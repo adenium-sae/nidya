@@ -54,4 +54,12 @@ class User extends Authenticatable
     public function roles() {
         return $this->belongsToMany(Role::class, 'store_user_roles', 'user_id', 'role_id');
     }
+
+    public function stores() {
+        return $this->belongsToMany(Store::class, 'store_user_roles', 'user_id', 'store_id');
+    }
+
+    public function checkPassword(string $password): bool {
+        return password_verify($password, $this->password);
+    }
 }

@@ -11,9 +11,9 @@ class SignInController extends Controller
 {
     public function __construct(private readonly SignInService $signInService) {}
 
-    public function login(SignInRequest $request) {
+    public function signInWithEmailAndPassword(SignInRequest $request) {
         $data = $request->validated();
-        $result = $this->signInService->signIn($data);
+        $result = $this->signInService->signInWithEmailAndPassword($data);
         return response()->json([
             "status" => true,
             "message" => "User signed in successfully",

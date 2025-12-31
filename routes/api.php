@@ -12,6 +12,6 @@ Route::get('/user', function (Request $request) {
 Route::prefix("auth")->group(function () {
     Route::prefix("admin")->group(function () {
         Route::post("signup", [AdminSignUpController::class, "register"]);
-        Route::post("signin", [AdminSignInController::class, "login"]);
+        Route::post("signin", [AdminSignInController::class, "signInWithEmailAndPassword"]);
     });
 });
