@@ -1,0 +1,16 @@
+<?php
+
+namespace App\Exceptions\Users;
+
+use App\Exceptions\ClientException;
+
+class UserNotFoundException extends ClientException
+{
+    public function __construct() {
+        parent::__construct(
+            "USER_NOT_FOUND",
+            "The specified user was not found.",
+            404
+        );
+    }
+}
