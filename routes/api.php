@@ -13,5 +13,7 @@ Route::prefix("auth")->group(function () {
     Route::prefix("admin")->group(function () {
         Route::post("signup", [AdminSignUpController::class, "register"]);
         Route::post("signin", [AdminSignInController::class, "signInWithEmailAndPassword"]);
+        Route::post("signin/otp", [AdminSignInController::class, "signInWithOtp"]);
+        Route::post("signin/otp/generate", [AdminSignInController::class, "generateOtp"]);
     });
 });

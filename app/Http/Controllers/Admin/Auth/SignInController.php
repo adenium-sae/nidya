@@ -20,4 +20,26 @@ class SignInController extends Controller
             "data" => $result
         ]);
     }
+
+    public function signInWithOtp(Request $request) {
+        $email = $request->input("email");
+        $otpCode = $request->input("otp");
+        $data = ["email" => $email, "otp" => $otpCode];
+        $result = $this->signInService->signInWithOtp($data);
+        return response()->json([
+            "status" => true,
+            "message" => "User signed in successfully",
+            "data" => $result
+        ]);
+    }
+
+    public function generateOtp(Request $request) {
+        $email = $request->input("email");
+        $otp = $this->signInService->generateOtp($email);
+        return response()->json([
+            "status" => true,
+            "message" => "OTP generated successfully",
+            "data" => ["otp_code" => $otp]
+        ]);
+    }
 }

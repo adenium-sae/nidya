@@ -39,17 +39,15 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'otp_expires_at' => 'datetime',
+    ];
 
     public function roles() {
         return $this->belongsToMany(Role::class, 'store_user_roles', 'user_id', 'role_id');
@@ -61,5 +59,20 @@ class User extends Authenticatable
 
     public function checkPassword(string $password): bool {
         return password_verify($password, $this->password);
+    }
+
+    public function generateOtp(): string {
+        $otp = rand(100000, 999999);
+        return (string) $otp;
+    }
+
+    public function validateOtp(?string $otp): bool {
+        if (!$otp) {
+            return false;
+        }
+        if (!$this->otp_expires_at) {
+            return false;
+        }
+        return $this->otp_code === $otp && $this->otp_expires_at->isFuture();
     }
 }
