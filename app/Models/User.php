@@ -61,6 +61,7 @@ class User extends Authenticatable
         return password_verify($password, $this->password);
     }
 
+
     public function generateOtp(): string {
         $otp = rand(100000, 999999);
         return (string) $otp;

@@ -38,7 +38,7 @@ class SignUpService {
             'role_id' => $role->id,
             'store_id' => $store->id,
         ]);
-        $token = $user->createToken("auth_token", ['admin'])->plainTextToken;
+        $token = $user->createToken("API Token")->plainTextToken;
         return ["user" => $user, "token" => $token];
     }
 }

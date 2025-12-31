@@ -17,7 +17,7 @@ class SignInService {
         if (!$user->checkPassword($data["password"])) {
             throw new InvalidCredentialsException();
         }
-        $token = $user->createToken("auth_token", ['admin'])->plainTextToken;
+        $token = $user->createToken("API Token")->plainTextToken;
         return ["user" => $user, "token" => $token];
     }
 
@@ -30,7 +30,7 @@ class SignInService {
         if (!$user->validateOtp($otp)) {
             throw new InvalidOtpCodeException();
         }
-        $token = $user->createToken("auth_token", ['admin'])->plainTextToken;
+        $token = $user->createToken("API Token")->plainTextToken;
         $user->otp_code = null;
         $user->otp_expires_at = null;
         $user->save();
