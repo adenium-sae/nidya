@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Middleware\Admin;
+namespace App\Http\Middleware;
 
 use App\Exceptions\Auth\AccessDeniedException;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class EnsureAdminMiddleware
+class EnsureRoleMiddleware
 {
     /**
      * Handle an incoming request.
