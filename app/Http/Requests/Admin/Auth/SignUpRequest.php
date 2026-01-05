@@ -24,6 +24,11 @@ class SignUpRequest extends FormRequest
         return [
             "email" => ["required", "email"],
             "password" => ["required", "string", "min:8", "confirmed"],
+            "first_name" => ["required", "string", "max:255"],
+            "middle_name" => ["nullable", "string", "max:255"],
+            "last_name" => ["nullable", "string", "max:255"],
+            "second_last_name" => ["required", "string", "max:255"],
+            "birth_date" => ["nullable", "date"]
         ];
     }
 }
