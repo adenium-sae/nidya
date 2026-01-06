@@ -8,4 +8,10 @@ return [
     'product_retrieved_successfully' => 'Product retrieved successfully.',
     'product_created_successfully' => 'Product created successfully.',
     'profile_created_successfully' => 'Profile created successfully',
+    'store_updated_successfully' => 'Store updated successfully',
+    'store_retrieved_successfully' => 'Store retrieved successfully',
+    'branch_updated_successfully' => 'Branch updated successfully',
+    'branch_retrieved_successfully' => 'Branch retrieved successfully',
+    'warehouse_updated_successfully' => 'Warehouse updated successfully',
+    'warehouse_retrieved_successfully' => 'Warehouse retrieved successfully',
 ];
