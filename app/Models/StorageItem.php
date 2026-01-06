@@ -16,11 +16,16 @@ class StorageItem extends Model
         "label",
         "batch_type",
         "warehouse_id",
+        "store_id",
         "product_id",
     ];
 
     public function warehouse() {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    public function store() {
+        return $this->belongsTo(Store::class);
     }
 
     public function product() {

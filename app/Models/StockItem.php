@@ -15,6 +15,7 @@ class StockItem extends Model
     protected $fillable = [
         "product_id",
         "storage_item_id",
+        "store_id",
         "stock",
     ];
 
@@ -24,5 +25,9 @@ class StockItem extends Model
 
     public function storageItem() {
         return $this->belongsTo(StorageItem::class);
+    }
+
+    public function store() {
+        return $this->belongsTo(Store::class);
     }
 }

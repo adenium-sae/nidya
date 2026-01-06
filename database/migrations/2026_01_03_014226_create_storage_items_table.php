@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string("label");
             $table->enum("batch_type", ["bag", "box", "stand", "in_sale", "other"]);
             $table->foreignUuid("warehouse_id")->constrained("warehouses")->cascadeOnDelete();
+            $table->foreignUuid("store_id")->constrained("stores")->cascadeOnDelete();
             $table->foreignUuid("product_id")->constrained("products")->cascadeOnDelete();
             $table->timestamps();
         });

@@ -16,8 +16,10 @@ return new class extends Migration
             $table->foreignUuid("store_id")->constrained("stores")->cascadeOnDelete();
             $table->foreignUuid("product_id")->constrained("products")->cascadeOnDelete();
             $table->decimal('price', 10, 2);
+            $table->string('currency', 3)->default('USD');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->unique(['store_id', 'product_id']);
         });
     }
 

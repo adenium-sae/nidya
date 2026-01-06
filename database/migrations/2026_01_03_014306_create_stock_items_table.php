@@ -15,8 +15,10 @@ return new class extends Migration
             $table->uuid("id")->primary();
             $table->foreignUuid("product_id")->constrained("products")->cascadeOnDelete();
             $table->foreignUuid("storage_item_id")->constrained("storage_items")->cascadeOnDelete();
+            $table->foreignUuid("store_id")->constrained("stores")->cascadeOnDelete();
             $table->integer("stock")->default(0);
             $table->timestamps();
+            $table->unique(['product_id', 'storage_item_id', 'store_id']);
         });
     }
 

@@ -18,4 +18,16 @@ class Product extends Model
         "sku",
         "type",
     ];
+
+    public function storeProducts() {
+        return $this->hasMany(StoreProduct::class);
+    }
+
+    public function storageItems() {
+        return $this->hasMany(StorageItem::class);
+    }
+
+    public function stockItems() {
+        return $this->hasMany(StockItem::class);
+    }
 }

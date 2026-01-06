@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\Auth\SignInController as AdminSignInController;
 use App\Http\Controllers\Admin\Auth\SignUpController as AdminSignUpController;
+use App\Http\Controllers\Admin\Products\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\Profiles\ProfileController as AdminProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -23,5 +24,11 @@ Route::prefix("auth")->group(function () {
 Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->group(function () {
     Route::prefix("profiles")->group(function () {
         Route::post("/", [AdminProfileController::class, "store"]);
+    });
+
+    Route::prefix("products")->group(function () {
+        Route::get("/", [AdminProductController::class, "index"]);
+        Route::get("/{id}", [AdminProductController::class, "show"]);
+        Route::post("/", [AdminProductController::class, "store"]);
     });
 });

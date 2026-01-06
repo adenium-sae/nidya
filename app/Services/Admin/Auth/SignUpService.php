@@ -57,7 +57,7 @@ class SignUpService {
                 'store_id' => $store->id,
                 'is_active' => true,
             ]);
-            $warehouse = Warehouse::create([
+            Warehouse::create([
                 'name' => $storeName . ' Warehouse',
                 'type' => 'central',
                 'is_active' => true,
@@ -69,9 +69,6 @@ class SignUpService {
             return [
                 "user" => $user,
                 "token" => $token,
-                "store" => $store,
-                "branch" => $branch,
-                "warehouse" => $warehouse,
                 "profile" => $profile,
             ];
         } catch (\Exception $e) {
