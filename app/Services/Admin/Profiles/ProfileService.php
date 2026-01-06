@@ -4,6 +4,7 @@ namespace App\Services\Admin\Profiles;
 
 use App\Models\Profile;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class ProfileService {
     
@@ -15,7 +16,7 @@ class ProfileService {
             'middle_name' => $data['middle_name'] ?? null,
             'last_name' => $data['last_name'],
             'second_last_name' => $data['second_last_name'] ?? null,
-            'birth_date' => $data['birth_date'] ?? null,
+            'birth_date' => $data['birth_date'] ? Carbon::createFromFormat('d-m-Y', $data['birth_date']) : null,
         ]);
         return $profile;
     }

@@ -26,7 +26,7 @@ class CreateProfileRequest extends FormRequest
             'middle_name' => 'nullable|string|max:255',
             'last_name' => 'required|string|max:255',
             'second_last_name' => 'nullable|string|max:255',
-            'birth_date' => 'nullable|date',
+            'birth_date' => 'nullable|date|date_format:d-m-Y',
         ];
     }
 }

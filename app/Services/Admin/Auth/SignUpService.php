@@ -13,6 +13,7 @@ use App\Models\Profile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class SignUpService {
 
@@ -50,7 +51,7 @@ class SignUpService {
                 'middle_name' => $data['middle_name'] ?? null,
                 'last_name' => $data['last_name'] ?? null,
                 'second_last_name' => $data['second_last_name'],
-                'birth_date' => $data['birth_date'] ?? null,
+                'birth_date' => $data['birth_date'] ? Carbon::createFromFormat('d-m-Y', $data['birth_date']) : null,
             ]);
             $branch = Branch::create([
                 'name' => $storeName . ' - Main Branch',
