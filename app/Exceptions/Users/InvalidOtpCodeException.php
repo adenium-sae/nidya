@@ -10,7 +10,7 @@ class InvalidOtpCodeException extends ClientException
     public function __construct() {
         parent::__construct(
             "INVALID_OTP_CODE",
-            "The provided OTP code is invalid or has expired.",
+            __('exceptions.invalid_otp_code'),
             401
         );
     }

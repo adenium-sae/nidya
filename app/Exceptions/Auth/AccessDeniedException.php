@@ -10,7 +10,7 @@ class AccessDeniedException extends ClientException
     public function __construct() {
         parent::__construct(
             "ACCESS_DENIED",
-            "You do not have permission to access this resource.",
+            __('exceptions.access_denied'),
             403
         );
     }

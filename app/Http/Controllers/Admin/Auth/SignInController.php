@@ -16,7 +16,7 @@ class SignInController extends Controller
         $result = $this->signInService->signInWithEmailAndPassword($data);
         return response()->json([
             "status" => true,
-            "message" => "User signed in successfully",
+            "message" => __('messages.user_signed_in_successfully'),
             "data" => $result
         ]);
     }
@@ -28,7 +28,7 @@ class SignInController extends Controller
         $result = $this->signInService->signInWithOtp($data);
         return response()->json([
             "status" => true,
-            "message" => "User signed in successfully",
+            "message" => __('messages.user_signed_in_successfully'),
             "data" => $result
         ]);
     }
@@ -38,7 +38,7 @@ class SignInController extends Controller
         $otp = $this->signInService->generateOtp($email);
         return response()->json([
             "status" => true,
-            "message" => "OTP generated successfully",
+            "message" => __('messages.otp_generated_successfully'),
             "data" => ["otp_code" => $otp]
         ]);
     }

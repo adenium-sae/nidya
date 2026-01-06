@@ -9,7 +9,7 @@ class EmailAlreadyTakenException extends ClientException
     public function __construct() {
         parent::__construct(
             "EMAIL_ALREADY_TAKEN",
-            "The provided email is already taken by another user.",
+            __('exceptions.email_already_taken'),
             409
         );
     }

@@ -9,7 +9,7 @@ class UserNotFoundException extends ClientException
     public function __construct() {
         parent::__construct(
             "USER_NOT_FOUND",
-            "The specified user was not found.",
+            __('exceptions.user_not_found'),
             404
         );
     }

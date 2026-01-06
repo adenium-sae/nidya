@@ -16,7 +16,7 @@ class SignUpController extends Controller
         $result = $this->signUpService->register($data);
         return response()->json([
             "status" => true,
-            "message" => "User registered successfully",
+            "message" => __('messages.user_registered_successfully'),
             "data" => $result
         ]);
     }

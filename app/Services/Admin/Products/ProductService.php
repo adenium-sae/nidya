@@ -2,6 +2,7 @@
 
 namespace App\Services\Admin\Products;
 
+use App\Exceptions\Warehouses\GlobalWarehouseMissingStoreException;
 use App\Exceptions\Warehouses\WarehouseNotFoundException;
 use App\Models\Product;
 use App\Models\StorageItem;
@@ -191,7 +192,7 @@ class ProductService {
                     throw new WarehouseNotFoundException();
                 }
                 if (empty($globalWarehouse->store_id)) {
-                    throw new \Exception("Global warehouse must have a store_id assigned");
+                    throw new GlobalWarehouseMissingStoreException();
                 }
                 $storageItem = StorageItem::create([
                     'label' => $data['label'] ?? $product->name,

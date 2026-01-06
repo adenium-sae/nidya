@@ -16,7 +16,7 @@ class ProductController extends Controller
         $filters = $request->validated();
         $products = $this->productService->getProducts($filters);
         return response()->json([
-            'message' => 'Products retrieved successfully.',
+            'message' => __('messages.products_retrieved_successfully'),
             'data' => $products->items(),
             'meta' => [
                 'current_page' => $products->currentPage(),
@@ -30,7 +30,7 @@ class ProductController extends Controller
     public function show(string $id) {
         $product = $this->productService->getProduct($id);
         return response()->json([
-            'message' => 'Product retrieved successfully.',
+            'message' => __('messages.product_retrieved_successfully'),
             'data' => $product,
         ]);
     }
@@ -39,7 +39,7 @@ class ProductController extends Controller
         $data = $request->validated();
         $product = $this->productService->createProduct($data);
         return response()->json([
-            'message' => 'Product created successfully.',
+            'message' => __('messages.product_created_successfully'),
             'data' => $product,
         ], 201);
     }

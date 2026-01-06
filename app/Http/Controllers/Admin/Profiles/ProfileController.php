@@ -16,7 +16,7 @@ class ProfileController extends Controller
         $result = $this->profileService->createProfile($data);
         return response()->json([
             "status" => true,
-            "message" => "Profile created successfully",
+            "message" => __('messages.profile_created_successfully'),
             "data" => $result
         ]);
     }

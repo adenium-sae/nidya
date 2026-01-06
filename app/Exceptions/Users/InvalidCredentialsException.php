@@ -10,7 +10,7 @@ class InvalidCredentialsException extends ClientException
     public function __construct() {
         parent::__construct(
             "INVALID_CREDENTIALS",
-            "The provided credentials are invalid.",
+            __('exceptions.invalid_credentials'),
             401
         );
     }
