@@ -57,7 +57,7 @@ class SignUpService {
                 'store_id' => $store->id,
                 'is_active' => true,
             ]);
-            Warehouse::create([
+            $warehouse = Warehouse::create([
                 'name' => $storeName . ' Warehouse',
                 'type' => 'central',
                 'is_active' => true,
@@ -70,6 +70,9 @@ class SignUpService {
                 "user" => $user,
                 "token" => $token,
                 "profile" => $profile,
+                "store" => $store,
+                "branch" => $branch,
+                "warehouse" => $warehouse,
             ];
         } catch (\Exception $e) {
             DB::rollBack();

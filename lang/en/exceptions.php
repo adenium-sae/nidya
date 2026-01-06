@@ -8,4 +8,6 @@ return [
     'access_denied' => 'You do not have permission to access this resource.',
     'warehouse_not_found' => 'The specified warehouse could not be found.',
     'global_warehouse_missing_store' => 'A global warehouse must be associated with at least one store.',
+    'store_not_found' => 'The specified store could not be found.',
+    'branch_not_found' => 'The specified branch could not be found.',
 ];

@@ -8,4 +8,6 @@ return [
     'access_denied' => 'No tienes permiso para acceder a este recurso.',
     'warehouse_not_found' => 'El almacén especificado no pudo ser encontrado.',
     'global_warehouse_missing_store' => 'Un almacén global debe estar asociado con al menos una tienda.',
+    'store_not_found' => 'La tienda especificada no pudo ser encontrada.',
+    'branch_not_found' => 'La sucursal especificada no pudo ser encontrada.',
 ];
