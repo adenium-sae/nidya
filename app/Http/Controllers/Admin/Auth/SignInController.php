@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Auth\SignInRequest;
 use App\Services\Admin\Auth\SignInService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class SignInController extends Controller
 {
@@ -40,6 +41,15 @@ class SignInController extends Controller
             "status" => true,
             "message" => __('messages.otp_generated_successfully'),
             "data" => ["otp_code" => $otp]
+        ]);
+    }
+
+    public function signOut(Request $request) {
+        $user = Auth::user();
+        $this->signInService->signOut($user);
+        return response()->json([
+            "status" => true,
+            "message" => __('messages.user_signed_out_successfully'),
         ]);
     }
 }

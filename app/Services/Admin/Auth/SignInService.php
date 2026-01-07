@@ -48,4 +48,8 @@ class SignInService {
         $user->save();
         return $otp;
     }
+
+    public function signOut(User $user): void {
+        $user->tokens()->delete();
+    }
 }

@@ -14,4 +14,5 @@ return [
     'branch_retrieved_successfully' => 'Branch retrieved successfully',
     'warehouse_updated_successfully' => 'Warehouse updated successfully',
     'warehouse_retrieved_successfully' => 'Warehouse retrieved successfully',
+    'user_signed_out_successfully' => 'User signed out successfully',
 ];
