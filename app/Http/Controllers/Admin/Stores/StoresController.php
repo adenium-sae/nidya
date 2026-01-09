@@ -6,13 +6,23 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Stores\UpdateStoreRequest;
 use App\Services\Admin\Stores\StoreService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class StoresController extends Controller
 {
     public function __construct(private readonly StoreService $storeService) {}
 
-    public function update(UpdateStoreRequest $request, string $id)
-    {
+    public function index(Request $request) {
+        $user_id = Auth::user()->id;
+        $result = $this->storeService->findAllByAdmin($request->all(), $user_id);
+        return response()->json([
+            "status" => true,
+            "message" => __('messages.stores_retrieved_successfully'),
+            "data" => $result
+        ]);
+    }
+
+    public function update(UpdateStoreRequest $request, string $id) {
         $data = $request->validated();
         $store = $this->storeService->update($id, $data);
         return response()->json([
@@ -22,8 +32,7 @@ class StoresController extends Controller
         ]);
     }
 
-    public function show(string $id)
-    {
+    public function show(string $id) {
         $store = $this->storeService->getById($id);
         return response()->json([
             "status" => true,

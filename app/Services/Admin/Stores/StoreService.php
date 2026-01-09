@@ -8,6 +8,14 @@ use Illuminate\Support\Facades\DB;
 
 class StoreService
 {
+    public function findAllByAdmin(array $data, string $user_id) {
+        $query = Store::where('user_id', $user_id);
+        if (isset($data['is_active'])) {
+            $query->where('is_active', $data['is_active']);
+        }
+        return $query->get();
+    }
+
     public function update(string $id, array $data): Store {
         DB::beginTransaction();
         try {

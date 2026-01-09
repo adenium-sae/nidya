@@ -15,4 +15,5 @@ return [
     'warehouse_updated_successfully' => 'Almacén actualizado exitosamente',
     'warehouse_retrieved_successfully' => 'Almacén obtenido exitosamente',
     'user_signed_out_successfully' => 'Usuario ha cerrado sesión exitosamente',
+    'stores_retrieved_successfully' => 'Tiendas obtenidas exitosamente',
 ];
