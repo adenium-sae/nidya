@@ -9,7 +9,6 @@ use App\Http\Controllers\Admin\Branches\BranchesController as AdminBranchesContr
 use App\Http\Controllers\Admin\Warehouses\WarehousesController as AdminWarehousesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Middleware\Admin\EnsureAdminMiddleware;
 
 Route::get('/user', function (Request $request) {
     return $request->user();

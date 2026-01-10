@@ -17,6 +17,7 @@ class Warehouse extends Model
         "type",
         "is_active",
         "branch_id",
+        "store_id",
     ];
 
     public function branch() {

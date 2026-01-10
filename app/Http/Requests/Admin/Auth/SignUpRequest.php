@@ -27,8 +27,8 @@ class SignUpRequest extends FormRequest
             "first_name" => ["required", "string", "max:255"],
             "middle_name" => ["nullable", "string", "max:255"],
             "last_name" => ["nullable", "string", "max:255"],
-            "second_last_name" => ["required", "string", "max:255"],
-            "birth_date" => ["nullable", "date", "date_format:d-m-Y"]
+            "second_last_name" => ["nullable", "string", "max:255"],
+            "birth_date" => ["nullable", "date"]
         ];
     }
 }

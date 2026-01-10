@@ -50,8 +50,8 @@ class SignUpService {
                 'first_name' => $data['first_name'],
                 'middle_name' => $data['middle_name'] ?? null,
                 'last_name' => $data['last_name'] ?? null,
-                'second_last_name' => $data['second_last_name'],
-                'birth_date' => $data['birth_date'] ? Carbon::createFromFormat('d-m-Y', $data['birth_date']) : null,
+                'second_last_name' => $data['second_last_name'] ?? null,
+                'birth_date' => isset($data['birth_date']) ? Carbon::parse($data['birth_date']) : null,
             ]);
             $branch = Branch::create([
                 'name' => $storeName . ' - Main Branch',

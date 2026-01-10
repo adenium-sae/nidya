@@ -16,6 +16,7 @@ class Store extends Model
         'name',
         'slug',
         'is_active',
+        'user_id',
     ];
 
     public function users() {

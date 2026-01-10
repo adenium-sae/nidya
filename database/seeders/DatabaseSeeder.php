@@ -2,6 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
+use App\Models\Store;
+use App\Models\StoreUserRole;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
