@@ -16,4 +16,5 @@ return [
     'warehouse_retrieved_successfully' => 'Warehouse retrieved successfully',
     'user_signed_out_successfully' => 'User signed out successfully',
     'stores_retrieved_successfully' => 'Stores retrieved successfully',
+    'store_created_successfully' => 'Store created successfully',
 ];

@@ -16,6 +16,23 @@ class StoreService
         return $query->get();
     }
 
+    public function create(array $data, string $user_id): Store {
+        DB::beginTransaction();
+        try {
+            $store = Store::create([
+                'name' => $data['name'],
+                'slug' => $data['slug'],
+                'is_active' => $data['is_active'] ?? true,
+                'user_id' => $user_id,
+            ]);
+            DB::commit();
+            return $store;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
     public function update(string $id, array $data): Store {
         DB::beginTransaction();
         try {

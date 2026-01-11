@@ -22,6 +22,21 @@ class StoresController extends Controller
         ]);
     }
 
+    public function store(Request $request) {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:stores,slug',
+            'is_active' => 'sometimes|boolean',
+        ]);
+        $user_id = Auth::user()->id;
+        $store = $this->storeService->create($data, $user_id);
+        return response()->json([
+            "status" => true,
+            "message" => __('messages.store_created_successfully'),
+            "data" => $store
+        ]);
+    }
+
     public function update(UpdateStoreRequest $request, string $id) {
         $data = $request->validated();
         $store = $this->storeService->update($id, $data);

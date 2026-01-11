@@ -16,4 +16,5 @@ return [
     'warehouse_retrieved_successfully' => 'Almacén obtenido exitosamente',
     'user_signed_out_successfully' => 'Usuario ha cerrado sesión exitosamente',
     'stores_retrieved_successfully' => 'Tiendas obtenidas exitosamente',
+    'store_created_successfully' => 'Tienda creada exitosamente',
 ];
