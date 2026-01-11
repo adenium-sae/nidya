@@ -39,6 +39,7 @@ class SignUpService {
                 'name' => $storeName,
                 'slug' => $slug,
                 'is_active' => true,
+                'user_id' => $user->id,
             ]);
             StoreUserRole::create([
                 'user_id' => $user->id,
