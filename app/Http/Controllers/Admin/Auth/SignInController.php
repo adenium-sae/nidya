@@ -46,7 +46,7 @@ class SignInController extends Controller
 
     public function signOut(Request $request) {
         $user = Auth::user();
-        $this->signInService->signOut($user);
+        $this->signInService->signOut($user->id);
         return response()->json([
             "status" => true,
             "message" => __('messages.user_signed_out_successfully'),

@@ -49,7 +49,10 @@ class SignInService {
         return $otp;
     }
 
-    public function signOut(User $user): void {
-        $user->tokens()->delete();
+    public function signOut(string $user_id): void {
+        $user = User::find($user_id);
+        if ($user && $user instanceof User) {
+            $user->clearTokens();
+        }
     }
 }

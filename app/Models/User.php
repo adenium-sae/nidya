@@ -76,4 +76,8 @@ class User extends Authenticatable
         }
         return $this->otp_code === $otp && $this->otp_expires_at->isFuture();
     }
+
+    public function clearTokens(): void {
+        $this->tokens()->delete();
+    }
 }

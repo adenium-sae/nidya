@@ -20,7 +20,7 @@ Route::prefix("auth")->group(function () {
         Route::post("signin", [AdminSignInController::class, "signInWithEmailAndPassword"]);
         Route::post("signin/otp", [AdminSignInController::class, "signInWithOtp"]);
         Route::post("signin/otp/generate", [AdminSignInController::class, "generateOtp"]);
-        Route::post("signout", [AdminSignInController::class, "signOut"]);
+        Route::post("signout", [AdminSignInController::class, "signOut"])->middleware('auth:sanctum');
     });
 });
 
