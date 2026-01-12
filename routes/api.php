@@ -37,11 +37,13 @@ Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->grou
 
     Route::prefix("stores")->group(function () {
         Route::get("/", [AdminStoresController::class, "index"]);
+        Route::post("/", [AdminStoresController::class, "store"]);
         Route::put("/{id}", [AdminStoresController::class, "update"]);
         Route::get("/{id}", [AdminStoresController::class, "show"]);
     });
 
     Route::prefix("branches")->group(function () {
+        Route::get("/", [AdminBranchesController::class, "index"]);
         Route::put("/{id}", [AdminBranchesController::class, "update"]);
         Route::get("/{id}", [AdminBranchesController::class, "show"]);
     });

@@ -17,4 +17,8 @@ return [
     'user_signed_out_successfully' => 'Usuario ha cerrado sesión exitosamente',
     'stores_retrieved_successfully' => 'Tiendas obtenidas exitosamente',
     'store_created_successfully' => 'Tienda creada exitosamente',
+    'branches_retrieved_successfully' => 'Sucursales obtenidas exitosamente',
+    'branch_created_successfully' => 'Sucursal creada exitosamente',
+    'branch_updated_successfully' => 'Sucursal actualizada exitosamente',
+    'branch_deleted_successfully' => 'Sucursal eliminada exitosamente',
 ];

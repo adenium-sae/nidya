@@ -17,4 +17,8 @@ return [
     'user_signed_out_successfully' => 'User signed out successfully',
     'stores_retrieved_successfully' => 'Stores retrieved successfully',
     'store_created_successfully' => 'Store created successfully',
+    'branches_retrieved_successfully' => 'Branches retrieved successfully',
+    'branch_created_successfully' => 'Branch created successfully',
+    'branch_updated_successfully' => 'Branch updated successfully',
+    'branch_deleted_successfully' => 'Branch deleted successfully',
 ];
