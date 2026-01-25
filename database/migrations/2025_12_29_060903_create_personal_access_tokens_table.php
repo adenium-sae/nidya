@@ -21,6 +21,22 @@ return new class extends Migration
             $table->timestamp('expires_at')->nullable()->index();
             $table->timestamps();
         });
+
+        Schema::create('activity_log', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('tenant_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->string('log_name')->nullable();
+            $table->text('description');
+            $table->nullableUuidMorphs('subject');
+            $table->nullableUuidMorphs('causer');
+            $table->json('properties')->nullable();
+            $table->string('event')->nullable();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->timestamps();
+            $table->index(['tenant_id', 'created_at']);
+            $table->index('log_name');
+        });
     }
 
     /**
@@ -28,6 +44,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('activity_log');
         Schema::dropIfExists('personal_access_tokens');
     }
 };
