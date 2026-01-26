@@ -5,6 +5,10 @@ namespace App\Services\Admin\Products;
 use App\Exceptions\Products\ProductHasStockException;
 use App\Exceptions\Products\ProductNotFoundException;
 use App\Models\Product;
+use App\Models\Stock;
+use App\Models\Store;
+use App\Models\StoreProduct;
+use Illuminate\Support\Facades\DB;
 
 class ProductService
 {
@@ -49,9 +53,106 @@ class ProductService
         return $product;
     }
 
-    public function createProduct(array $data): Product
+    public function createForSingleStore(array $data): Product
     {
-        return Product::create($data);
+        DB::beginTransaction();
+        try {
+            $product = $this->createBaseProduct($data);
+            StoreProduct::create([
+                'store_id' => $data['store_id'],
+                'product_id' => $product->id,
+                'price' => $data['price'],
+                'currency' => 'MXN',
+                'is_active' => true,
+                'is_visible' => true,
+            ]);
+            if ($data['type'] === 'product' && !empty($data['initial_stock']) && $data['initial_stock'] > 0) {
+                $this->createInitialStock($product->id, $data);
+            }
+            DB::commit();
+            return $product;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    public function createForMultipleStores(array $data): Product
+    {
+        DB::beginTransaction();
+        try {
+            $product = $this->createBaseProduct($data);
+
+            foreach ($data['store_ids'] as $storeId) {
+                \App\Models\StoreProduct::create([
+                    'store_id' => $storeId,
+                    'product_id' => $product->id,
+                    'price' => $data['price'],
+                    'currency' => 'MXN',
+                    'is_active' => true,
+                    'is_visible' => true,
+                ]);
+            }
+            DB::commit();
+            return $product;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    public function createForAllStores(array $data): Product
+    {
+        DB::beginTransaction();
+        try {
+            $product = $this->createBaseProduct($data);
+            $storeIds = Store::pluck('id');
+            foreach ($storeIds as $storeId) {
+                StoreProduct::create([
+                    'store_id' => $storeId,
+                    'product_id' => $product->id,
+                    'price' => $data['price'],
+                    'currency' => 'MXN',
+                    'is_active' => true,
+                    'is_visible' => true,
+                ]);
+            }
+            DB::commit();
+            return $product;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    private function createBaseProduct(array $data): Product
+    {
+        return Product::create([
+            'category_id' => $data['category_id'],
+            'name' => $data['name'],
+            'description' => $data['description'] ?? null,
+            'sku' => $data['sku'],
+            'barcode' => $data['barcode'] ?? null,
+            'type' => $data['type'],
+            'cost' => $data['cost'],
+            'image_url' => $data['image_url'] ?? null,
+            'track_inventory' => $data['type'] === 'product' ? ($data['track_inventory'] ?? true) : false,
+            'min_stock' => $data['min_stock'] ?? 0,
+            'max_stock' => $data['max_stock'] ?? 0,
+            'is_active' => true,
+        ]);
+    }
+
+    private function createInitialStock(string $productId, array $data): void
+    {
+        Stock::create([
+            'product_id' => $productId,
+            'warehouse_id' => $data['warehouse_id'],
+            'storage_location_id' => null,
+            'quantity' => $data['initial_stock'],
+            'reserved' => 0,
+            'avg_cost' => $data['cost'],
+        ]);
     }
 
     public function update(string $id, array $data): Product

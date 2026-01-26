@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Products\StoreProductRequest;
 use App\Http\Requests\Admin\Products\UpdateProductRequest;
 use App\Models\Product;
-use App\Services\Products\ProductService;
+use App\Services\Admin\Products\ProductService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -18,22 +18,38 @@ class ProductController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $products = $this->productService->list(
-            $request->all(),
-            [
-                'by' => $request->get('sort_by', 'name'),
-                'order' => $request->get('sort_order', 'asc')
-            ],
-            $request->get('per_page', 15)
+        $products = $this->productService->getProducts(
+            $request->all()
         );
         return response()->json($products);
     }
 
-    public function store(StoreProductRequest $request): JsonResponse
+    public function storeSingle(StoreProductRequest $request): JsonResponse
     {
-        $product = $this->productService->create($request->validated());
+        $data = $request->validated();
+        $product = $this->productService->createForSingleStore($data);
         return response()->json([
-            'message' => __('messages.product_created_successfully'),
+            'message' => __('messages.product_created_in_single_store'),
+            'data' => $product->load('category')
+        ], 201);
+    }
+
+    public function storeMultiple(StoreProductRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+        $product = $this->productService->createForMultipleStores($data);
+        return response()->json([
+            'message' => __('messages.product_created_in_multiple_stores'),
+            'data' => $product->load('category')
+        ], 201);
+    }
+
+    public function storeAll(StoreProductRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+        $product = $this->productService->createForAllStores($data);
+        return response()->json([
+            'message' => __('messages.product_created_in_all_stores'),
             'data' => $product->load('category')
         ], 201);
     }

@@ -32,7 +32,9 @@ Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->grou
     Route::prefix("products")->group(function () {
         Route::get("/", [AdminProductController::class, "index"]);
         Route::get("/{id}", [AdminProductController::class, "show"]);
-        Route::post("/", [AdminProductController::class, "store"]);
+        Route::post("/single", [AdminProductController::class, "storeSingle"]);
+        Route::post("/multiple", [AdminProductController::class, "storeMultiple"]);
+        Route::post("/all", [AdminProductController::class, "storeAll"]);
     });
 
     Route::prefix("stores")->group(function () {
