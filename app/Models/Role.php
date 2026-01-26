@@ -2,21 +2,30 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Role extends Model
 {
-    use HasUuids;
-
-    protected $keyType = 'string';
-    public $incrementing = false;
+    use HasFactory, HasUuids, BelongsToTenant;
 
     protected $fillable = [
-        'key'
+        'tenant_id',
+        'key',
+        'name',
+        'description',
+        'is_system',
     ];
 
-    public function users() {
-        return $this->belongsToMany(User::class, 'store_user_roles', 'role_id', 'user_id');
+    protected $casts = [
+        'is_system' => 'boolean',
+    ];
+
+    public function permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class, 'role_permissions');
     }
 }

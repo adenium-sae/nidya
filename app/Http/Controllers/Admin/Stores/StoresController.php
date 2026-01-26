@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Stores;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Stores\CreateStoreRequest;
 use App\Http\Requests\Admin\Stores\UpdateStoreRequest;
 use App\Services\Admin\Stores\StoreService;
 use Illuminate\Http\Request;
@@ -22,19 +23,15 @@ class StoresController extends Controller
         ]);
     }
 
-    public function store(Request $request) {
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:stores,slug',
-            'is_active' => 'sometimes|boolean',
-        ]);
+    public function store(CreateStoreRequest $request) {
+        $data = $request->validated();
         $user_id = Auth::user()->id;
         $store = $this->storeService->create($data, $user_id);
         return response()->json([
             "status" => true,
             "message" => __('messages.store_created_successfully'),
             "data" => $store
-        ]);
+        ], 201);
     }
 
     public function update(UpdateStoreRequest $request, string $id) {

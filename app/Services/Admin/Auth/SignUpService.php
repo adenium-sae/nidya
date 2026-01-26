@@ -2,83 +2,121 @@
 
 namespace App\Services\Admin\Auth;
 
-use App\Exceptions\Users\EmailAlreadyTakenException;
-use App\Models\User;
-use App\Models\Role;
-use App\Models\Store;
-use App\Models\StoreUserRole;
 use App\Models\Branch;
-use App\Models\Warehouse;
 use App\Models\Profile;
+use App\Models\Store;
+use App\Models\Tenant;
+use App\Models\User;
+use App\Models\Warehouse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
-class SignUpService {
-
-    public function register(array $data): array {
-        try {
-            DB::beginTransaction();
-            if (User::where('email', $data['email'])->exists()) {
-                throw new EmailAlreadyTakenException();
-            }
-            $user = User::create([
-                "email" => $data["email"],
-                "password" => Hash::make($data["password"]),
+class SignUpService
+{
+    public function register(array $data): array
+    {
+        return DB::transaction(function () use ($data) {
+            $tenant = $this->createTenant($data);
+            $user = $this->createUser($data);
+            $tenant->users()->attach($user->id, [
+                'role' => 'owner',
+                'is_active' => true
             ]);
-            $role = Role::firstOrCreate(['key' => 'admin']);
-            $storeName = $data['store_name'] ?? ($user->email . "'s store");
-            $slugBase = Str::slug($storeName);
-            $slug = $slugBase;
-            $i = 1;
-            while (Store::where('slug', $slug)->exists()) {
-                $slug = $slugBase . '-' . $i++;
-            }
-            $store = Store::create([
-                'name' => $storeName,
-                'slug' => $slug,
-                'is_active' => true,
-                'user_id' => $user->id,
-            ]);
-            StoreUserRole::create([
-                'user_id' => $user->id,
-                'role_id' => $role->id,
-                'store_id' => $store->id,
-            ]);
-            $profile = Profile::create([
-                'user_id' => $user->id,
-                'first_name' => $data['first_name'],
-                'middle_name' => $data['middle_name'] ?? null,
-                'last_name' => $data['last_name'] ?? null,
-                'second_last_name' => $data['second_last_name'] ?? null,
-                'birth_date' => isset($data['birth_date']) ? Carbon::parse($data['birth_date']) : null,
-            ]);
-            $branch = Branch::create([
-                'name' => $storeName . ' - Main Branch',
-                'store_id' => $store->id,
-                'is_active' => true,
-            ]);
-            $warehouse = Warehouse::create([
-                'name' => $storeName . ' Warehouse',
-                'type' => 'central',
-                'is_active' => true,
-                'branch_id' => $branch->id,
-                'store_id' => $store->id,
-            ]);
-            $token = $user->createToken("API Token")->plainTextToken;
-            DB::commit();
+            session(['tenant_id' => $tenant->id]);
+            $store = $this->createDefaultStore($tenant, $user);
+            $branch = $this->createDefaultBranch($store, $user);
+            $warehouse = $this->createDefaultWarehouse($store, $branch);
+            $token = $user->createToken('auth_token')->plainTextToken;
             return [
-                "user" => $user,
-                "token" => $token,
-                "profile" => $profile,
-                "store" => $store,
-                "branch" => $branch,
-                "warehouse" => $warehouse,
+                'user' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'full_name' => $user->fullName(),
+                    'profile' => $user->profile
+                ],
+                'tenant' => [
+                    'id' => $tenant->id,
+                    'name' => $tenant->name,
+                    'slug' => $tenant->slug,
+                    'subscription_status' => $tenant->subscription_status
+                ],
+                'store' => [
+                    'id' => $store->id,
+                    'name' => $store->name,
+                    'slug' => $store->slug
+                ],
+                'token' => $token
             ];
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
+        });
+    }
+
+    protected function createTenant(array $data): Tenant
+    {
+        $firstName = $data['first_name'];
+        $lastName = $data['last_name'] ?? '';
+        $fullName = trim("$firstName $lastName");
+        return Tenant::create([
+            'name' => $fullName,
+            'slug' => Str::slug($fullName) . '-' . Str::random(6),
+            'email' => $data['email'],
+            'subscription_status' => 'trial',
+            'trial_ends_at' => now()->addDays(30)
+        ]);
+    }
+
+    protected function createUser(array $data): User
+    {
+        $user = User::create([
+            'email' => $data['email'],
+            'password' => $data['password'],
+            'is_active' => true
+        ]);
+        Profile::create([
+            'user_id' => $user->id,
+            'first_name' => $data['first_name'],
+            'middle_name' => $data['middle_name'] ?? null,
+            'last_name' => $data['last_name'] ?? null,
+            'second_last_name' => $data['second_last_name'] ?? null,
+            'birth_date' => $data['birth_date'] ?? null
+        ]);
+
+        return $user->load('profile');
+    }
+
+    protected function createDefaultStore(Tenant $tenant, User $user): Store
+    {
+        $firstName = $user->profile->first_name;
+        $slug = Str::slug($firstName);
+        return Store::create([
+            'tenant_id' => $tenant->id,
+            'name' => "{$firstName}'s Store",
+            'slug' => $slug . '-store',
+            'is_active' => true
+        ]);
+    }
+
+    protected function createDefaultBranch(Store $store, User $user): Branch
+    {
+        $firstName = $user->profile->first_name;
+        return Branch::create([
+            'tenant_id' => $store->tenant_id,
+            'store_id' => $store->id,
+            'name' => "{$firstName}'s Branch",
+            'code' => 'MAIN',
+            'is_active' => true
+        ]);
+    }
+
+    protected function createDefaultWarehouse(Store $store, Branch $branch): Warehouse
+    {
+        return Warehouse::create([
+            'tenant_id' => $store->tenant_id,
+            'store_id' => $store->id,
+            'branch_id' => $branch->id,
+            'name' => 'Main Warehouse',
+            'code' => 'WH-MAIN',
+            'type' => 'physical',
+            'is_active' => true
+        ]);
     }
 }

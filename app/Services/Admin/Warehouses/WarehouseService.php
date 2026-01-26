@@ -4,35 +4,52 @@ namespace App\Services\Admin\Warehouses;
 
 use App\Exceptions\Warehouses\WarehouseNotFoundException;
 use App\Models\Warehouse;
-use Illuminate\Support\Facades\DB;
 
 class WarehouseService
 {
-    public function update(string $id, array $data) {
-        DB::beginTransaction();
-        try {
-            $warehouse = Warehouse::findOrFail($id);
-            if (isset($data['name'])) $warehouse->name = $data['name'];
-            if (isset($data['type'])) $warehouse->type = $data['type'];
-            if (isset($data['is_active'])) $warehouse->is_active = $data['is_active'];
-            if (isset($data['branch_id'])) $warehouse->branch_id = $data['branch_id'];
-            $warehouse->save();
-            DB::commit();
-            return $warehouse;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            if ($e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
-                throw new WarehouseNotFoundException();
-            }
-            throw $e;
+    public function findAll(array $filters)
+    {
+        $query = Warehouse::with(['store', 'branch', 'address']);
+
+        if (!empty($filters['store_id'])) {
+            $query->where('store_id', $filters['store_id']);
         }
+
+        if (!empty($filters['branch_id'])) {
+            $query->where('branch_id', $filters['branch_id']);
+        }
+
+        if (!empty($filters['type'])) {
+            $query->where('type', $filters['type']);
+        }
+
+        if (!empty($filters['is_active'])) {
+            $query->where('is_active', $filters['is_active']);
+        }
+
+        return $query->get();
     }
 
-    public function getById(string $id) {
-        try {
-            return Warehouse::findOrFail($id);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+    public function update(string $id, array $data): Warehouse
+    {
+        /** @var Warehouse|null $warehouse */
+        $warehouse = Warehouse::find($id);
+
+        if (!$warehouse) {
             throw new WarehouseNotFoundException();
         }
+
+        $warehouse->fill($data);
+        $warehouse->save();
+        return $warehouse->fresh(['store', 'branch', 'address']);
+    }
+
+    public function getById(string $id): Warehouse
+    {
+        $warehouse = Warehouse::with(['store', 'branch', 'address', 'storageLocations', 'stock'])->find($id);
+        if (!$warehouse) {
+            throw new WarehouseNotFoundException();
+        }
+        return $warehouse;
     }
 }
