@@ -2,7 +2,7 @@
 
 namespace App\Services\Admin\Stores;
 
-use App\Exceptions\Stores\StoreNotFoundException;
+use App\Exceptions\Organization\Stores\StoreNotFoundException;
 use App\Models\Store;
 
 class StoreService

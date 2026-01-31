@@ -2,8 +2,8 @@
 
 namespace App\Services\Admin\Products;
 
-use App\Exceptions\Products\ProductHasStockException;
-use App\Exceptions\Products\ProductNotFoundException;
+use App\Exceptions\Catalog\Products\ProductHasStockException;
+use App\Exceptions\Catalog\Products\ProductNotFoundException;
 use App\Models\Product;
 use App\Models\Stock;
 use App\Models\Store;

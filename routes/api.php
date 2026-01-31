@@ -1,12 +1,12 @@
 <?php
 
-use App\Http\Controllers\Admin\Auth\SignInController as AdminSignInController;
-use App\Http\Controllers\Admin\Auth\SignUpController as AdminSignUpController;
-use App\Http\Controllers\Admin\Products\ProductController as AdminProductController;
-use App\Http\Controllers\Admin\Profiles\ProfileController as AdminProfileController;
-use App\Http\Controllers\Admin\Stores\StoresController as AdminStoresController;
-use App\Http\Controllers\Admin\Branches\BranchesController as AdminBranchesController;
-use App\Http\Controllers\Admin\Warehouses\WarehousesController as AdminWarehousesController;
+use App\Http\Controllers\Api\Management\Access\Auth\SignInController as AdminSignInController;
+use App\Http\Controllers\Api\Management\Access\Auth\SignUpController as AdminSignUpController;
+use App\Http\Controllers\Api\Management\Catalog\ProductController as AdminProductController;
+use App\Http\Controllers\Api\Management\Organization\Profiles\ProfileController as AdminProfileController;
+use App\Http\Controllers\Api\Management\Organization\Stores\StoresController as AdminStoresController;
+use App\Http\Controllers\Api\Management\Organization\Branches\BranchesController as AdminBranchesController;
+use App\Http\Controllers\Api\Management\Inventory\Warehouses\WarehousesController as AdminWarehousesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 

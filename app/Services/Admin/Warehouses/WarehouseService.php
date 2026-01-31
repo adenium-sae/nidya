@@ -2,7 +2,7 @@
 
 namespace App\Services\Admin\Warehouses;
 
-use App\Exceptions\Warehouses\WarehouseNotFoundException;
+use App\Exceptions\Inventory\Warehouses\WarehouseNotFoundException;
 use App\Models\Warehouse;
 
 class WarehouseService

@@ -2,9 +2,9 @@
 
 namespace App\Services\Sales;
 
-use App\Exceptions\Products\ProductNotAvailableException;
+use App\Exceptions\Catalog\Products\ProductNotAvailableException;
 use App\Exceptions\Sales\SaleCancellationException;
-use App\Exceptions\Stock\InsufficientStockException;
+use App\Exceptions\Inventory\Stock\InsufficientStockException;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;

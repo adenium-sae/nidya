@@ -2,7 +2,7 @@
 
 namespace App\Services\Products;
 
-use App\Exceptions\Products\ProductHasStockException;
+use App\Exceptions\Catalog\Products\ProductHasStockException;
 use App\Models\Product;
 
 class ProductService

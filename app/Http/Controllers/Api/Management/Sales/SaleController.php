@@ -1,0 +1,48 @@
+<?php
+
+namespace App\Http\Controllers\Api\Management\Sales;
+
+use App\Http\Controllers\Controller;
+
+use App\Models\Sale;
+use App\Services\Sales\SaleService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class SaleController extends Controller
+{
+    public function __construct(
+        protected SaleService $saleService
+    ) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        $sales = $this->saleService->list($request->all(), $request->get('per_page', 15));
+        return response()->json($sales);
+    }
+
+    public function show(Sale $sale): JsonResponse
+    {
+        $sale->load(['items.product', 'user', 'customer', 'branch', 'warehouse', 'payments']);
+        return response()->json($sale);
+    }
+
+    public function cancel(Sale $sale): JsonResponse
+    {
+        $sale = $this->saleService->cancel($sale, Auth::user()->id);
+        return response()->json([
+            'message' => __('messages.sale_cancelled_successfully'),
+            'data' => $sale
+        ]);
+    }
+
+    public function dailySummary(Request $request): JsonResponse
+    {
+        $summary = $this->saleService->getDailySummary(
+            $request->get('branch_id'),
+            $request->get('date', now()->toDateString())
+        );
+        return response()->json($summary);
+    }
+}

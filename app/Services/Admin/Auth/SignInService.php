@@ -2,10 +2,10 @@
 
 namespace App\Services\Admin\Auth;
 
-use App\Exceptions\Auth\InvalidCredentialsException;
-use App\Exceptions\Auth\OtpExpiredException;
-use App\Exceptions\Auth\OtpInvalidException;
-use App\Exceptions\Auth\UserInactiveException;
+use App\Exceptions\Access\Auth\InvalidCredentialsException;
+use App\Exceptions\Access\Auth\OtpExpiredException;
+use App\Exceptions\Access\Auth\OtpInvalidException;
+use App\Exceptions\Access\Auth\UserInactiveException;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 

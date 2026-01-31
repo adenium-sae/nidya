@@ -2,7 +2,7 @@
 
 namespace App\Services\Admin\Branches;
 
-use App\Exceptions\Branches\BranchNotFoundException;
+use App\Exceptions\Organization\Branches\BranchNotFoundException;
 use App\Models\Branch;
 
 class BranchService
