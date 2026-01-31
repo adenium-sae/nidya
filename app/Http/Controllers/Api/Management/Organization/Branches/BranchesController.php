@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\Management\Organization\Branches;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Management\Organization\Branches\GetBranchesRequest;
 use App\Http\Requests\Management\Organization\Branches\UpdateBranchRequest;
-use App\Services\Admin\Branches\BranchService;
+use App\Services\Organization\BranchService;
 use Illuminate\Http\Request;
 
 class BranchesController extends Controller

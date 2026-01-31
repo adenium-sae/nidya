@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Admin\Branches;
+namespace App\Services\Organization;
 
 use App\Exceptions\Organization\Branches\BranchNotFoundException;
 use App\Models\Branch;
@@ -10,15 +10,12 @@ class BranchService
     public function findAll(array $filters)
     {
         $query = Branch::with(['store', 'address', 'warehouses']);
-
         if (!empty($filters['store_id'])) {
             $query->where('store_id', $filters['store_id']);
         }
-
         if (!empty($filters['is_active'])) {
             $query->where('is_active', $filters['is_active']);
         }
-
         if (!empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function($q) use ($search) {
@@ -26,7 +23,6 @@ class BranchService
                   ->orWhere('code', 'like', "%{$search}%");
             });
         }
-
         return $query->get();
     }
 

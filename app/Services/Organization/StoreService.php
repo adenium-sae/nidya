@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Admin\Stores;
+namespace App\Services\Organization;
 
 use App\Exceptions\Organization\Stores\StoreNotFoundException;
 use App\Models\Store;
@@ -10,11 +10,9 @@ class StoreService
     public function findAllByAdmin(array $filters, string $userId)
     {
         $query = Store::with(['branches', 'warehouses']);
-
         if (!empty($filters['is_active'])) {
             $query->where('is_active', $filters['is_active']);
         }
-
         if (!empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function($q) use ($search) {
@@ -22,7 +20,6 @@ class StoreService
                   ->orWhere('slug', 'like', "%{$search}%");
             });
         }
-
         return $query->get();
     }
 
@@ -44,11 +41,9 @@ class StoreService
     {
         /** @var Store|null $store */
         $store = Store::find($id);
-
         if (!$store) {
             throw new StoreNotFoundException();
         }
-
         $store->fill($data);
         $store->save();
         return $store->fresh();

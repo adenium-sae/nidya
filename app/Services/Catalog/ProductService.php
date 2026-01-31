@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Admin\Products;
+namespace App\Services\Catalog;
 
 use App\Exceptions\Catalog\Products\ProductHasStockException;
 use App\Exceptions\Catalog\Products\ProductNotFoundException;
@@ -82,9 +82,8 @@ class ProductService
         DB::beginTransaction();
         try {
             $product = $this->createBaseProduct($data);
-
             foreach ($data['store_ids'] as $storeId) {
-                \App\Models\StoreProduct::create([
+                StoreProduct::create([
                     'store_id' => $storeId,
                     'product_id' => $product->id,
                     'price' => $data['price'],

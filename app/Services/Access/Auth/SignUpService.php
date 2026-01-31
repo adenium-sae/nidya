@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Admin\Auth;
+namespace App\Services\Access\Auth;
 
 use App\Models\Branch;
 use App\Models\Profile;
@@ -79,7 +79,6 @@ class SignUpService
             'second_last_name' => $data['second_last_name'] ?? null,
             'birth_date' => $data['birth_date'] ?? null
         ]);
-
         return $user->load('profile');
     }
 

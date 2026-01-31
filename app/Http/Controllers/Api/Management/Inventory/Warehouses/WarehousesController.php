@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Management\Inventory\Warehouses;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Management\Inventory\Warehouses\UpdateWarehouseRequest;
-use App\Services\Admin\Warehouses\WarehouseService;
+use App\Services\Inventory\WarehouseService;
 use Illuminate\Http\Request;
 
 class WarehousesController extends Controller

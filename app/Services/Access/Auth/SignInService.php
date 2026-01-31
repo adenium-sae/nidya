@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Admin\Auth;
+namespace App\Services\Access\Auth;
 
 use App\Exceptions\Access\Auth\InvalidCredentialsException;
 use App\Exceptions\Access\Auth\OtpExpiredException;
@@ -57,13 +57,9 @@ class SignInService
     {
         /** @var User|null $user */
         $user = User::find($userId);
-        
         if ($user) {
-            // Revoke all tokens
             $user->tokens()->delete();
         }
-
-        // Clear session
         session()->forget('tenant_id');
     }
 

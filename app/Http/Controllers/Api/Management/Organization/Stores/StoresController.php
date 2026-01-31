@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\Management\Organization\Stores;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Management\Organization\Stores\CreateStoreRequest;
 use App\Http\Requests\Management\Organization\Stores\UpdateStoreRequest;
-use App\Services\Admin\Stores\StoreService;
+use App\Services\Organization\StoreService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 

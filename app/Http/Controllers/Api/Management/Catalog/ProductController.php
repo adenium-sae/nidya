@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Management\Catalog\StoreProductRequest;
 use App\Http\Requests\Management\Catalog\UpdateProductRequest;
 use App\Models\Product;
-use App\Services\Admin\Products\ProductService;
+use App\Services\Catalog\ProductService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

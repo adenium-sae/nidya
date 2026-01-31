@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Management\Access\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Management\Access\Auth\SignUpRequest;
-use App\Services\Admin\Auth\SignUpService;
+use App\Services\Access\Auth\SignUpService;
 use Illuminate\Http\Request;
 
 class SignUpController extends Controller
