@@ -31,7 +31,7 @@ return new class extends Migration
             $table->foreignUuid('storage_location_id')->nullable()->constrained()->nullOnDelete();
             $table->integer('quantity')->default(0);
             $table->integer('reserved')->default(0);
-            $table->integer('available')->virtualAs('quantity - reserved');
+            $table->integer('available')->storedAs('quantity - reserved');
             $table->decimal('avg_cost', 10, 2)->nullable();
             $table->timestamps();
             $table->unique(['product_id', 'warehouse_id', 'storage_location_id'], 'stock_location_unique');
@@ -110,7 +110,7 @@ return new class extends Migration
             $table->foreignUuid('product_id')->constrained()->cascadeOnDelete();
             $table->integer('quantity_before');
             $table->integer('quantity_after');
-            $table->integer('difference')->virtualAs('quantity_after - quantity_before');
+            $table->integer('difference')->storedAs('quantity_after - quantity_before');
             $table->timestamps();
         });
     }

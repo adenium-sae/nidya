@@ -15,13 +15,11 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::prefix("auth")->group(function () {
-    Route::prefix("admin")->group(function () {
-        Route::post("signup", [AdminSignUpController::class, "register"]);
-        Route::post("signin", [AdminSignInController::class, "signInWithEmailAndPassword"]);
-        Route::post("signin/otp", [AdminSignInController::class, "signInWithOtp"]);
-        Route::post("signin/otp/generate", [AdminSignInController::class, "generateOtp"]);
-        Route::post("signout", [AdminSignInController::class, "signOut"])->middleware('auth:sanctum');
-    });
+    Route::post("signup", [AdminSignUpController::class, "register"]);
+    Route::post("signin", [AdminSignInController::class, "signInWithEmailAndPassword"]);
+    Route::post("signin/otp", [AdminSignInController::class, "signInWithOtp"]);
+    Route::post("signin/otp/generate", [AdminSignInController::class, "generateOtp"]);
+    Route::post("signout", [AdminSignInController::class, "signOut"])->middleware('auth:sanctum');
 });
 
 Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->group(function () {
