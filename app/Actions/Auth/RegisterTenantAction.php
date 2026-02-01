@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Access\Auth;
+namespace App\Actions\Auth;
 
 use App\Models\Branch;
 use App\Models\Profile;
@@ -11,9 +11,14 @@ use App\Models\Warehouse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class SignUpService
+class RegisterTenantAction
 {
-    public function register(array $data): array
+    public function __invoke(array $data): void
+    {
+        $this->register($data);
+    }
+
+    private function register(array $data): array
     {
         return DB::transaction(function () use ($data) {
             $tenant = $this->createTenant($data);
@@ -50,7 +55,7 @@ class SignUpService
         });
     }
 
-    protected function createTenant(array $data): Tenant
+    private function createTenant(array $data): Tenant
     {
         $firstName = $data['first_name'];
         $lastName = $data['last_name'] ?? '';
@@ -64,7 +69,7 @@ class SignUpService
         ]);
     }
 
-    protected function createUser(array $data): User
+    private function createUser(array $data): User
     {
         $user = User::create([
             'email' => $data['email'],
@@ -82,7 +87,7 @@ class SignUpService
         return $user->load('profile');
     }
 
-    protected function createDefaultStore(Tenant $tenant, User $user): Store
+    private function createDefaultStore(Tenant $tenant, User $user): Store
     {
         $firstName = $user->profile->first_name;
         $slug = Str::slug($firstName);
@@ -94,7 +99,7 @@ class SignUpService
         ]);
     }
 
-    protected function createDefaultBranch(Store $store, User $user): Branch
+    private function createDefaultBranch(Store $store, User $user): Branch
     {
         $firstName = $user->profile->first_name;
         return Branch::create([
@@ -106,7 +111,7 @@ class SignUpService
         ]);
     }
 
-    protected function createDefaultWarehouse(Store $store, Branch $branch): Warehouse
+    private function createDefaultWarehouse(Store $store, Branch $branch): Warehouse
     {
         return Warehouse::create([
             'tenant_id' => $store->tenant_id,

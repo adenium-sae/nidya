@@ -2,54 +2,62 @@
 
 namespace App\Http\Controllers\Api\Management\Access\Auth;
 
+use App\Actions\Access\Auth\GenerateOtpAction;
+use App\Actions\Access\Auth\LoginAction;
+use App\Actions\Access\Auth\LoginWithOtpAction;
+use App\Actions\Access\Auth\LogoutAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Access\Auth\SignInWithOtpRequest;
 use App\Http\Requests\Management\Access\Auth\SignInRequest;
-use App\Services\Access\Auth\SignInService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class SignInController extends Controller
 {
-    public function __construct(private readonly SignInService $signInService) {}
+    public function __construct(
+        private readonly LoginAction $loginAction,
+        private readonly LoginWithOtpAction $loginWithOtpAction,
+        private readonly GenerateOtpAction $generateOtpAction,
+        private readonly LogoutAction $logoutAction,
+    ) {}
 
-    public function signInWithEmailAndPassword(SignInRequest $request) {
-        $data = $request->validated();
-        $result = $this->signInService->signInWithEmailAndPassword($data);
+    public function signIn(SignInRequest $request): JsonResponse
+    {
+        $data = ($this->loginAction)($request->validated());
         return response()->json([
-            "status" => true,
-            "message" => __('messages.user_signed_in_successfully'),
-            "data" => $result
+            'message' => __('messages.login_successful'),
+            'data' => $data
         ]);
     }
 
-    public function signInWithOtp(Request $request) {
-        $email = $request->input("email");
-        $otpCode = $request->input("otp");
-        $data = ["email" => $email, "otp" => $otpCode];
-        $result = $this->signInService->signInWithOtp($data);
+    public function signInWithOtp(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|string|max:6',
+        ]);
+        $data = ($this->loginWithOtpAction)($data);
         return response()->json([
-            "status" => true,
-            "message" => __('messages.user_signed_in_successfully'),
-            "data" => $result
+            'message' => __('messages.login_successful'),
+            'data' => $data
         ]);
     }
 
-    public function generateOtp(Request $request) {
-        $email = $request->input("email");
-        $otp = $this->signInService->generateOtp($email);
+    public function requestOtp(Request $request): JsonResponse
+    {
+        $request->validate(['email' => 'required|email']);
+        ($this->generateOtpAction)($request->get('email'));
         return response()->json([
-            "status" => true,
-            "message" => __('messages.otp_generated_successfully'),
-            "data" => ["otp_code" => $otp]
+            'message' => __('messages.otp_sent_successfully')
         ]);
     }
 
-    public function signOut(Request $request) {
-        $user = Auth::user();
-        $this->signInService->signOut($user->id);
+    public function signOut(): JsonResponse
+    {
+        ($this->logoutAction)(Auth::user()->id);
         return response()->json([
-            "status" => true,
-            "message" => __('messages.user_signed_out_successfully'),
+            'message' => __('messages.logout_successful')
         ]);
     }
 }

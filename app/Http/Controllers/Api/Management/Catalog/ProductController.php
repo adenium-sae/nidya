@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Api\Management\Catalog;
 
+use App\Actions\Catalog\Products\CreateProductAction;
+use App\Actions\Catalog\Products\DeleteProductAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Management\Catalog\StoreProductRequest;
 use App\Http\Requests\Management\Catalog\UpdateProductRequest;
-use App\Models\Product;
 use App\Services\Catalog\ProductService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,7 +14,9 @@ use Illuminate\Http\Request;
 class ProductController extends Controller
 {
     public function __construct(
-        protected ProductService $productService
+        protected ProductService $productService,
+        protected CreateProductAction $createProductAction,
+        protected DeleteProductAction $deleteProductAction
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -26,8 +29,7 @@ class ProductController extends Controller
 
     public function storeSingle(StoreProductRequest $request): JsonResponse
     {
-        $data = $request->validated();
-        $product = $this->productService->createForSingleStore($data);
+        $product = ($this->createProductAction)($request->validated());
         return response()->json([
             'message' => __('messages.product_created_in_single_store'),
             'data' => $product->load('category')
@@ -36,8 +38,7 @@ class ProductController extends Controller
 
     public function storeMultiple(StoreProductRequest $request): JsonResponse
     {
-        $data = $request->validated();
-        $product = $this->productService->createForMultipleStores($data);
+        $product = ($this->createProductAction)($request->validated());
         return response()->json([
             'message' => __('messages.product_created_in_multiple_stores'),
             'data' => $product->load('category')
@@ -46,8 +47,7 @@ class ProductController extends Controller
 
     public function storeAll(StoreProductRequest $request): JsonResponse
     {
-        $data = $request->validated();
-        $product = $this->productService->createForAllStores($data);
+        $product = ($this->createProductAction)($request->validated() + ['all_stores' => true]);
         return response()->json([
             'message' => __('messages.product_created_in_all_stores'),
             'data' => $product->load('category')
@@ -71,7 +71,7 @@ class ProductController extends Controller
 
     public function destroy(string $id): JsonResponse
     {
-        $this->productService->delete($id);
+        ($this->deleteProductAction)($id);
         return response()->json([
             'message' => __('messages.product_deleted_successfully')
         ]);

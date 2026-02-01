@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Management\Inventory\Stock;
 
+use App\Actions\Stock\AdjustStockAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Management\Inventory\Stock\AdjustStockRequest;
 use App\Services\Stock\StockService;
@@ -12,7 +13,8 @@ use Illuminate\Support\Facades\Auth;
 class StockController extends Controller
 {
     public function __construct(
-        protected StockService $stockService
+        protected StockService $stockService,
+        protected AdjustStockAction $adjustStockAction
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -23,7 +25,7 @@ class StockController extends Controller
 
     public function adjust(AdjustStockRequest $request): JsonResponse
     {
-        $adjustment = $this->stockService->adjust($request->validated(), Auth::user()->id);
+        $adjustment = ($this->adjustStockAction)($request->validated(), Auth::user()->id);
 
         return response()->json([
             'message' => __('messages.stock_adjusted_successfully'),
