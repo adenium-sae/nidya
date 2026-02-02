@@ -2,6 +2,7 @@
 
 namespace App\Actions\Auth;
 
+use App\Enums\TenantRole;
 use App\Models\Branch;
 use App\Models\Profile;
 use App\Models\Store;
@@ -24,7 +25,8 @@ class RegisterTenantAction
             $tenant = $this->createTenant($data);
             $user = $this->createUser($data);
             $tenant->users()->attach($user->id, [
-                'role' => 'owner',
+                'id' => (string) Str::uuid(),
+                'role' => TenantRole::OWNER->value,
                 'is_active' => true
             ]);
             session(['tenant_id' => $tenant->id]);
@@ -119,7 +121,7 @@ class RegisterTenantAction
             'branch_id' => $branch->id,
             'name' => 'Main Warehouse',
             'code' => 'WH-MAIN',
-            'type' => 'physical',
+            'type' => 'central',
             'is_active' => true
         ]);
     }

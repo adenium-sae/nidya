@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Traits\BelongsToTenant;
+use App\Enums\TenantRole;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -15,7 +15,6 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use BelongsToTenant;
     use HasApiTokens, HasFactory, Notifiable, HasUuids, SoftDeletes;
 
     protected $fillable = [
@@ -75,7 +74,7 @@ class User extends Authenticatable
     {
         return $this->tenants()
             ->where('tenant_id', $tenantId)
-            ->wherePivot('role', 'owner')
+            ->wherePivot('role', TenantRole::OWNER->value)
             ->exists();
     }
 
@@ -83,7 +82,7 @@ class User extends Authenticatable
     {
         return $this->tenants()
             ->where('tenant_id', $tenantId)
-            ->wherePivotIn('role', ['owner', 'admin'])
+            ->wherePivotIn('role', [TenantRole::OWNER->value, TenantRole::ADMIN->value])
             ->exists();
     }
 
@@ -110,7 +109,7 @@ class User extends Authenticatable
         $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $this->update([
             'otp_code' => $otp,
-            'otp_expires_at' => now()->addMinutes(10),
+            'otp_expires_at' => now()->addMinutes(2),
         ]);
         return $otp;
     }
