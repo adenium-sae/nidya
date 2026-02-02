@@ -7,7 +7,7 @@ use App\Actions\Access\Auth\LoginAction;
 use App\Actions\Access\Auth\LoginWithOtpAction;
 use App\Actions\Access\Auth\LogoutAction;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Access\Auth\SignInWithOtpRequest;
+use App\Http\Requests\Management\Access\Auth\SignInWithOtpRequest;
 use App\Http\Requests\Management\Access\Auth\SignInRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,7 +22,7 @@ class SignInController extends Controller
         private readonly LogoutAction $logoutAction,
     ) {}
 
-    public function signIn(SignInRequest $request): JsonResponse
+    public function signInWithEmailAndPassword(SignInRequest $request): JsonResponse
     {
         $data = ($this->loginAction)($request->validated());
         return response()->json([
@@ -31,12 +31,9 @@ class SignInController extends Controller
         ]);
     }
 
-    public function signInWithOtp(Request $request): JsonResponse
+    public function signInWithOtp(SignInWithOtpRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'email' => 'required|email',
-            'otp' => 'required|string|max:6',
-        ]);
+        $data = $request->validated();
         $data = ($this->loginWithOtpAction)($data);
         return response()->json([
             'message' => __('messages.login_successful'),
@@ -44,7 +41,7 @@ class SignInController extends Controller
         ]);
     }
 
-    public function requestOtp(Request $request): JsonResponse
+    public function generateOtp(Request $request): JsonResponse
     {
         $request->validate(['email' => 'required|email']);
         ($this->generateOtpAction)($request->get('email'));
