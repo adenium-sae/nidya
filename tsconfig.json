@@ -11,7 +11,10 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "skipLibCheck": true,
-    "lib": ["es2020", "dom", "dom.iterable"]
+    "lib": ["es2020", "dom", "dom.iterable"],
+    "paths": {
+      "@/*": ["./resources/js/*"],
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

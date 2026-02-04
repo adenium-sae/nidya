@@ -1,35 +1,43 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { RouterLink, Router } from '@angular/router';
-import { AuthService, SignUpPayload } from '@/services/auth.service';
+import { RouterLink, Router, ActivatedRoute } from '@angular/router';
+import { AuthService } from '@/services/auth.service';
 
 @Component({
-  selector: 'app-sign-up-with-email-and-password',
+  selector: 'app-reset-password',
   standalone: true,
   imports: [
     CommonModule, 
     ReactiveFormsModule,
-    RouterLink
+    RouterLink,
   ],
-  templateUrl: './sign-up-with-email-and-password.component.html',
-  styleUrl: './sign-up-with-email-and-password.component.css',
+  templateUrl: './reset-password.component.html',
+  styleUrl: './reset-password.component.css',
 })
-export class SignUpWithEmailAndPasswordComponent {
+export class ResetPasswordComponent implements OnInit {
   formGroup: FormGroup;
   isLoading = false;
+  token = '';
+  email = '';
 
   constructor(
     private readonly formBuilder: FormBuilder,
     private readonly authService: AuthService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly route: ActivatedRoute
   ) {
     this.formGroup = this.formBuilder.group({
-      name: ['', [Validators.required, Validators.minLength(2)]],
-      email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8)]],
       password_confirmation: ['', [Validators.required]]
     }, { validators: this.passwordMatchValidator });
+  }
+
+  ngOnInit() {
+    this.route.queryParams.subscribe(params => {
+      this.token = params['token'] || '';
+      this.email = params['email'] || '';
+    });
   }
 
   passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
@@ -43,22 +51,23 @@ export class SignUpWithEmailAndPasswordComponent {
   }
 
   onSubmit() {
-    if (this.formGroup.valid) {
+    if (this.formGroup.valid && this.token && this.email) {
       this.isLoading = true;
-      const payload: SignUpPayload = {
-        name: this.formGroup.value.name,
-        email: this.formGroup.value.email,
+      const payload = {
+        token: this.token,
+        email: this.email,
         password: this.formGroup.value.password,
         password_confirmation: this.formGroup.value.password_confirmation
       };
-      this.authService.signUpWithEmailAndPassword(payload).subscribe({
-        next: (response) => {
+
+      this.authService.resetPassword(payload).subscribe({
+        next: () => {
           this.isLoading = false;
           this.router.navigate(['/auth/sign-in']);
         },
         error: (error) => {
           this.isLoading = false;
-          console.error('Registration failed:', error);
+          console.error('Reset password failed:', error);
         }
       });
     } else {
