@@ -1,33 +1,35 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
-import tailwindcss from '@tailwindcss/vite';
-import angular from '@analogjs/vite-plugin-angular';
+import vue from '@vitejs/plugin-vue';
+
+import path from 'path';
 
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/main.ts'],
+            input: ['resources/css/app.css', 'resources/js/app.js'],
             refresh: true,
         }),
-        tailwindcss(),
-        angular({
-            tsconfig: './tsconfig.json'
-        })
+        vue({
+            template: {
+                transformAssetUrls: {
+                    base: null,
+                    includeAbsolute: false,
+                },
+            },
+        }),
     ],
     resolve: {
         alias: {
-            '@': '/resources/js',
+            vue: 'vue/dist/vue.esm-bundler.js',
+            '@': path.resolve(__dirname, './resources/js'),
         },
-        preserveSymlinks: true
     },
     server: {
         host: '0.0.0.0',
         strictPort: true,
         hmr: {
             host: '144.126.218.214',
-        },
-        watch: {
-            ignored: ['**/storage/framework/views/**', '**/vendor/**', '**/node_modules/**'],
         },
     },
 });

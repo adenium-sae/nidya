@@ -14,9 +14,9 @@ use Illuminate\Support\Str;
 
 class RegisterTenantAction
 {
-    public function __invoke(array $data): void
+    public function __invoke(array $data): array
     {
-        $this->register($data);
+        return $this->register($data);
     }
 
     private function register(array $data): array
@@ -51,6 +51,16 @@ class RegisterTenantAction
                     'id' => $store->id,
                     'name' => $store->name,
                     'slug' => $store->slug
+                ],
+                'branch' => [
+                    'id' => $branch->id,
+                    'name' => $branch->name,
+                    'code' => $branch->code
+                ],
+                'warehouse' => [
+                    'id' => $warehouse->id,
+                    'name' => $warehouse->name,
+                    'code' => $warehouse->code
                 ],
                 'token' => $token
             ];

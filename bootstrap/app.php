@@ -1,7 +1,7 @@
 <?php
 
 use App\Exceptions\ClientException;
-// use App\Http\Middleware\EnsureRoleMiddleware;
+use App\Http\Middleware\EnsureRoleMiddleware;
 // use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -15,9 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // $middleware->alias([
-        //     "profile.type" => EnsureRoleMiddleware::class
-        // ]);
+        $middleware->alias([
+            "profile.type" => EnsureRoleMiddleware::class
+        ]);
         // $middleware->append(SetLocale::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
