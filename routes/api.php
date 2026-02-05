@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Management\Access\Auth\SignInController;
 use App\Http\Controllers\Api\Management\Access\Auth\SignUpController;
 use App\Http\Controllers\Api\Management\Catalog\ProductController;
+use App\Http\Controllers\Api\Management\DashboardController;
 use App\Http\Controllers\Api\Management\Organization\Profiles\ProfileController;
 use App\Http\Controllers\Api\Management\Organization\Stores\StoresController;
 use App\Http\Controllers\Api\Management\Organization\Branches\BranchesController;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/user', function (Request $request) {
     return $request->user()->load('profile');
 })->middleware('auth:sanctum');
+
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('auth:sanctum');
 
 Route::prefix("auth")->group(function () {
     Route::post("signup", [SignUpController::class, "register"]);
