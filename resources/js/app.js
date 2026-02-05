@@ -5,25 +5,34 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 const routes = [
     { path: "/", redirect: "/home" },
-    { 
-        path: "/home", 
-        component: () => import('./pages/home.vue'),
-        meta: { requiresAuth: true }
+    {
+        path: "/",
+        redirect: "/panel/dashboard"
     },
-    { 
-        path: "/sign-in", 
-        component: () => import('./pages/auth/sign-in.vue'),
+    {
+        path: "/home",
+        redirect: "/panel/dashboard"
+    },
+    {
+        path: "/sign-in",
+        component: () => import('./pages/auth/SignInPage.vue'),
         meta: { guest: true }
     },
-    { 
-        path: "/sign-up", 
-        component: () => import('./pages/auth/sign-up.vue'),
+    {
+        path: "/sign-up",
+        component: () => import('./pages/auth/SignUpPage.vue'),
         meta: { guest: true }
     },
-    { 
-        path: "/onboarding", 
-        component: () => import('./pages/onboarding/index.vue'),
-        meta: { requiresAuth: true }
+    {
+        path: "/panel",
+        redirect: "/panel/dashboard",
+        meta: { requiresAuth: true },
+        children: [
+            {
+                path: "dashboard",
+                component: () => import('./pages/panel/Dashboard.vue')
+            }
+        ]
     }
 ];
 
