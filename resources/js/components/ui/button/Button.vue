@@ -37,6 +37,7 @@ defineProps({
   size: { type: null, required: false },
   as: { type: String, default: 'button' },
   class: { type: null, required: false },
+  asChild: { type: Boolean, default: false },
 })
 </script>
 

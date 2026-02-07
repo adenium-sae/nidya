@@ -5,18 +5,22 @@ namespace Database\Seeders;
 use App\Models\Address;
 use App\Models\Branch;
 use App\Models\Category;
+use App\Models\Customer;
 use App\Models\Permission;
 use App\Models\Product;
 use App\Models\Profile;
 use App\Models\Role;
+use App\Models\Sale;
+use App\Models\SaleItem;
 use App\Models\Stock;
-use App\Models\StorageLocation;
 use App\Models\Store;
 use App\Models\StoreProduct;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Warehouse;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class DemoDataSeeder extends Seeder
@@ -57,15 +61,36 @@ class DemoDataSeeder extends Seeder
         ]);
 
         // Asignar usuario al tenant como owner
-        $tenant->users()->attach($user->id, [
+        DB::table('tenant_users')->insert([
+            'id' => Str::uuid(),
+            'tenant_id' => $tenant->id,
+            'user_id' => $user->id,
             'role' => 'owner',
             'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         $this->command->info("✅ Usuario admin creado: {$user->email} / password");
 
         // 3. Crear Roles y Permisos
         $allPermissions = Permission::all();
+        
+        // Helper function to attach permissions with UUIDs
+        $attachPermissions = function ($roleId, $permissionIds) {
+            $now = now();
+            $records = [];
+            foreach ($permissionIds as $permissionId) {
+                $records[] = [
+                    'id' => Str::uuid(),
+                    'role_id' => $roleId,
+                    'permission_id' => $permissionId,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+            DB::table('role_permissions')->insert($records);
+        };
         
         // Rol: Administrador (todos los permisos)
         $adminRole = Role::create([
@@ -75,7 +100,7 @@ class DemoDataSeeder extends Seeder
             'description' => 'Acceso total al sistema',
             'is_system' => true,
         ]);
-        $adminRole->permissions()->attach($allPermissions->pluck('id'));
+        $attachPermissions($adminRole->id, $allPermissions->pluck('id')->toArray());
 
         // Rol: Gerente de Sucursal
         $managerRole = Role::create([
@@ -90,7 +115,7 @@ class DemoDataSeeder extends Seeder
             'sales.view', 'sales.create', 'cash.view', 'cash.open', 'cash.close',
             'customers.view', 'customers.create', 'reports.sales', 'reports.inventory'
         ]);
-        $managerRole->permissions()->attach($managerPermissions->pluck('id'));
+        $attachPermissions($managerRole->id, $managerPermissions->pluck('id')->toArray());
 
         // Rol: Vendedor
         $sellerRole = Role::create([
@@ -104,7 +129,7 @@ class DemoDataSeeder extends Seeder
             'dashboard.view', 'products.view', 'sales.view', 'sales.create',
             'cash.view', 'cash.open', 'cash.close', 'customers.view', 'customers.create'
         ]);
-        $sellerRole->permissions()->attach($sellerPermissions->pluck('id'));
+        $attachPermissions($sellerRole->id, $sellerPermissions->pluck('id')->toArray());
 
         $this->command->info('✅ Roles creados: Admin, Gerente, Vendedor');
 
@@ -200,58 +225,18 @@ class DemoDataSeeder extends Seeder
 
         $this->command->info('✅ Almacenes creados');
 
-        // 7. Crear Ubicaciones de Almacenamiento
-        foreach ([$warehouse1, $warehouse2, $warehouseCentral] as $wh) {
-            StorageLocation::create([
+
+
+        // 8. Crear Categorías (flat structure)
+        $categoryNames = ['Refrescos', 'Agua', 'Papas', 'Arroz', 'Frijol', 'Galletas', 'Abarrotes', 'Bebidas', 'Botanas', 'Limpieza'];
+        
+        foreach ($categoryNames as $catName) {
+            Category::create([
                 'tenant_id' => $tenant->id,
-                'warehouse_id' => $wh->id,
-                'code' => 'ESTANTE-A1',
-                'name' => 'Estante A - Nivel 1',
-                'type' => 'shelf',
-                'aisle' => 'A',
-                'section' => '1',
+                'name' => $catName,
+                'slug' => Str::slug($catName),
                 'is_active' => true,
             ]);
-
-            StorageLocation::create([
-                'tenant_id' => $tenant->id,
-                'warehouse_id' => $wh->id,
-                'code' => 'CAJA-REFRESCOS',
-                'name' => 'Caja de Refrescos',
-                'type' => 'box',
-                'aisle' => 'B',
-                'section' => '2',
-                'is_active' => true,
-            ]);
-        }
-
-        $this->command->info('✅ Ubicaciones de almacenamiento creadas');
-
-        // 8. Crear Categorías
-        $categories = [
-            'Abarrotes' => ['Arroz', 'Frijol', 'Azúcar', 'Harina'],
-            'Bebidas' => ['Refrescos', 'Agua', 'Jugos'],
-            'Limpieza' => ['Detergente', 'Cloro', 'Jabón'],
-            'Botanas' => ['Papas', 'Dulces', 'Galletas'],
-        ];
-
-        foreach ($categories as $parentName => $children) {
-            $parent = Category::create([
-                'tenant_id' => $tenant->id,
-                'name' => $parentName,
-                'slug' => Str::slug($parentName),
-                'is_active' => true,
-            ]);
-
-            foreach ($children as $childName) {
-                Category::create([
-                    'tenant_id' => $tenant->id,
-                    'parent_id' => $parent->id,
-                    'name' => $childName,
-                    'slug' => Str::slug($childName),
-                    'is_active' => true,
-                ]);
-            }
         }
 
         $this->command->info('✅ Categorías creadas');
@@ -263,8 +248,12 @@ class DemoDataSeeder extends Seeder
             ['name' => 'Sabritas 45g', 'sku' => 'SAB-45', 'barcode' => '7501055310', 'category' => 'Papas', 'cost' => 8.00, 'price' => 12.00],
             ['name' => 'Arroz Verde Valle 1kg', 'sku' => 'ARROZ-1K', 'barcode' => '7501055311', 'category' => 'Arroz', 'cost' => 18.00, 'price' => 25.00],
             ['name' => 'Frijol Isadora 1kg', 'sku' => 'FRIJ-1K', 'barcode' => '7501055312', 'category' => 'Frijol', 'cost' => 22.00, 'price' => 30.00],
+            ['name' => 'Pepsi 600ml', 'sku' => 'PEPSI-600', 'barcode' => '7501055313', 'category' => 'Refrescos', 'cost' => 9.00, 'price' => 14.00],
+            ['name' => 'Doritos 62g', 'sku' => 'DOR-62', 'barcode' => '7501055314', 'category' => 'Papas', 'cost' => 10.00, 'price' => 16.00],
+            ['name' => 'Galletas Marías 170g', 'sku' => 'GAL-170', 'barcode' => '7501055315', 'category' => 'Galletas', 'cost' => 12.00, 'price' => 18.00],
         ];
 
+        $createdProducts = [];
         foreach ($products as $prodData) {
             $category = Category::where('tenant_id', $tenant->id)
                 ->where('name', $prodData['category'])
@@ -295,18 +284,17 @@ class DemoDataSeeder extends Seeder
 
             // Crear stock inicial en cada almacén
             foreach ([$warehouse1, $warehouse2, $warehouseCentral] as $wh) {
-                $location = StorageLocation::where('warehouse_id', $wh->id)->first();
-                
                 Stock::create([
                     'tenant_id' => $tenant->id,
                     'product_id' => $product->id,
                     'warehouse_id' => $wh->id,
-                    'storage_location_id' => $location->id,
                     'quantity' => rand(20, 100),
                     'reserved' => 0,
                     'avg_cost' => $prodData['cost'],
                 ]);
             }
+
+            $createdProducts[] = ['product' => $product, 'price' => $prodData['price']];
         }
 
         $this->command->info('✅ Productos creados con stock inicial');

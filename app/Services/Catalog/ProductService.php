@@ -2,11 +2,18 @@
 
 namespace App\Services\Catalog;
 
+use App\Actions\Catalog\Products\CreateProductAction;
+use App\Actions\Catalog\Products\DeleteProductAction;
 use App\Exceptions\Catalog\Products\ProductNotFoundException;
 use App\Models\Product;
 
 class ProductService
 {
+    public function __construct(
+        protected CreateProductAction $createProductAction,
+        protected DeleteProductAction $deleteProductAction
+    ) {}
+
     public function getProducts(array $filters)
     {
         $query = Product::with(['category', 'stock', 'storeProducts']);
@@ -48,6 +55,11 @@ class ProductService
         return $product;
     }
 
+    public function create(array $data): Product
+    {
+        return ($this->createProductAction)($data);
+    }
+
     public function update(string $id, array $data): Product
     {
         /** @var Product|null $product */
@@ -58,6 +70,11 @@ class ProductService
         $product->fill($data);
         $product->save();
         return $product->fresh('category');
+    }
+
+    public function delete(string $id): void
+    {
+        ($this->deleteProductAction)($id);
     }
 
     public function getStockStatus(string $id): array
@@ -86,3 +103,4 @@ class ProductService
         ];
     }
 }
+

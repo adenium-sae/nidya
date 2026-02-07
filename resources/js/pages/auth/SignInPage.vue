@@ -13,7 +13,7 @@ const password = ref('');
 const loading = ref(false);
 const error = ref('');
 
-const handleLogin = async () => {
+async function handleLogin() {
     loading.value = true;
     error.value = '';
 
@@ -36,7 +36,7 @@ const handleLogin = async () => {
     } finally {
         loading.value = false;
     }
-};
+}
 </script>
 
 <template>

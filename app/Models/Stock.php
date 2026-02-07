@@ -12,6 +12,8 @@ class Stock extends Model
 {
     use HasFactory, HasUuids, BelongsToTenant;
 
+    protected $table = 'stock';
+
     protected $fillable = [
         'tenant_id',
         'product_id',

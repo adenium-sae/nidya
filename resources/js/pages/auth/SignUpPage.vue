@@ -1,4 +1,6 @@
-<script setup>
+<script setup lang="ts">
+import { ref, reactive } from 'vue';
+import { useRouter } from 'vue-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,16 +13,120 @@ import {
   StepperDescription,
   StepperIndicator,
 } from '@/components/ui/stepper'
-import { useRouter } from 'vue-router';
+import { User, Store, MapPin, Package } from 'lucide-vue-next';
 import AuthLayout from '@/layouts/AuthLayout.vue';
+import axios from 'axios';
 
-const handleNext = () => {
-    if (currentStep.value === 1) handleSignUp();
-    else if (currentStep.value === 2) updateStore();
-    else if (currentStep.value === 3) updateBranch();
-    else if (currentStep.value === 4) updateWarehouse();
-};
+const router = useRouter();
+const currentStep = ref(1);
+const loading = ref(false);
+const error = ref('');
 
+const form = reactive({
+    first_name: '',
+    last_name: '',
+    email: '',
+    password: '',
+    password_confirmation: '',
+    store: {
+        name: '',
+    },
+    branch: {
+        name: '',
+        code: '',
+    },
+    warehouse: {
+        name: '',
+        code: '',
+    }
+});
+
+const steps = [
+    {
+        step: 1,
+        title: 'Cuenta',
+        description: 'Detalles personales',
+        icon: User
+    },
+    {
+        step: 2,
+        title: 'Tienda',
+        description: 'Info del negocio',
+        icon: Store
+    },
+    {
+        step: 3,
+        title: 'Sucursal',
+        description: 'Sucursal principal',
+        icon: MapPin
+    },
+    {
+        step: 4,
+        title: 'Almacén',
+        description: 'Almacén principal',
+        icon: Package
+    }
+];
+
+async function handleNext() {
+    error.value = '';
+    if (currentStep.value === 1) updateStore();
+    else if (currentStep.value === 2) updateBranch();
+    else if (currentStep.value === 3) updateWarehouse();
+    if (currentStep.value < 4) {
+        currentStep.value++;
+        return;
+    }
+    await handleSignUp();
+}
+
+async function handleSignUp() {
+    loading.value = true;
+    try {
+        await axios.post('/api/auth/signup', {
+            first_name: form.first_name,
+            last_name: form.last_name,
+            email: form.email,
+            password: form.password,
+            password_confirmation: form.password_confirmation,
+            store_name: form.store.name,
+            branch_name: form.branch.name,
+            branch_code: form.branch.code,
+            warehouse_name: form.warehouse.name,
+            warehouse_code: form.warehouse.code
+        });
+        router.push('/panel');
+    } catch (e: any) {
+        console.error(e);
+        error.value = e.response?.data?.message || 'Error al registrar. Intente nuevamente.';
+    } finally {
+        loading.value = false;
+    }
+}
+
+function updateStore() {
+    if (!form.store.name && form.first_name) {
+        form.store.name = `Tienda de ${form.first_name}`;
+    }
+}
+
+function updateBranch() {
+    if (!form.branch.name) {
+        form.branch.name = 'Matriz';
+    }
+    if (!form.branch.code) {
+        form.branch.code = 'SUC-001';
+    }
+}
+
+function updateWarehouse() {
+    if (!form.warehouse.name) {
+        form.warehouse.name = 'Almacén General';
+    }
+    if (!form.warehouse.code) {
+        form.warehouse.code = 'ALM-001';
+    }
+}
 </script>
 
 <template>

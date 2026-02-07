@@ -26,11 +26,44 @@ const routes = [
     {
         path: "/panel",
         redirect: "/panel/dashboard",
+        component: () => import('./pages/panel/PanelRoot.vue'),
         meta: { requiresAuth: true },
         children: [
             {
                 path: "dashboard",
-                component: () => import('./pages/panel/Dashboard.vue')
+                component: () => import('./pages/panel/DashboardPage.vue')
+            },
+            {
+                path: "inventory/categories",
+                component: () => import('./pages/panel/inventory/CategoriesPage.vue')
+            },
+            {
+                path: "inventory/products",
+                component: () => import('./pages/panel/inventory/products/ProductListPage.vue')
+            },
+            {
+                path: "inventory/products/create",
+                component: () => import('./pages/panel/inventory/products/CreateProductPage.vue')
+            },
+            {
+                path: "inventory/products/:id/edit",
+                component: () => import('./pages/panel/inventory/products/EditProductPage.vue')
+            },
+            {
+                path: "inventory/stock",
+                component: () => import('./pages/panel/inventory/StockPage.vue')
+            },
+            {
+                path: "inventory/movements",
+                component: () => import('./pages/panel/inventory/MovementsPage.vue')
+            },
+            {
+                path: "inventory/adjustments",
+                component: () => import('./pages/panel/inventory/AdjustmentsPage.vue')
+            },
+            {
+                path: "inventory/warehouses",
+                component: () => import('./pages/panel/inventory/WarehousesPage.vue')
             }
         ]
     }

@@ -21,7 +21,7 @@ class StoreProductRequest extends FormRequest
             'type' => ['required', 'in:product,service'],
             'cost' => ['required', 'numeric', 'min:0'],
             'price' => ['required', 'numeric', 'min:0'], // Precio de venta base para las tiendas
-            'image_url' => ['nullable', 'url'],
+            'image' => ['nullable', 'image', 'max:2048'], // Max 2MB
             'category_id' => ['required', 'exists:categories,id'],
             
             // Asignación de Tiendas

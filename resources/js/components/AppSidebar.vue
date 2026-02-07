@@ -2,6 +2,7 @@
 import type { HTMLAttributes } from "vue"
 import { ref, onMounted } from "vue"
 import axios from "axios"
+import { RouterLink } from 'vue-router'
 
 import { 
   ChevronRight, 
@@ -52,39 +53,39 @@ const user = ref({
 
 const isLoading = ref(true)
 
-onMounted(async () => {
+onMounted(async function() {
   try {
-    const token = localStorage.getItem('auth_token')
+    const token = localStorage.getItem('auth_token');
     const response = await axios.get('/api/user', {
       headers: {
         Authorization: `Bearer ${token}`
       }
-    })
+    });
     
-    const userData = response.data
-    const profile = userData.profile
+    const userData = response.data;
+    const profile = userData.profile;
     
     // Build full name from profile
-    let fullName = userData.email
+    let fullName = userData.email;
     if (profile) {
-      const nameParts = [profile.first_name]
-      if (profile.middle_name) nameParts.push(profile.middle_name)
-      if (profile.last_name) nameParts.push(profile.last_name)
-      if (profile.second_last_name) nameParts.push(profile.second_last_name)
-      fullName = nameParts.join(' ')
+      const nameParts = [profile.first_name];
+      if (profile.middle_name) nameParts.push(profile.middle_name);
+      if (profile.last_name) nameParts.push(profile.last_name);
+      if (profile.second_last_name) nameParts.push(profile.second_last_name);
+      fullName = nameParts.join(' ');
     }
     
     user.value = {
       name: fullName,
       email: userData.email,
       avatar: profile?.avatar_url || ''
-    }
+    };
   } catch (error) {
-    console.error('Error fetching user data:', error)
+    console.error('Error fetching user data:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-})
+});
 
 // Navigation data based on database models
 const navMain = [
@@ -223,7 +224,7 @@ const navMain = [
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton size="lg" as-child>
-            <a href="/panel/dashboard">
+            <RouterLink to="/panel/dashboard">
               <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <Store class="size-4" />
               </div>
@@ -231,7 +232,7 @@ const navMain = [
                 <span class="font-medium">Nidya</span>
                 <span class="text-xs text-muted-foreground">Panel de Control</span>
               </div>
-            </a>
+            </RouterLink>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
@@ -243,10 +244,10 @@ const navMain = [
           <!-- Dashboard (no subitems) -->
           <SidebarMenuItem>
             <SidebarMenuButton as-child :tooltip="navMain[0].title">
-              <a :href="navMain[0].url">
+              <RouterLink :to="navMain[0].url">
                 <component :is="navMain[0].icon" class="size-4" />
                 <span>{{ navMain[0].title }}</span>
-              </a>
+              </RouterLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
 
@@ -270,7 +271,7 @@ const navMain = [
                 <SidebarMenuSub v-if="item.items?.length">
                   <SidebarMenuSubItem v-for="childItem in item.items" :key="childItem.title">
                     <SidebarMenuSubButton as-child>
-                      <a :href="childItem.url">{{ childItem.title }}</a>
+                      <RouterLink :to="childItem.url">{{ childItem.title }}</RouterLink>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
                 </SidebarMenuSub>

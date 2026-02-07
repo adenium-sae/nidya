@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\Management\Organization\Profiles\ProfileController;
 use App\Http\Controllers\Api\Management\Organization\Stores\StoresController;
 use App\Http\Controllers\Api\Management\Organization\Branches\BranchesController;
 use App\Http\Controllers\Api\Management\Inventory\Warehouses\WarehousesController;
+use App\Http\Controllers\Api\Management\Catalog\CategoryController;
+use App\Http\Controllers\Api\Management\Inventory\Stock\StockController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +35,7 @@ Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->grou
     Route::prefix("products")->group(function () {
         Route::get("/", [ProductController::class, "index"]);
         Route::get("/{id}", [ProductController::class, "show"]);
+        Route::put("/{id}", [ProductController::class, "update"]);
         Route::post("/single", [ProductController::class, "storeSingle"]);
         Route::post("/multiple", [ProductController::class, "storeMultiple"]);
         Route::post("/all", [ProductController::class, "storeAll"]);
@@ -52,7 +55,26 @@ Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->grou
     });
 
     Route::prefix("warehouses")->group(function () {
-        Route::put("/{id}", [WarehousesController::class, "update"]);
+        Route::get("/types", [WarehousesController::class, "getTypes"]);
+        Route::get("/", [WarehousesController::class, "index"]);
+        Route::post("/", [WarehousesController::class, "store"]);
         Route::get("/{id}", [WarehousesController::class, "show"]);
+        Route::put("/{id}", [WarehousesController::class, "update"]);
+        Route::delete("/{id}", [WarehousesController::class, "destroy"]);
+    });
+
+    Route::prefix("categories")->group(function () {
+        Route::get("/", [CategoryController::class, "index"]);
+        Route::post("/", [CategoryController::class, "store"]);
+        Route::get("/{category}", [CategoryController::class, "show"]);
+        Route::put("/{category}", [CategoryController::class, "update"]);
+        Route::delete("/{category}", [CategoryController::class, "destroy"]);
+    });
+
+    Route::prefix("inventory/stock")->group(function () {
+        Route::get("/", [StockController::class, "index"]);
+        Route::post("/adjust", [StockController::class, "adjust"]);
+        Route::get("/movements", [StockController::class, "movements"]);
+        Route::get("/adjustments", [StockController::class, "adjustments"]);
     });
 });

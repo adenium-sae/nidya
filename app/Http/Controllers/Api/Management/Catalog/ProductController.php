@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers\Api\Management\Catalog;
 
-use App\Actions\Catalog\Products\CreateProductAction;
-use App\Actions\Catalog\Products\DeleteProductAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Management\Catalog\StoreProductRequest;
 use App\Http\Requests\Management\Catalog\UpdateProductRequest;
@@ -14,9 +12,7 @@ use Illuminate\Http\Request;
 class ProductController extends Controller
 {
     public function __construct(
-        protected ProductService $productService,
-        protected CreateProductAction $createProductAction,
-        protected DeleteProductAction $deleteProductAction
+        protected ProductService $productService
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -29,7 +25,13 @@ class ProductController extends Controller
 
     public function storeSingle(StoreProductRequest $request): JsonResponse
     {
-        $product = ($this->createProductAction)($request->validated());
+        $data = $request->validated();
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('products', 'public');
+            $data['image_url'] = '/storage/' . $path;
+        }
+
+        $product = $this->productService->create($data);
         return response()->json([
             'message' => __('messages.product_created_in_single_store'),
             'data' => $product->load('category')
@@ -38,7 +40,13 @@ class ProductController extends Controller
 
     public function storeMultiple(StoreProductRequest $request): JsonResponse
     {
-        $product = ($this->createProductAction)($request->validated());
+        $data = $request->validated();
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('products', 'public');
+            $data['image_url'] = '/storage/' . $path;
+        }
+
+        $product = $this->productService->create($data);
         return response()->json([
             'message' => __('messages.product_created_in_multiple_stores'),
             'data' => $product->load('category')
@@ -47,7 +55,13 @@ class ProductController extends Controller
 
     public function storeAll(StoreProductRequest $request): JsonResponse
     {
-        $product = ($this->createProductAction)($request->validated() + ['all_stores' => true]);
+        $data = $request->validated();
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('products', 'public');
+            $data['image_url'] = '/storage/' . $path;
+        }
+
+        $product = $this->productService->create($data + ['all_stores' => true]);
         return response()->json([
             'message' => __('messages.product_created_in_all_stores'),
             'data' => $product->load('category')
@@ -62,7 +76,12 @@ class ProductController extends Controller
 
     public function update(UpdateProductRequest $request, string $id): JsonResponse
     {
-        $updatedProduct = $this->productService->update($id, $request->validated());
+        $data = $request->validated();
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('products', 'public');
+            $data['image_url'] = '/storage/' . $path;
+        }
+        $updatedProduct = $this->productService->update($id, $data);
         return response()->json([
             'message' => __('messages.product_updated_successfully'),
             'data' => $updatedProduct->load('category')
@@ -71,7 +90,7 @@ class ProductController extends Controller
 
     public function destroy(string $id): JsonResponse
     {
-        ($this->deleteProductAction)($id);
+        $this->productService->delete($id);
         return response()->json([
             'message' => __('messages.product_deleted_successfully')
         ]);
