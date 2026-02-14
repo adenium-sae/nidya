@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Management\Organization\Profiles\ProfileController;
 use App\Http\Controllers\Api\Management\Organization\Stores\StoresController;
 use App\Http\Controllers\Api\Management\Organization\Branches\BranchesController;
 use App\Http\Controllers\Api\Management\Inventory\Warehouses\WarehousesController;
+use App\Http\Controllers\Api\Management\Inventory\StorageLocationController;
 use App\Http\Controllers\Api\Management\Catalog\CategoryController;
 use App\Http\Controllers\Api\Management\Inventory\Stock\StockController;
 use Illuminate\Http\Request;
@@ -55,13 +56,16 @@ Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->grou
     });
 
     Route::prefix("warehouses")->group(function () {
-        Route::get("/types", [WarehousesController::class, "getTypes"]);
         Route::get("/", [WarehousesController::class, "index"]);
         Route::post("/", [WarehousesController::class, "store"]);
+        Route::get("/types", [WarehousesController::class, "getTypes"]);
         Route::get("/{id}", [WarehousesController::class, "show"]);
         Route::put("/{id}", [WarehousesController::class, "update"]);
         Route::delete("/{id}", [WarehousesController::class, "destroy"]);
     });
+
+    Route::get("/inventory/locations", [StorageLocationController::class, "index"]);
+    Route::post("/inventory/locations", [StorageLocationController::class, "store"]);
 
     Route::prefix("categories")->group(function () {
         Route::get("/", [CategoryController::class, "index"]);
@@ -73,7 +77,9 @@ Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->grou
 
     Route::prefix("inventory/stock")->group(function () {
         Route::get("/", [StockController::class, "index"]);
+        Route::patch("/{id}/quantity", [StockController::class, "updateQuantity"]);
         Route::post("/adjust", [StockController::class, "adjust"]);
+        Route::post("/transfer", [StockController::class, "transfer"]);
         Route::get("/movements", [StockController::class, "movements"]);
         Route::get("/adjustments", [StockController::class, "adjustments"]);
     });

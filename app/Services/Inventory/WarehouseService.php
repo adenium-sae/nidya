@@ -70,6 +70,7 @@ class WarehouseService
 
     public function delete(string $id): void
     {
+        /** @var \App\Models\Warehouse|null $warehouse */
         $warehouse = Warehouse::find($id);
         if (!$warehouse) {
             throw new WarehouseNotFoundException();

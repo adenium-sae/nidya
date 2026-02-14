@@ -21,6 +21,7 @@ interface Product {
   stock: any[];
   store_products: any[];
   is_active: boolean;
+  total_stock: number;
 }
 
 const products = ref<Product[]>([]);
@@ -66,10 +67,10 @@ const columns: Column[] = [
     type: 'custom',
     align: 'right'
   },
-  { 
-    key: 'cost', 
-    label: 'Costo', 
-    type: 'currency',
+  {
+    key: 'total_stock',
+    label: 'Existencias',
+    type: 'custom',
     align: 'right'
   }
 ];
@@ -251,6 +252,16 @@ function getProductPrice(product: Product) {
         <template #cell-price="{ row }">
           <span class="font-medium tabular-nums">
             {{ getProductPrice(row) }}
+          </span>
+        </template>
+
+        <!-- Custom cell for total stock -->
+        <template #cell-total_stock="{ row }">
+          <span :class="[
+            'font-bold tabular-nums',
+            (row.total_stock || 0) <= 0 ? 'text-destructive' : 'text-primary'
+          ]">
+            {{ row.total_stock || 0 }}
           </span>
         </template>
       </DataTable>

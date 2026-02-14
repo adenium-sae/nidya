@@ -7,13 +7,14 @@ use App\Models\StockAdjustment;
 use App\Models\StockAdjustmentItem;
 use App\Models\StockMovement;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class AdjustStockAction
 {
-    public function __invoke(array $data, int $userId): StockAdjustment
+    public function __invoke(array $data, string $userId): StockAdjustment
     {
         return DB::transaction(function () use ($data, $userId) {
-            $tenantId = session('tenant_id');
+            $tenantId = session('tenant_id') ?? Auth::user()->tenants()->first()?->id;
             $year = now()->year;
             $lastAdjustment = StockAdjustment::withoutTenantScope()
                 ->where('tenant_id', $tenantId)
@@ -28,24 +29,39 @@ class AdjustStockAction
                 'tenant_id' => $tenantId,
                 'folio' => $folio,
                 'warehouse_id' => $data['warehouse_id'],
+                'storage_location_id' => $data['storage_location_id'] ?? null,
                 'type' => $data['type'],
-                'reason' => $data['reason'],
+                'reason' => $data['reason'] ?? $data['items'][0]['reason'] ?? 'other',
                 'user_id' => $userId,
                 'notes' => $data['notes'] ?? null,
             ]);
 
             foreach ($data['items'] as $itemData) {
-                $this->processAdjustmentItem($adjustment, $itemData, $data['warehouse_id'], $data['reason'], $tenantId, $userId);
+                $this->processAdjustmentItem(
+                    $adjustment, 
+                    $itemData, 
+                    $data['warehouse_id'], 
+                    $data['storage_location_id'] ?? null,
+                    $itemData['reason'] ?? $data['reason'] ?? 'other', 
+                    $tenantId, 
+                    $userId
+                );
             }
 
             return $adjustment;
         });
     }
 
-    private function processAdjustmentItem(StockAdjustment $adjustment, array $itemData, string $warehouseId, string $reason, string $tenantId, int $userId): void
+    private function processAdjustmentItem(StockAdjustment $adjustment, array $itemData, string $warehouseId, ?string $storageLocationId, string $reason, string $tenantId, string $userId): void
     {
         $stock = Stock::where('product_id', $itemData['product_id'])
             ->where('warehouse_id', $warehouseId)
+            ->when($storageLocationId, function($q) use ($storageLocationId) {
+                $q->where('storage_location_id', $storageLocationId);
+            })
+            ->when(!$storageLocationId, function($q) {
+                $q->whereNull('storage_location_id');
+            })
             ->lockForUpdate()
             ->first();
 
@@ -68,6 +84,7 @@ class AdjustStockAction
                 'tenant_id' => $tenantId,
                 'product_id' => $itemData['product_id'],
                 'warehouse_id' => $warehouseId,
+                'storage_location_id' => $storageLocationId,
                 'quantity' => $quantityAfter,
                 'reserved' => 0,
             ]);
@@ -77,7 +94,7 @@ class AdjustStockAction
             'tenant_id' => $tenantId,
             'product_id' => $itemData['product_id'],
             'warehouse_id' => $warehouseId,
-            'storage_location_id' => $stock->storage_location_id,
+            'storage_location_id' => $storageLocationId,
             'type' => 'adjustment',
             'quantity' => $difference,
             'quantity_before' => $quantityBefore,

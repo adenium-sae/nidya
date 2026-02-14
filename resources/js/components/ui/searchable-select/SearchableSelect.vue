@@ -2,7 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import axios from 'axios'
 import { useDebounceFn } from '@vueuse/core'
-import { Check, ChevronsUpDown, Search, Loader2 } from 'lucide-vue-next'
+import { Check, ChevronsUpDown, Search, Loader2, Plus } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -38,6 +38,8 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   minSearchLength?: number
   debounceMs?: number
+  showAddOption?: boolean
+  addOptionLabel?: string
 }>(), {
   placeholder: 'Seleccionar...',
   searchPlaceholder: 'Buscar...',
@@ -47,13 +49,16 @@ const props = withDefaults(defineProps<{
   valueKey: 'id',
   searchKey: 'search',
   disabled: false,
-  minSearchLength: 1,
-  debounceMs: 300
+  minSearchLength: 0,
+  debounceMs: 300,
+  showAddOption: false,
+  addOptionLabel: 'Agregar nuevo'
 })
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string | null): void
   (e: 'select', option: SearchableSelectOption | null): void
+  (e: 'add-click'): void
 }>()
 
 const open = ref(false)
@@ -166,7 +171,7 @@ watch(open, (isOpen) => {
         :disabled="disabled"
         class="w-full justify-between font-normal"
       >
-        <span :class="{ 'text-muted-foreground': !selectedOption }">
+        <span :class="cn('truncate flex-1 text-left', !selectedOption && 'text-muted-foreground')">
           {{ displayLabel }}
         </span>
         <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -184,26 +189,48 @@ watch(open, (isOpen) => {
           />
           <Loader2 v-if="isLoading" class="ml-2 h-4 w-4 animate-spin opacity-50" />
         </div>
-        <CommandList>
-          <CommandEmpty v-if="!isLoading">
-            {{ emptyMessage }}
-          </CommandEmpty>
-          <CommandGroup>
-            <CommandItem
-              v-for="option in displayOptions"
-              :key="option.value"
-              :value="option.value"
-              @select="handleSelect(option)"
-            >
-              <Check
-                :class="cn(
-                  'mr-2 h-4 w-4',
-                  modelValue === option.value ? 'opacity-100' : 'opacity-0'
-                )"
-              />
-              {{ option.label }}
-            </CommandItem>
-          </CommandGroup>
+        <CommandList class="flex flex-col h-full">
+          <div v-if="isLoading" class="py-6 text-center">
+            <Loader2 class="h-6 w-6 animate-spin mx-auto text-muted-foreground opacity-50" />
+            <p class="text-xs text-muted-foreground mt-2">Cargando...</p>
+          </div>
+
+          <template v-else>
+            <div v-if="displayOptions.length === 0" class="py-6 text-center">
+              <p class="text-sm text-muted-foreground">{{ emptyMessage }}</p>
+            </div>
+
+            <CommandGroup v-if="displayOptions.length > 0" class="flex-1 overflow-auto">
+              <CommandItem
+                v-for="option in displayOptions"
+                :key="option.value"
+                :value="option.value"
+                @select="handleSelect(option)"
+              >
+                <Check
+                  :class="cn(
+                    'mr-2 h-4 w-4',
+                    modelValue === option.value ? 'opacity-100' : 'opacity-0'
+                  )"
+                />
+                {{ option.label }}
+              </CommandItem>
+            </CommandGroup>
+
+            <!-- Always show Add New at the bottom if enabled -->
+            <div v-if="showAddOption" class="p-2 border-t bg-muted/5 mt-auto">
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                class="w-full justify-start font-normal h-9 text-primary hover:text-primary hover:bg-primary/10 border-dashed"
+                @click="emit('add-click')"
+              >
+                <Plus class="mr-2 h-4 w-4" />
+                {{ addOptionLabel }}
+              </Button>
+            </div>
+          </template>
         </CommandList>
       </Command>
     </PopoverContent>

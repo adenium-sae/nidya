@@ -221,6 +221,20 @@ async function handleSubmit() {
   }
 }
 
+function handleAddNewStore() {
+  toast({
+    title: 'Crear Tienda',
+    description: 'Navega a la sección de Tiendas para crear una nueva.',
+  });
+}
+
+function handleAddNewBranch() {
+  toast({
+    title: 'Crear Sucursal',
+    description: 'Navega a la sección de Sucursales para crear una nueva.',
+  });
+}
+
 async function handleDelete(id: string) {
   if (!confirm('¿Estás seguro de eliminar este almacén?')) return;
 
@@ -329,6 +343,9 @@ onMounted(function() {
                 label-key="name"
                 value-key="id"
                 placeholder="Buscar sucursal..."
+                show-add-option
+                add-option-label="Nueva Sucursal"
+                @add-click="handleAddNewBranch"
               />
             </div>
             <div class="grid gap-2">
@@ -339,6 +356,9 @@ onMounted(function() {
                 label-key="name"
                 value-key="id"
                 placeholder="Buscar tienda (opcional)..."
+                show-add-option
+                add-option-label="Nueva Tienda"
+                @add-click="handleAddNewStore"
               />
               <p class="text-[0.8rem] text-muted-foreground">
                 Dejar vacío para que sea un almacén compartido por todas las tiendas de la sucursal.

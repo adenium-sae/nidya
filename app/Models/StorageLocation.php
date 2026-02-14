@@ -9,18 +9,25 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class StockAdjustment extends Model
+class StorageLocation extends Model
 {
     use HasFactory, HasUuids, BelongsToTenant;
 
     protected $fillable = [
         'tenant_id',
         'warehouse_id',
-        'folio',
+        'code',
+        'name',
         'type',
-        'reason',
-        'user_id',
-        'notes',
+        'aisle',
+        'section',
+        'capacity',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'capacity' => 'integer',
     ];
 
     public function warehouse(): BelongsTo
@@ -28,13 +35,8 @@ class StockAdjustment extends Model
         return $this->belongsTo(Warehouse::class);
     }
 
-    public function user(): BelongsTo
+    public function stock(): HasMany
     {
-        return $this->belongsTo(User::class);
-    }
-
-    public function items(): HasMany
-    {
-        return $this->hasMany(StockAdjustmentItem::class);
+        return $this->hasMany(Stock::class);
     }
 }

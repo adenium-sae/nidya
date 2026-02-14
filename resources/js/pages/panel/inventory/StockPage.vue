@@ -48,6 +48,11 @@ interface StockItem {
     id: string
     name: string
   }
+  storage_location?: {
+    id: string
+    name: string
+    code: string
+  }
 }
 
 const { toast } = useToast()
@@ -134,6 +139,7 @@ async function handleSubmit() {
         items: [
             {
                 product_id: form.stockItem.product.id,
+                storage_location_id: form.stockItem.storage_location?.id || null,
                 quantity_after: calculatedTotal.value
             }
         ]
@@ -195,6 +201,7 @@ onMounted(function() {
             <TableHead>Producto</TableHead>
             <TableHead>SKU</TableHead>
             <TableHead>Almacén</TableHead>
+            <TableHead>Ubicación</TableHead>
             <TableHead class="text-right">Disponible</TableHead>
             <TableHead class="text-right">Reservado</TableHead>
             <TableHead class="text-right">Acciones</TableHead>
@@ -210,6 +217,12 @@ onMounted(function() {
             <TableCell class="font-medium">{{ item.product?.name }}</TableCell>
             <TableCell>{{ item.product?.sku }}</TableCell>
             <TableCell>{{ item.warehouse?.name }}</TableCell>
+            <TableCell>
+              <span v-if="item.storage_location" class="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                {{ item.storage_location.code }}
+              </span>
+              <span v-else class="text-muted-foreground italic text-xs">Sin ubicar</span>
+            </TableCell>
             <TableCell class="text-right font-bold">{{ item.quantity }}</TableCell>
             <TableCell class="text-right text-muted-foreground">{{ item.reserved }}</TableCell>
             <TableCell class="text-right">

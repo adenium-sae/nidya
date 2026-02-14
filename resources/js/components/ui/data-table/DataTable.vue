@@ -249,8 +249,8 @@ const perPageOptions = [10, 15, 25, 50, 100]
     <!-- Table Container -->
     <div class="rounded-md border bg-card flex-1 flex flex-col overflow-hidden min-h-0">
       <!-- Scrollable Table Wrapper -->
-      <div class="flex-1 overflow-auto">
-        <Table>
+      <div class="flex-1 overflow-auto flex flex-col">
+        <Table class="flex-1 h-full">
           <TableHeader class="sticky top-0 z-10 bg-card shadow-sm">
             <TableRow class="hover:bg-transparent">
               <TableHead 
@@ -270,7 +270,7 @@ const perPageOptions = [10, 15, 25, 50, 100]
             </TableRow>
           </TableHeader>
           
-          <TableBody>
+          <TableBody class="h-full">
             <!-- Loading State -->
             <TableRow v-if="isLoading">
               <TableCell :colspan="columns.length + (actions.length > 0 ? 1 : 0)" class="h-24 text-center">
@@ -282,11 +282,12 @@ const perPageOptions = [10, 15, 25, 50, 100]
             </TableRow>
             
             <!-- Empty State -->
-            <TableRow v-else-if="data.length === 0">
-              <TableCell :colspan="columns.length + (actions.length > 0 ? 1 : 0)" class="h-24 text-center">
-                <div class="flex flex-col items-center justify-center text-center py-6">
-                  <component v-if="emptyIcon" :is="emptyIcon" class="h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p class="text-muted-foreground">{{ emptyMessage }}</p>
+            <TableRow v-else-if="data.length === 0" class="h-full hover:bg-transparent border-0">
+              <TableCell :colspan="columns.length + (actions.length > 0 ? 1 : 0)" class="h-full p-0 text-center">
+                <div class="flex flex-col items-center justify-center text-center h-full min-h-[300px]">
+                  <component v-if="emptyIcon" :is="emptyIcon" class="h-16 w-16 text-muted-foreground/20 mb-4" />
+                  <p class="text-muted-foreground text-xl font-medium">{{ emptyMessage }}</p>
+                  <p class="text-muted-foreground/60 text-sm mt-1">Crea uno nuevo para empezar a gestionar tu inventario.</p>
                 </div>
               </TableCell>
             </TableRow>

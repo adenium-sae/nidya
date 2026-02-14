@@ -16,7 +16,8 @@ class ProductService
 
     public function getProducts(array $filters)
     {
-        $query = Product::with(['category', 'stock', 'storeProducts']);
+        $query = Product::with(['category', 'storeProducts'])
+            ->withSum('stock as total_stock', 'quantity');
         if (!empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function($q) use ($search) {
@@ -33,6 +34,14 @@ class ProductService
         }
         if (isset($filters['is_active'])) {
             $query->where('is_active', $filters['is_active']);
+        }
+        if (!empty($filters['warehouse_id'])) {
+            $query->whereHas('stock', function($q) use ($filters) {
+                $q->where('warehouse_id', $filters['warehouse_id']);
+                if (!empty($filters['storage_location_id'])) {
+                    $q->where('storage_location_id', $filters['storage_location_id']);
+                }
+            });
         }
         $perPage = $filters['per_page'] ?? 15;
         return $query->paginate($perPage);

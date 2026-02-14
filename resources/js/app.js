@@ -62,6 +62,18 @@ const routes = [
                 component: () => import('./pages/panel/inventory/AdjustmentsPage.vue')
             },
             {
+                path: "inventory/adjustments/entry",
+                component: () => import('./pages/panel/inventory/adjustments/EntryForm.vue')
+            },
+            {
+                path: "inventory/adjustments/exit",
+                component: () => import('./pages/panel/inventory/adjustments/ExitForm.vue')
+            },
+            {
+                path: "inventory/adjustments/transfer",
+                component: () => import('./pages/panel/inventory/adjustments/TransferForm.vue')
+            },
+            {
                 path: "inventory/warehouses",
                 component: () => import('./pages/panel/inventory/WarehousesPage.vue')
             }
