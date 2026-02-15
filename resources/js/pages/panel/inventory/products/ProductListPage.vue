@@ -6,7 +6,15 @@ import { useRouter } from 'vue-router';
 import { DataTable, type Column, type Action, type Filter, type Pagination } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast/use-toast';
-import { Plus, Package } from 'lucide-vue-next';
+import { Plus, Package, Trash2, AlertCircle } from 'lucide-vue-next';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const router = useRouter();
 const { toast } = useToast();
@@ -26,9 +34,14 @@ interface Product {
 
 const products = ref<Product[]>([]);
 const isLoading = ref(true);
+
 const searchQuery = ref('');
 const filterValues = ref<Record<string, string>>({});
 const categories = ref<{ id: string; name: string }[]>([]);
+
+const deleteDialogOpen = ref(false);
+const productToDelete = ref<Product | null>(null);
+const isDeleting = ref(false);
 
 const pagination = ref<Pagination>({
   currentPage: 1,
@@ -37,12 +50,11 @@ const pagination = ref<Pagination>({
   total: 0
 });
 
-// Column definitions
 const columns: Column[] = [
   { 
     key: 'image_url', 
     label: '', 
-    type: 'image',
+    type: 'custom',
     width: 'w-[60px]'
   },
   { 
@@ -163,27 +175,38 @@ function handlePerPageChange(perPage: number) {
   fetchProducts(1);
 }
 
-async function handleAction(action: string, row: Product) {
-  const token = localStorage.getItem('auth_token');
-  
+function handleAction(action: string, row: Product) {
   if (action === 'edit') {
     router.push(`/panel/inventory/products/${row.id}/edit`);
   } else if (action === 'delete') {
-    if (!confirm(`¿Estás seguro de que deseas eliminar "${row.name}"?`)) return;
-    
-    try {
-      await axios.delete(`/api/admin/products/${row.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast({ title: 'Éxito', description: 'Producto eliminado correctamente.' });
-      fetchProducts(pagination.value.currentPage);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'No se pudo eliminar el producto.',
-        variant: 'destructive'
-      });
+    productToDelete.value = row;
+    deleteDialogOpen.value = true;
+  }
+}
+
+async function confirmDelete() {
+  if (!productToDelete.value) return;
+  isDeleting.value = true;
+  const token = localStorage.getItem('auth_token');
+  try {
+    await axios.delete(`/api/admin/products/${productToDelete.value.id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    toast({ title: 'Éxito', description: 'Producto eliminado correctamente.' });
+    if (products.value.length === 1 && pagination.value.currentPage > 1) {
+      pagination.value.currentPage--;
     }
+    await fetchProducts(pagination.value.currentPage);
+    deleteDialogOpen.value = false;
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    toast({
+      title: 'Error',
+      description: 'No se pudo eliminar el producto.',
+      variant: 'destructive'
+    });
+  } finally {
+    isDeleting.value = false;
   }
 }
 
@@ -200,6 +223,15 @@ function getProductPrice(product: Product) {
     }).format(price);
   }
   return '-';
+}
+
+function getImageUrl(path: string | null) {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000';
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  const cleanBase = backendUrl.endsWith('/') ? backendUrl.substring(0, backendUrl.length - 1) : backendUrl;
+  return `${cleanBase}/${cleanPath}`;
 }
 </script>
 
@@ -231,6 +263,24 @@ function getProductPrice(product: Product) {
             <Plus class="mr-2 h-4 w-4" />
             Nuevo Producto
           </Button>
+        </template>
+
+        <!-- Custom cell for image_url -->
+        <template #cell-image_url="{ row }">
+          <div class="flex items-center justify-center">
+            <div class="w-10 h-10 rounded-lg bg-muted overflow-hidden flex-shrink-0 border relative">
+              <img 
+                v-if="row.image_url" 
+                :src="getImageUrl(row.image_url)" 
+                :alt="row.name || ''"
+                class="w-full h-full object-cover"
+                @error="$event.target.style.display='none'"
+              />
+              <div v-else class="w-full h-full flex items-center justify-center text-muted-foreground">
+                <Package class="h-5 w-5 opacity-20" />
+              </div>
+            </div>
+          </div>
         </template>
 
         <!-- Custom cell for name with link styling -->
@@ -266,5 +316,26 @@ function getProductPrice(product: Product) {
         </template>
       </DataTable>
     </div>
+
+    <Dialog :open="deleteDialogOpen" @update:open="deleteDialogOpen = $event">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Confirmar eliminación</DialogTitle>
+          <DialogDescription>
+            ¿Estás seguro de que deseas eliminar el producto <span class="font-medium text-foreground">"{{ productToDelete?.name }}"</span>?
+            Esta acción no se puede deshacer.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="deleteDialogOpen = false" :disabled="isDeleting">
+            Cancelar
+          </Button>
+          <Button variant="destructive" @click="confirmDelete" :disabled="isDeleting">
+            <span v-if="isDeleting">Eliminando...</span>
+            <span v-else>Eliminar</span>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>

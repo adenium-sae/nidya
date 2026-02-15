@@ -4,18 +4,9 @@ import axios from 'axios';
 
 import { DataTable, type Column, type Action } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { Plus, FolderTree } from 'lucide-vue-next';
 import { useToast } from '@/components/ui/toast/use-toast';
+import CategoryFormDialog from '@/components/inventory/CategoryFormDialog.vue';
 
 interface Category {
   id: string;
@@ -31,13 +22,7 @@ const categories = ref<Category[]>([]);
 const isLoading = ref(true);
 const searchQuery = ref('');
 const isDialogOpen = ref(false);
-const isEditing = ref(false);
-const currentId = ref<string | null>(null);
-
-const form = reactive({
-  name: '',
-  description: ''
-});
+const selectedCategory = ref<Category | null>(null);
 
 // DataTable Configuration
 const columns: Column[] = [
@@ -92,52 +77,20 @@ function handleSearch(value: string) {
 
 function handleAction(actionKey: string, row: Category) {
   if (actionKey === 'edit') {
-    openEditDialog(row);
+    selectedCategory.value = row;
+    isDialogOpen.value = true;
   } else if (actionKey === 'delete') {
     handleDelete(row.id);
   }
 }
 
 function openCreateDialog() {
-  isEditing.value = false;
-  currentId.value = null;
-  form.name = '';
-  form.description = '';
+  selectedCategory.value = null;
   isDialogOpen.value = true;
 }
 
-function openEditDialog(category: Category) {
-  isEditing.value = true;
-  currentId.value = category.id;
-  form.name = category.name;
-  form.description = category.description || '';
-  isDialogOpen.value = true;
-}
-
-async function handleSubmit() {
-  const token = localStorage.getItem('auth_token');
-  try {
-    if (isEditing.value && currentId.value) {
-      await axios.put(`/api/admin/categories/${currentId.value}`, form, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast({ title: 'Éxito', description: 'Categoría actualizada correctamente.' });
-    } else {
-      await axios.post('/api/admin/categories', form, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast({ title: 'Éxito', description: 'Categoría creada correctamente.' });
-    }
-    isDialogOpen.value = false;
-    fetchCategories();
-  } catch (error) {
-    console.error('Error saving category:', error);
-    toast({
-      title: 'Error',
-      description: 'Hubo un error al guardar la categoría.',
-      variant: 'destructive',
-    });
-  }
+function handleCategorySaved() {
+  fetchCategories();
 }
 
 async function handleDelete(id: string) {
@@ -191,30 +144,11 @@ onMounted(function() {
       </DataTable>
 
       <!-- Dialog Create/Edit -->
-      <Dialog v-model:open="isDialogOpen">
-        <DialogContent class="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{{ isEditing ? 'Editar Categoría' : 'Nueva Categoría' }}</DialogTitle>
-            <DialogDescription>
-              Completa los detalles de la categoría aquí.
-            </DialogDescription>
-          </DialogHeader>
-          <div class="grid gap-4 py-4">
-            <div class="grid gap-2">
-              <Label htmlFor="name">Nombre <span class="text-destructive">*</span></Label>
-              <Input id="name" v-model="form.name" />
-            </div>
-            <div class="grid gap-2">
-              <Label htmlFor="description">Descripción</Label>
-              <Input id="description" v-model="form.description" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" @click="isDialogOpen = false">Cancelar</Button>
-            <Button type="submit" @click="handleSubmit">Guardar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CategoryFormDialog 
+        v-model:open="isDialogOpen"
+        :category="selectedCategory"
+        @saved="handleCategorySaved"
+      />
     </div>
   </div>
 </template>

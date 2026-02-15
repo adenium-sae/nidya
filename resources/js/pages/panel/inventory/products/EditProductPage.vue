@@ -22,6 +22,7 @@ const categories = ref<Category[]>([])
 const isLoading = ref(false)
 const isFetching = ref(true)
 const initialData = ref<any>({})
+const serverErrors = ref<Record<string, string[]>>({})
 
 onMounted(async function() {
   const token = localStorage.getItem('auth_token');
@@ -62,51 +63,52 @@ onMounted(async function() {
 
 async function handleSubmit(formData: any, imageFile: File | null) {
   isLoading.value = true;
+  serverErrors.value = {};
   const token = localStorage.getItem('auth_token');
   
   try {
     const data = new FormData();
     data.append('name', formData.name);
     data.append('sku', formData.sku);
-    
-    if (formData.description) data.append('description', formData.description);
-    if (formData.barcode) data.append('barcode', formData.barcode);
-    
+    if (formData.description) {
+      data.append('description', formData.description);
+    }
+    if (formData.barcode) {
+      data.append('barcode', formData.barcode);
+    }
     data.append('cost', formData.cost);
     data.append('category_id', formData.category_id);
     data.append('type', formData.type);
     data.append('is_active', formData.is_active ? '1' : '0');
-
-    if (formData.min_stock) data.append('min_stock', formData.min_stock);
-    
+    if (formData.min_stock) {
+      data.append('min_stock', formData.min_stock);
+    }
     if (imageFile) {
       data.append('image', imageFile);
     }
-
     data.append('_method', 'PUT');
-    
     await axios.post(`/api/admin/products/${productId}`, data, {
       headers: { 
         Authorization: `Bearer ${token}`,
         'Content-Type': 'multipart/form-data'
       }
     });
-    
     toast({ title: 'Éxito', description: 'Producto actualizado correctamente.' });
     router.push('/panel/inventory/products');
-    
   } catch (error: any) {
     console.error('Error updating product:', error);
     let msg = 'Hubo un error al actualizar el producto.';
-    if (error.response?.data?.message) msg = error.response.data.message;
     if (error.response?.data?.errors) {
-      msg += ' ' + Object.values(error.response.data.errors).flat().join(', ');
+      serverErrors.value = error.response.data.errors;
+      msg = Object.values(error.response.data.errors).flat().join(', ');
+    } else if (error.response?.data?.message) {
+      msg = error.response.data.message;
     }
-    
     toast({
-      title: 'Error',
+      title: 'Error de validación',
       description: msg,
       variant: 'destructive',
+      duration: 5000
     });
   } finally {
     isLoading.value = false;
@@ -115,6 +117,10 @@ async function handleSubmit(formData: any, imageFile: File | null) {
 
 function handleCancel() {
   router.back();
+}
+
+function handleCategoryCreated(category: Category) {
+  categories.value.push(category);
 }
 </script>
 
@@ -131,24 +137,17 @@ function handleCancel() {
       </div>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="isFetching" class="flex items-center justify-center py-20">
-      <div class="text-center">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <p class="text-muted-foreground mt-4">Cargando producto...</p>
-      </div>
-    </div>
-
     <ProductForm
-      v-else
       :categories="categories"
       :stores="[]"
       :initial-data="initialData"
       :is-loading="isLoading"
       :is-edit-mode="true"
+      :server-errors="serverErrors"
       submit-label="Guardar Cambios"
       @submit="handleSubmit"
       @cancel="handleCancel"
+      @category-created="handleCategoryCreated"
     />
   </div>
 </template>

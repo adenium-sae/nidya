@@ -18,7 +18,6 @@ Route::get('/user', function (Request $request) {
     return $request->user()->load('profile');
 })->middleware('auth:sanctum');
 
-Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('auth:sanctum');
 
 Route::prefix("auth")->group(function () {
     Route::post("signup", [SignUpController::class, "register"]);
@@ -29,6 +28,8 @@ Route::prefix("auth")->group(function () {
 });
 
 Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('auth:sanctum');
+
     Route::prefix("profiles")->group(function () {
         Route::post("/", [ProfileController::class, "store"]);
     });
@@ -37,6 +38,7 @@ Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->grou
         Route::get("/", [ProductController::class, "index"]);
         Route::get("/{id}", [ProductController::class, "show"]);
         Route::put("/{id}", [ProductController::class, "update"]);
+        Route::delete("/{id}", [ProductController::class, "destroy"]);
         Route::post("/single", [ProductController::class, "storeSingle"]);
         Route::post("/multiple", [ProductController::class, "storeMultiple"]);
         Route::post("/all", [ProductController::class, "storeAll"]);

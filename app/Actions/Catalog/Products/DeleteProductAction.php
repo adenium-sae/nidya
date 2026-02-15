@@ -12,17 +12,13 @@ class DeleteProductAction
     {
         /** @var Product|null $product */
         $product = Product::find($id);
-        
         if (!$product) {
             throw new ProductNotFoundException();
         }
-
         $totalStock = $product->stock()->sum('quantity');
-        
         if ($totalStock > 0) {
             throw new ProductHasStockException();
         }
-
         $product->delete();
     }
 }

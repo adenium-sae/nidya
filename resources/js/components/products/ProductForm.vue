@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue';
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -9,10 +10,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Upload, Package, Tag, DollarSign, Store as StoreIcon, Sparkles } from 'lucide-vue-next';
+import { Upload, Package, Tag, DollarSign, Store as StoreIcon, Sparkles, Plus, Info } from 'lucide-vue-next';
+import { useToast } from '@/components/ui/toast/use-toast';
+import SearchableSelect from '@/components/ui/searchable-select/SearchableSelect.vue';
+import CategoryFormDialog from '@/components/inventory/CategoryFormDialog.vue';
+import { z } from 'zod';
 
 interface Category {
   id: string;
@@ -48,37 +59,69 @@ const props = withDefaults(defineProps<{
   isLoading?: boolean;
   isEditMode?: boolean;
   submitLabel?: string;
+  serverErrors?: Record<string, string[]>;
 }>(), {
   categories: () => [],
   stores: () => [],
   initialData: () => ({}),
   isLoading: false,
   isEditMode: false,
-  submitLabel: 'Guardar'
+  submitLabel: 'Guardar',
+  serverErrors: () => ({})
 });
 
 const emit = defineEmits<{
   (e: 'submit', data: ProductFormData, imageFile: File | null): void;
   (e: 'cancel'): void;
+  (e: 'category-created', category: Category): void;
 }>();
 
+const { toast } = useToast();
 const previewImage = ref<string | null>(props.initialData.image_url || null);
 const imageFile = ref<File | null>(null);
+const isCreatingCategory = ref(false);
+const fieldErrors = reactive<Record<string, string>>({});
+
+function clearFieldError(field: string) {
+  if (fieldErrors[field]) {
+    delete fieldErrors[field];
+  }
+}
+
+function clearAllErrors() {
+  Object.keys(fieldErrors).forEach(key => delete fieldErrors[key]);
+}
+
+watch(() => props.serverErrors, (errors) => {
+  if (errors && Object.keys(errors).length > 0) {
+    Object.entries(errors).forEach(([field, messages]) => {
+      fieldErrors[field] = Array.isArray(messages) ? messages[0] : messages;
+    });
+  }
+}, { deep: true });
 
 const form = reactive<ProductFormData>({
   name: props.initialData.name || '',
   description: props.initialData.description || '',
   sku: props.initialData.sku || '',
   barcode: props.initialData.barcode || '',
-  price: props.initialData.price || '',
-  cost: props.initialData.cost || '',
+  price: props.initialData.price ? Number(props.initialData.price).toFixed(2) : '',
+  cost: props.initialData.cost ? Number(props.initialData.cost).toFixed(2) : '',
   category_id: props.initialData.category_id || '',
   type: props.initialData.type || 'product',
   target_stores: props.initialData.target_stores || 'single',
   store_id: props.initialData.store_id || '',
   store_ids: props.initialData.store_ids || [],
-  min_stock: props.initialData.min_stock || '5',
+  min_stock: props.initialData.min_stock || '0',
   is_active: props.initialData.is_active ?? true,
+});
+
+// Map categories for SearchableSelect
+const categoryOptions = computed(() => {
+  return props.categories.map(cat => ({
+    value: String(cat.id),
+    label: cat.name
+  }));
 });
 
 watch(() => props.initialData, (newData) => {
@@ -88,8 +131,8 @@ watch(() => props.initialData, (newData) => {
       description: newData.description || '',
       sku: newData.sku || '',
       barcode: newData.barcode || '',
-      price: newData.price || '',
-      cost: newData.cost || '',
+      price: newData.price ? Number(newData.price).toFixed(2) : '',
+      cost: newData.cost ? Number(newData.cost).toFixed(2) : '',
       category_id: newData.category_id || '',
       type: newData.type || 'product',
       target_stores: newData.target_stores || 'single',
@@ -141,16 +184,134 @@ function isStoreSelected(storeId: string) {
   return form.store_ids.includes(storeId);
 }
 
-function handleSubmit() {
+const currencyInputSchema = z.string().regex(/^\d*\.?\d{0,2}$/, "Formato inválido (máx. 2 decimales)");
+
+const currencyFormatSchema = z.coerce.number().transform((val) => {
+  return val.toFixed(2);
+});
+
+const productFormSchema = computed(() => {
+  let schema: z.ZodType<any> = z.object({
+    name: z.string().min(1, "El nombre es obligatorio"),
+    description: z.string().optional(),
+    sku: z.string().min(1, "El SKU es obligatorio"),
+    barcode: z.string().optional(),
+    price: props.isEditMode 
+      ? z.string().optional() 
+      : z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, "Precio inválido"),
+    cost: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, "Costo inválido"),
+    category_id: z.string().min(1, "La categoría es obligatoria"),
+    type: z.string(),
+    target_stores: z.string(),
+    store_id: z.string().optional(),
+    store_ids: z.array(z.string()).optional(),
+    min_stock: z.coerce.string().refine((val) => !isNaN(parseInt(val)) && parseInt(val) >= 0, "Stock mínimo inválido"),
+    is_active: z.boolean(),
+    image_url: z.string().optional(),
+  });
+  if (!props.isEditMode) {
+    schema = schema.refine((data) => {
+      if (data.target_stores === 'single' && !data.store_id) {
+        return false;
+      }
+      return true;
+    }, {
+      message: "Debe seleccionar una tienda",
+      path: ["store_id"],
+    }).refine((data) => {
+      if (data.target_stores === 'multiple' && (!data.store_ids || data.store_ids.length === 0)) {
+        return false;
+      }
+      return true;
+    }, {
+      message: "Debe seleccionar al menos una tienda",
+      path: ["store_ids"],
+    });
+  }
+  return schema;
+});
+
+
+function handlePriceKeydown(e: KeyboardEvent) {
+  if (['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter', 'Home', 'End'].includes(e.key)) return;
+  if (e.ctrlKey || e.metaKey) return;
+  const input = e.target as HTMLInputElement;
+  const key = e.key;
+  if (!/[\d.]/.test(key)) {
+    e.preventDefault();
+    return;
+  }
+  if (key === '.' && input.value.includes('.')) {
+    e.preventDefault();
+    return;
+  }
+  if (input.value.includes('.')) {
+    const parts = input.value.split('.');
+    const decimalPart = parts[1];
+    if (decimalPart && decimalPart.length >= 2) {
+      const cursorStart = input.selectionStart || 0;
+      const dotIndex = input.value.indexOf('.');
+      if (cursorStart > dotIndex && input.selectionStart === input.selectionEnd) {
+         e.preventDefault();
+      }
+    }
+  }
+}
+
+function validateDecimals(field: 'price' | 'cost') {
+  let value = form[field];
+  if (!value) return;
+  const sanitized = value.replace(/[^0-9.]/g, '');
+  if (sanitized !== value) {
+    value = sanitized;
+    form[field] = value;
+  }
+  if (value.includes('.')) {
+    const parts = value.split('.');
+    if (parts[1].length > 2) {
+      form[field] = parts[0] + '.' + parts[1].substring(0, 2);
+    }
+  }
+} 
+
+function formatPrice(field: 'price' | 'cost') {
+  if (!form[field]) return;
+  const result = currencyFormatSchema.safeParse(form[field]);
+  if (result.success) {
+    form[field] = result.data;
+  }
+}
+
+async function handleSubmit() {
+  clearAllErrors();
+  const result = productFormSchema.value.safeParse(form);
+  if (!result.success) {
+    // Map Zod errors to inline field errors
+    result.error.errors.forEach(err => {
+      const field = err.path[0] as string;
+      if (field && !fieldErrors[field]) {
+        fieldErrors[field] = err.message;
+      }
+    });
+    toast({
+      title: 'Error de validación',
+      description: 'Por favor corrige los campos marcados en rojo.',
+      variant: 'destructive',
+    });
+    return;
+  }
   emit('submit', { ...form }, imageFile.value);
+}
+
+function handleCategoryCreated(newCategory: Category) {
+  emit('category-created', newCategory);
+  form.category_id = String(newCategory.id);
 }
 </script>
 
 <template>
   <div class="grid lg:grid-cols-[1fr_340px] gap-8">
-    <!-- Left Column: Image + Basic Info -->
     <div class="space-y-8 min-w-0">
-      <!-- Product Image & Name Card -->
       <div class="bg-card rounded-xl border p-6 shadow-sm">
         <h2 class="text-lg font-semibold mb-6 flex items-center gap-2">
           <Package class="h-5 w-5 text-primary" />
@@ -158,7 +319,6 @@ function handleSubmit() {
         </h2>
         
         <div class="grid md:grid-cols-3 gap-6">
-          <!-- Image Upload -->
           <div>
             <Label class="block mb-3 text-sm font-medium">Imagen</Label>
             <div class="border-2 border-dashed rounded-xl flex flex-col items-center justify-center aspect-square cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-colors relative overflow-hidden bg-muted/20">
@@ -176,11 +336,11 @@ function handleSubmit() {
             </div>
           </div>
 
-          <!-- Basic Fields -->
           <div class="md:col-span-2 space-y-5">
             <div class="space-y-2">
               <Label for="name">Nombre del Producto <span class="text-destructive">*</span></Label>
-              <Input id="name" v-model="form.name" placeholder="Ej. Coca Cola 600ml" class="" />
+              <Input id="name" v-model="form.name" placeholder="Ej. Coca Cola 600ml" :class="{ 'border-destructive': fieldErrors.name }" @input="clearFieldError('name')" />
+              <p v-if="fieldErrors.name" class="text-xs text-destructive">{{ fieldErrors.name }}</p>
             </div>
             
             <div class="space-y-2">
@@ -191,7 +351,6 @@ function handleSubmit() {
         </div>
       </div>
 
-      <!-- Identification Card -->
       <div class="bg-card rounded-xl border p-6 shadow-sm">
         <h2 class="text-lg font-semibold mb-6 flex items-center gap-2">
           <Tag class="h-5 w-5 text-primary" />
@@ -202,7 +361,7 @@ function handleSubmit() {
           <div class="space-y-2">
             <Label for="sku">SKU (Código único) <span class="text-destructive">*</span></Label>
             <div class="relative">
-              <Input id="sku" v-model="form.sku" placeholder="PROD-001" class=" pr-12" />
+              <Input id="sku" v-model="form.sku" placeholder="PROD-001" :class="['pr-12', { 'border-destructive': fieldErrors.sku }]" @input="clearFieldError('sku')" />
               <Button 
                 type="button" 
                 variant="ghost" 
@@ -214,7 +373,8 @@ function handleSubmit() {
                 <Sparkles class="h-4 w-4 text-primary" />
               </Button>
             </div>
-            <p class="text-xs text-muted-foreground">Identificador único para tu inventario</p>
+            <p v-if="fieldErrors.sku" class="text-xs text-destructive">{{ fieldErrors.sku }}</p>
+            <p v-else class="text-xs text-muted-foreground">Identificador único para tu inventario</p>
           </div>
           <div class="space-y-2">
             <Label for="barcode">Código de Barras</Label>
@@ -224,7 +384,6 @@ function handleSubmit() {
         </div>
       </div>
 
-      <!-- Pricing Card -->
       <div class="bg-card rounded-xl border p-6 shadow-sm">
         <h2 class="text-lg font-semibold mb-6 flex items-center gap-2">
           <DollarSign class="h-5 w-5 text-primary" />
@@ -236,40 +395,61 @@ function handleSubmit() {
             <Label for="price">Precio de Venta <span class="text-destructive">*</span></Label>
             <div class="relative">
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-              <Input id="price" type="number" step="0.01" v-model="form.price" placeholder="0.00" class="pl-7" />
+              <Input 
+                id="price" 
+                type="text" 
+                inputmode="decimal"
+                v-model="form.price" 
+                placeholder="0.00" 
+                :class="['pl-7', { 'border-destructive': fieldErrors.price }]" 
+                @blur="formatPrice('price')"
+                @input="validateDecimals('price'); clearFieldError('price')"
+                @keydown="handlePriceKeydown"
+              />
             </div>
+            <p v-if="fieldErrors.price" class="text-xs text-destructive">{{ fieldErrors.price }}</p>
           </div>
           <div class="space-y-2">
             <Label for="cost">Costo de Compra <span class="text-destructive">*</span></Label>
             <div class="relative">
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-              <Input id="cost" type="number" step="0.01" v-model="form.cost" placeholder="0.00" class="pl-7" />
+              <Input 
+                id="cost" 
+                type="text" 
+                inputmode="decimal"
+                v-model="form.cost" 
+                placeholder="0.00" 
+                :class="['pl-7', { 'border-destructive': fieldErrors.cost }]" 
+                @blur="formatPrice('cost')"
+                @input="validateDecimals('cost'); clearFieldError('cost')"
+                @keydown="handlePriceKeydown"
+              />
             </div>
-            <p v-if="isEditMode" class="text-xs text-muted-foreground">El precio de venta se configura por tienda</p>
+            <p v-if="fieldErrors.cost" class="text-xs text-destructive">{{ fieldErrors.cost }}</p>
+            <p v-else-if="isEditMode" class="text-xs text-muted-foreground">El precio de venta se configura por tienda</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Right Column: Classification & Stores (Fixed Width) -->
     <div class="space-y-8 w-full lg:w-[340px]">
-      <!-- Classification Card -->
       <div class="bg-card rounded-xl border p-6 shadow-sm">
         <h2 class="text-lg font-semibold mb-6">Clasificación</h2>
         
         <div class="space-y-5">
           <div class="space-y-2">
             <Label>Categoría <span class="text-destructive">*</span></Label>
-            <Select v-model="form.category_id">
-              <SelectTrigger class="">
-                <SelectValue placeholder="Seleccionar..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="cat in categories" :key="cat.id" :value="cat.id">
-                  {{ cat.name }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              v-model="form.category_id"
+              :options="categoryOptions"
+              placeholder="Seleccionar categoría..."
+              search-placeholder="Buscar..."
+              show-add-option
+              add-option-label="Nueva Categoría"
+              @add-click="isCreatingCategory = true"
+              @update:model-value="clearFieldError('category_id')"
+            />
+            <p v-if="fieldErrors.category_id" class="text-xs text-destructive">{{ fieldErrors.category_id }}</p>
           </div>
           
           <div class="space-y-2">
@@ -286,14 +466,24 @@ function handleSubmit() {
           </div>
 
           <div class="space-y-2">
-            <Label for="min_stock">Stock Mínimo</Label>
+            <div class="flex items-center gap-2">
+              <Label for="min_stock">Stock Mínimo</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger as-child>
+                    <Info class="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Alerta cuando el stock baje de este nivel</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Input id="min_stock" type="number" v-model="form.min_stock" class="" />
-            <p class="text-xs text-muted-foreground">Alerta cuando el stock baje de este nivel</p>
           </div>
         </div>
       </div>
 
-      <!-- Distribution Card (only for create mode) -->
       <div v-if="!isEditMode" class="bg-card rounded-xl border p-6 shadow-sm">
         <h2 class="text-lg font-semibold mb-6 flex items-center gap-2">
           <StoreIcon class="h-5 w-5 text-primary" />
@@ -315,22 +505,21 @@ function handleSubmit() {
             </Select>
           </div>
           
-          <!-- Single Store Selection -->
           <div class="space-y-2" v-if="form.target_stores === 'single'">
-            <Label>Seleccionar Tienda</Label>
-            <Select v-model="form.store_id">
-              <SelectTrigger class="">
+            <Label>Seleccionar Tienda <span class="text-destructive">*</span></Label>
+            <Select v-model="form.store_id" @update:model-value="clearFieldError('store_id')">
+              <SelectTrigger :class="{ 'border-destructive': fieldErrors.store_id }">
                 <SelectValue placeholder="Seleccionar..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem v-for="store in stores" :key="store.id" :value="store.id">
+                <SelectItem v-for="store in stores" :key="store.id" :value="String(store.id)">
                   {{ store.name }}
                 </SelectItem>
               </SelectContent>
             </Select>
+            <p v-if="fieldErrors.store_id" class="text-xs text-destructive">{{ fieldErrors.store_id }}</p>
           </div>
 
-          <!-- Multiple Store Selection -->
           <div class="space-y-3" v-if="form.target_stores === 'multiple'">
             <Label>Seleccionar Tiendas</Label>
             <div class="border rounded-lg divide-y max-h-48 overflow-y-auto">
@@ -351,7 +540,6 @@ function handleSubmit() {
             </p>
           </div>
 
-          <!-- All Stores Info -->
           <div v-if="form.target_stores === 'all'" class="bg-primary/5 border border-primary/20 rounded-lg p-4">
             <p class="text-sm text-primary">
               El producto estará disponible en todas las tiendas actuales.
@@ -360,7 +548,6 @@ function handleSubmit() {
         </div>
       </div>
 
-      <!-- Status Card (only for edit mode) -->
       <div v-if="isEditMode" class="bg-card rounded-xl border p-6 shadow-sm">
         <h2 class="text-lg font-semibold mb-6">Estado</h2>
         
@@ -385,11 +572,15 @@ function handleSubmit() {
     </div>
   </div>
 
-  <!-- Actions -->
   <div class="flex justify-end gap-4 pt-4 border-t mt-8">
     <Button variant="outline" @click="$emit('cancel')">Cancelar</Button>
     <Button @click="handleSubmit" :disabled="isLoading">
       {{ isLoading ? 'Guardando...' : submitLabel }}
     </Button>
   </div>
-</template>
+
+  <CategoryFormDialog 
+    v-model:open="isCreatingCategory"
+    @saved="handleCategoryCreated"
+  />
+</template
