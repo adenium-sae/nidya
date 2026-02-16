@@ -56,24 +56,22 @@ function removeItem(index: number) {
 }
 
 async function handleProductSelect(productId: string, index: number) {
-  if (!productId || !form.warehouse_id) return;
-  
-  try {
-    const token = localStorage.getItem('auth_token');
-    const response = await axios.get(`/api/admin/inventory/stock`, {
-      headers: { Authorization: `Bearer ${token}` },
-      params: { 
-        product_id: productId, 
-        warehouse_id: form.warehouse_id,
-        storage_location_id: form.storage_location_id || undefined
-      }
-    });
-    
-    const totalQty = response.data.data?.reduce((sum: number, stock: any) => sum + stock.quantity, 0) || 0;
-    form.items[index].current_quantity = totalQty;
-  } catch (error) {
-    console.error('Error fetching product stock:', error);
-  }
+    if (!productId || !form.warehouse_id) return;
+    try {
+        const token = localStorage.getItem('auth_token');
+        const response = await axios.get(`/api/admin/inventory/stock`, {
+            headers: { Authorization: `Bearer ${token}` },
+            params: {
+                product_id: productId,
+                warehouse_id: form.warehouse_id,
+                storage_location_id: form.storage_location_id || undefined
+            }
+        });
+        const totalQty = response.data.reduce((sum: number, stock: any) => sum + stock.quantity, 0) || 0;
+        form.items[index].available = totalQty;
+    } catch (error) {
+        console.error('Error fetching product stock:', error);
+    }
 }
 
 async function handleSubmit() {
@@ -161,10 +159,10 @@ async function handleSubmit() {
     <div class="bg-card border rounded-lg p-6">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-lg font-semibold">Productos</h2>
-        <Button 
-          type="button" 
-          variant="outline" 
-          size="sm" 
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
           @click="addItem"
           :disabled="!form.warehouse_id"
         >
@@ -174,8 +172,8 @@ async function handleSubmit() {
       </div>
 
       <div class="space-y-4">
-        <div 
-          v-for="(item, index) in form.items" 
+        <div
+          v-for="(item, index) in form.items"
           :key="index"
           class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start border-b pb-8 last:border-0"
         >
@@ -195,7 +193,7 @@ async function handleSubmit() {
             <Label>Cant.</Label>
             <Input type="number" v-model.number="item.quantity_after" min="1" class="h-10" />
             <div class="absolute -bottom-5 left-0 text-[10px] text-muted-foreground whitespace-nowrap">
-              En stock: <span class="font-medium text-primary">{{ item.current_quantity }}</span>
+              En stock: <span class="font-medium text-primary">{{ item.available }}</span>
             </div>
           </div>
           <div class="md:col-span-4 space-y-2">
@@ -212,10 +210,10 @@ async function handleSubmit() {
             </Select>
           </div>
           <div class="md:col-span-1 pt-8 flex justify-end">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              class="text-destructive hover:bg-destructive/10 h-10 w-10" 
+            <Button
+              variant="ghost"
+              size="icon"
+              class="text-destructive hover:bg-destructive/10 h-10 w-10"
               @click="removeItem(index)"
               :disabled="form.items.length === 1"
             >
@@ -228,16 +226,13 @@ async function handleSubmit() {
 
     <!-- Step 3: Confirmation -->
     <div class="flex justify-end">
-      <div class="w-full md:w-[300px]">
-        <Button 
-          class="w-full font-bold shadow-lg shadow-primary/20" 
-          :disabled="isSubmitting"
-          @click="handleSubmit"
+        <Button
+            :disabled="isSubmitting"
+            @click="handleSubmit"
         >
-          <Save class="mr-2 h-6 w-6" />
-          {{ isSubmitting ? 'Guardando...' : 'Registrar Entrada' }}
+            <Save class="mr-2" />
+            {{ isSubmitting ? 'Guardando...' : 'Registrar Entrada' }}
         </Button>
-      </div>
     </div>
   </div>
 </template>
