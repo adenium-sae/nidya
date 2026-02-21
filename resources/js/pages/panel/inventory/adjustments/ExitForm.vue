@@ -31,11 +31,11 @@ const reasons = [
 ];
 
 const locationEndpoint = computed(() => {
-  return form.warehouse_id ? `/api/admin/inventory/locations?warehouse_id=${form.warehouse_id}` : null;
+  return form.warehouse_id ? `/api/admin/inventory/locations?warehouse_id=${form.warehouse_id}` : undefined;
 });
 
 const productEndpoint = computed(() => {
-  if (!form.warehouse_id) return null;
+  if (!form.warehouse_id) return undefined;
   let url = `/api/admin/products?warehouse_id=${form.warehouse_id}`;
   if (form.storage_location_id) {
     url += `&storage_location_id=${form.storage_location_id}`;
@@ -95,7 +95,8 @@ async function handleSubmit() {
       ...form,
       items: form.items.map(i => ({
         product_id: i.product_id,
-        quantity_after: Math.max(0, i.current_quantity - i.quantity_to_remove),
+        quantity: i.quantity_to_remove,
+        mode: 'decrement',
         reason: i.reason
       }))
     };
@@ -190,7 +191,7 @@ async function handleSubmit() {
               value-key="id"
               placeholder="Buscar producto..."
               :disabled="!form.warehouse_id"
-              @update:model-value="val => handleProductSelect(val, index)"
+              @update:model-value="val => handleProductSelect(val as string, index)"
             />
           </div>
           <div class="md:col-span-2 space-y-2 relative">

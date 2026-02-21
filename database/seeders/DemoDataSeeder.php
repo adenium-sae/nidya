@@ -15,7 +15,6 @@ use App\Models\SaleItem;
 use App\Models\Stock;
 use App\Models\Store;
 use App\Models\StoreProduct;
-use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Warehouse;
 use Carbon\Carbon;
@@ -29,25 +28,10 @@ class DemoDataSeeder extends Seeder
     {
         $this->command->info('🚀 Creando datos de demostración...');
 
-        // 1. Crear Tenant
-        $tenant = Tenant::create([
-            'name' => 'Abarrotes Don Pepe',
-            'slug' => 'abarrotes-don-pepe',
-            'tax_id' => 'ABCD123456XYZ',
-            'business_name' => 'Abarrotes Don Pepe S.A. de C.V.',
-            'phone' => '6441234567',
-            'email' => 'contacto@abarrotesdonpepe.com',
-            'subscription_status' => 'trial',
-            'trial_ends_at' => now()->addDays(30),
-            'subscription_plan' => 'professional',
-        ]);
-        
-        $this->command->info("✅ Tenant creado: {$tenant->name}");
-
-        // 2. Crear Usuario Owner
+        // 1. Crear Usuario Owner
         $user = User::create([
-            'email' => 'admin@abarrotes.com',
-            'password' => bcrypt('password'),
+            'email' => 'oscar@erus.mx',
+            'password' => bcrypt('12345678'),
             'email_verified_at' => now(),
             'is_active' => true,
         ]);
@@ -60,20 +44,9 @@ class DemoDataSeeder extends Seeder
             'phone' => '6441234567',
         ]);
 
-        // Asignar usuario al tenant como owner
-        DB::table('tenant_users')->insert([
-            'id' => Str::uuid(),
-            'tenant_id' => $tenant->id,
-            'user_id' => $user->id,
-            'role' => 'owner',
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
         $this->command->info("✅ Usuario admin creado: {$user->email} / password");
 
-        // 3. Crear Roles y Permisos
+        // 2. Crear Roles y Permisos
         $allPermissions = Permission::all();
         
         // Helper function to attach permissions with UUIDs
@@ -94,7 +67,6 @@ class DemoDataSeeder extends Seeder
         
         // Rol: Administrador (todos los permisos)
         $adminRole = Role::create([
-            'tenant_id' => $tenant->id,
             'key' => 'admin',
             'name' => 'Administrador',
             'description' => 'Acceso total al sistema',
@@ -104,7 +76,6 @@ class DemoDataSeeder extends Seeder
 
         // Rol: Gerente de Sucursal
         $managerRole = Role::create([
-            'tenant_id' => $tenant->id,
             'key' => 'branch_manager',
             'name' => 'Gerente de Sucursal',
             'description' => 'Gestión completa de una sucursal',
@@ -119,7 +90,6 @@ class DemoDataSeeder extends Seeder
 
         // Rol: Vendedor
         $sellerRole = Role::create([
-            'tenant_id' => $tenant->id,
             'key' => 'seller',
             'name' => 'Vendedor',
             'description' => 'Ventas y caja',
@@ -133,9 +103,8 @@ class DemoDataSeeder extends Seeder
 
         $this->command->info('✅ Roles creados: Admin, Gerente, Vendedor');
 
-        // 4. Crear Store
+        // 3. Crear Store
         $store = Store::create([
-            'tenant_id' => $tenant->id,
             'name' => 'Abarrotes Don Pepe',
             'slug' => 'abarrotes-don-pepe',
             'description' => 'Tu abarrotera de confianza',
@@ -145,7 +114,7 @@ class DemoDataSeeder extends Seeder
 
         $this->command->info("✅ Tienda creada: {$store->name}");
 
-        // 5. Crear Direcciones y Sucursales
+        // 4. Crear Direcciones y Sucursales
         $address1 = Address::create([
             'street' => 'Av. Miguel Alemán',
             'ext_number' => '123',
@@ -157,7 +126,6 @@ class DemoDataSeeder extends Seeder
         ]);
 
         $branch1 = Branch::create([
-            'tenant_id' => $tenant->id,
             'store_id' => $store->id,
             'address_id' => $address1->id,
             'name' => 'Sucursal Centro',
@@ -179,7 +147,6 @@ class DemoDataSeeder extends Seeder
         ]);
 
         $branch2 = Branch::create([
-            'tenant_id' => $tenant->id,
             'store_id' => $store->id,
             'address_id' => $address2->id,
             'name' => 'Sucursal Norte',
@@ -192,9 +159,8 @@ class DemoDataSeeder extends Seeder
 
         $this->command->info('✅ Sucursales creadas: Centro y Norte');
 
-        // 6. Crear Almacenes
+        // 5. Crear Almacenes
         $warehouse1 = Warehouse::create([
-            'tenant_id' => $tenant->id,
             'store_id' => $store->id,
             'branch_id' => $branch1->id,
             'name' => 'Almacén Principal Centro',
@@ -204,7 +170,6 @@ class DemoDataSeeder extends Seeder
         ]);
 
         $warehouse2 = Warehouse::create([
-            'tenant_id' => $tenant->id,
             'store_id' => $store->id,
             'branch_id' => $branch2->id,
             'name' => 'Almacén Sucursal Norte',
@@ -215,7 +180,6 @@ class DemoDataSeeder extends Seeder
 
         // Almacén central (sin sucursal)
         $warehouseCentral = Warehouse::create([
-            'tenant_id' => $tenant->id,
             'store_id' => $store->id,
             'name' => 'Almacén Central',
             'code' => 'ALM-CENTRAL',
@@ -225,14 +189,11 @@ class DemoDataSeeder extends Seeder
 
         $this->command->info('✅ Almacenes creados');
 
-
-
-        // 8. Crear Categorías (flat structure)
+        // 6. Crear Categorías (flat structure)
         $categoryNames = ['Refrescos', 'Agua', 'Papas', 'Arroz', 'Frijol', 'Galletas', 'Abarrotes', 'Bebidas', 'Botanas', 'Limpieza'];
         
         foreach ($categoryNames as $catName) {
             Category::create([
-                'tenant_id' => $tenant->id,
                 'name' => $catName,
                 'slug' => Str::slug($catName),
                 'is_active' => true,
@@ -241,7 +202,7 @@ class DemoDataSeeder extends Seeder
 
         $this->command->info('✅ Categorías creadas');
 
-        // 9. Crear Productos
+        // 7. Crear Productos
         $products = [
             ['name' => 'Coca-Cola 600ml', 'sku' => 'COCA-600', 'barcode' => '7501055308', 'category' => 'Refrescos', 'cost' => 10.00, 'price' => 15.00],
             ['name' => 'Agua Ciel 1L', 'sku' => 'AGUA-1L', 'barcode' => '7501055309', 'category' => 'Agua', 'cost' => 5.00, 'price' => 8.00],
@@ -255,12 +216,9 @@ class DemoDataSeeder extends Seeder
 
         $createdProducts = [];
         foreach ($products as $prodData) {
-            $category = Category::where('tenant_id', $tenant->id)
-                ->where('name', $prodData['category'])
-                ->first();
+            $category = Category::where('name', $prodData['category'])->first();
 
             $product = Product::create([
-                'tenant_id' => $tenant->id,
                 'category_id' => $category->id,
                 'name' => $prodData['name'],
                 'sku' => $prodData['sku'],
@@ -274,7 +232,6 @@ class DemoDataSeeder extends Seeder
 
             // Asignar producto a la tienda con precio
             StoreProduct::create([
-                'tenant_id' => $tenant->id,
                 'store_id' => $store->id,
                 'product_id' => $product->id,
                 'price' => $prodData['price'],
@@ -285,7 +242,6 @@ class DemoDataSeeder extends Seeder
             // Crear stock inicial en cada almacén
             foreach ([$warehouse1, $warehouse2, $warehouseCentral] as $wh) {
                 Stock::create([
-                    'tenant_id' => $tenant->id,
                     'product_id' => $product->id,
                     'warehouse_id' => $wh->id,
                     'quantity' => rand(20, 100),
@@ -304,7 +260,7 @@ class DemoDataSeeder extends Seeder
         $this->command->info('');
         $this->command->info('📧 Usuario: admin@abarrotes.com');
         $this->command->info('🔑 Password: password');
-        $this->command->info('🏪 Tenant: Abarrotes Don Pepe');
+        $this->command->info('🏪 Tienda: Abarrotes Don Pepe');
         $this->command->info('');
     }
 }

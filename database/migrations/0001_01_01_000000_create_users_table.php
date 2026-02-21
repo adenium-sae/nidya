@@ -53,32 +53,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('tenants', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->string('name');
-            $table->string('slug')->unique();
-            $table->string('tax_id')->nullable();
-            $table->string('business_name')->nullable();
-            $table->string('phone')->nullable();
-            $table->string('email')->nullable();
-            $table->enum('subscription_status', ['trial', 'active', 'suspended', 'cancelled'])->default('trial');
-            $table->timestamp('trial_ends_at')->nullable();
-            $table->date('subscription_started_at')->nullable();
-            $table->string('subscription_plan')->nullable();
-            $table->json('settings')->nullable();
-            $table->timestamps();
-            $table->softDeletes();
-        });
-
-        Schema::create('tenant_users', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('tenant_id')->constrained()->cascadeOnDelete();
-            $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
-            $table->enum('role', ['owner', 'admin', 'member'])->default('member');
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-            $table->unique(['tenant_id', 'user_id']);
-        });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
@@ -104,8 +78,7 @@ return new class extends Migration
         Schema::dropIfExists('users');
         Schema::dropIfExists('profiles');
         Schema::dropIfExists('addresses');
-        Schema::dropIfExists('tenants');
-        Schema::dropIfExists('tenant_users');
+
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
     }

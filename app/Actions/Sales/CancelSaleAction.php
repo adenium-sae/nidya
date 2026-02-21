@@ -37,7 +37,6 @@ class CancelSaleAction
             $quantityBefore = $stock->quantity;
             $stock->addStock($item->quantity);
             StockMovement::create([
-                'tenant_id' => session('tenant_id'),
                 'product_id' => $item->product_id,
                 'warehouse_id' => $warehouseId,
                 'storage_location_id' => $stock->storage_location_id,

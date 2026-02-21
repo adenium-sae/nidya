@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Traits\BelongsToTenant;
+
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,10 +11,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Sale extends Model
 {
-    use HasFactory, HasUuids, BelongsToTenant;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
-        'tenant_id',
+        
         'folio',
         'store_id',
         'branch_id',
@@ -80,12 +80,10 @@ class Sale extends Model
         return $this->hasMany(SalePayment::class);
     }
 
-    public static function generateFolio(string $tenantId): string
+    public static function generateFolio(): string
     {
         $year = now()->year;
-        $lastSale = self::withoutTenantScope()
-            ->where('tenant_id', $tenantId)
-            ->whereYear('created_at', $year)
+        $lastSale = self::whereYear('created_at', $year)
             ->orderBy('created_at', 'desc')
             ->first();
         $number = $lastSale ? ((int) substr($lastSale->folio, -5)) + 1 : 1;

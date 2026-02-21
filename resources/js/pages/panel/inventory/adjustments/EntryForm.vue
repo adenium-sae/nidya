@@ -19,7 +19,7 @@ const form = reactive({
   storage_location_id: '',
   type: 'increase',
   items: [
-    { product_id: '', quantity_after: 0, current_quantity: 0, reason: 'found' }
+    { product_id: '', quantity_after: 0, current_quantity: 0, available: 0, reason: 'found' }
   ]
 });
 
@@ -30,11 +30,11 @@ const reasons = [
 ];
 
 const locationEndpoint = computed(() => {
-  return form.warehouse_id ? `/api/admin/inventory/locations?warehouse_id=${form.warehouse_id}` : null;
+  return form.warehouse_id ? `/api/admin/inventory/locations?warehouse_id=${form.warehouse_id}` : undefined;
 });
 
 const productEndpoint = computed(() => {
-  if (!form.warehouse_id) return null;
+  if (!form.warehouse_id) return undefined;
   let url = `/api/admin/products?warehouse_id=${form.warehouse_id}`;
   if (form.storage_location_id) {
     url += `&storage_location_id=${form.storage_location_id}`;
@@ -43,12 +43,12 @@ const productEndpoint = computed(() => {
 });
 
 function addItem() {
-  form.items.push({ product_id: '', quantity_after: 0, current_quantity: 0, reason: 'found' });
+  form.items.push({ product_id: '', quantity_after: 0, current_quantity: 0, available: 0, reason: 'found' });
 }
 
 function handleWarehouseChange() {
   // Clear items when warehouse changes to maintain consistency
-  form.items = [{ product_id: '', quantity_after: 0, current_quantity: 0, reason: 'found' }];
+  form.items = [{ product_id: '', quantity_after: 0, current_quantity: 0, available: 0, reason: 'found' }];
 }
 
 function removeItem(index: number) {
@@ -91,7 +91,8 @@ async function handleSubmit() {
       ...form,
       items: form.items.map(i => ({
         product_id: i.product_id,
-        quantity_after: i.current_quantity + i.quantity_after,
+        quantity: i.quantity_after,
+        mode: 'increment',
         reason: i.reason
       }))
     };
@@ -186,7 +187,7 @@ async function handleSubmit() {
               value-key="id"
               placeholder="Buscar producto..."
               :disabled="!form.warehouse_id"
-              @update:model-value="val => handleProductSelect(val, index)"
+              @update:model-value="val => handleProductSelect(val as string, index)"
             />
           </div>
           <div class="md:col-span-2 space-y-2 relative">

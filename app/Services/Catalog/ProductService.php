@@ -4,6 +4,7 @@ namespace App\Services\Catalog;
 
 use App\Actions\Catalog\Products\CreateProductAction;
 use App\Actions\Catalog\Products\DeleteProductAction;
+use App\Actions\Catalog\Products\UpdateProductAction;
 use App\Exceptions\Catalog\Products\ProductNotFoundException;
 use App\Models\Product;
 
@@ -11,8 +12,11 @@ class ProductService
 {
     public function __construct(
         protected CreateProductAction $createProductAction,
+        protected UpdateProductAction $updateProductAction,
         protected DeleteProductAction $deleteProductAction,
     ) {}
+
+    // --- Queries ---
 
     public function getProducts(array $filters)
     {
@@ -67,28 +71,6 @@ class ProductService
         return $product;
     }
 
-    public function create(array $data): Product
-    {
-        return ($this->createProductAction)($data);
-    }
-
-    public function update(string $id, array $data): Product
-    {
-        /** @var Product|null $product */
-        $product = Product::find($id);
-        if (!$product) {
-            throw new ProductNotFoundException();
-        }
-        $product->fill($data);
-        $product->save();
-        return $product->fresh("category");
-    }
-
-    public function delete(string $id): void
-    {
-        ($this->deleteProductAction)($id);
-    }
-
     public function getStockStatus(string $id): array
     {
         /** @var Product|null $product */
@@ -116,5 +98,22 @@ class ProductService
             "total_stock" => $product->stock()->sum("quantity"),
             "by_warehouse" => $stockByWarehouse,
         ];
+    }
+
+    // --- Mutations (delegated to Actions) ---
+
+    public function create(array $data): Product
+    {
+        return ($this->createProductAction)($data);
+    }
+
+    public function update(string $id, array $data): Product
+    {
+        return ($this->updateProductAction)($id, $data);
+    }
+
+    public function delete(string $id): void
+    {
+        ($this->deleteProductAction)($id);
     }
 }

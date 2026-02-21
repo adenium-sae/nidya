@@ -15,8 +15,8 @@ class EnsureRoleMiddleware
      */
     public function handle(Request $request, Closure $next, string $role): Response
     {
-        // TODO: Implement proper role verification logic based on Tenant/User pivot or Profile fields.
-        // For now, we proceed to unblock access as the User model structure for roles is complex (pivot).
+        // TODO: Implement proper role verification logic based on User roles or Profile fields.
+        // For now, we proceed to unblock access.
         
         return $next($request);
     }

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Traits\BelongsToTenant;
+
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,10 +12,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use HasFactory, HasUuids, BelongsToTenant, SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
-        'tenant_id',
+        
         'category_id',
         'name',
         'description',

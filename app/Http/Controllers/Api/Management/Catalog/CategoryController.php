@@ -28,8 +28,7 @@ class CategoryController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $tenantId = $request->user()->tenants()->first()?->id;
-        $category = $this->categoryService->create($validated, $tenantId);
+        $category = $this->categoryService->create($validated);
 
         return response()->json([
             'message' => 'Categoría creada exitosamente',

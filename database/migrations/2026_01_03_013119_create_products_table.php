@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('categories', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('tenant_id')->constrained()->cascadeOnDelete();
+
             // $table->foreignUuid('parent_id')->nullable()->constrained('categories')->nullOnDelete();
             $table->string('name');
             $table->string('slug');
@@ -21,12 +21,12 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
-            $table->unique(['tenant_id', 'slug']);
+            $table->unique('slug');
         });
 
         Schema::create('products', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('tenant_id')->constrained()->cascadeOnDelete();
+
             $table->foreignUuid('category_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name');
             $table->text('description')->nullable();
@@ -42,7 +42,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
-            $table->unique(['tenant_id', 'sku']);
+            $table->unique('sku');
         });
 
         Schema::create('product_attributes', function (Blueprint $table) {
@@ -64,7 +64,7 @@ return new class extends Migration
 
         Schema::create('store_products', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('tenant_id')->constrained()->cascadeOnDelete();
+
             $table->foreignUuid('store_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('product_id')->constrained()->cascadeOnDelete();
             $table->decimal('price', 10, 2);

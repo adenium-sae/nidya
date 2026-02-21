@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use App\Enums\TenantRole;
+
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -43,12 +43,7 @@ class User extends Authenticatable
         return $this->hasOne(Profile::class);
     }
 
-    public function tenants(): BelongsToMany
-    {
-        return $this->belongsToMany(Tenant::class, 'tenant_users')
-            ->withPivot('role', 'is_active')
-            ->withTimestamps();
-    }
+
 
     public function sales(): HasMany
     {
@@ -65,44 +60,7 @@ class User extends Authenticatable
         return $this->hasMany(CashRegisterSession::class);
     }
 
-    public function hasAccessToTenant(string $tenantId): bool
-    {
-        return $this->tenants()->where('tenant_id', $tenantId)->exists();
-    }
 
-    public function isOwnerOfTenant(string $tenantId): bool
-    {
-        return $this->tenants()
-            ->where('tenant_id', $tenantId)
-            ->wherePivot('role', TenantRole::OWNER->value)
-            ->exists();
-    }
-
-    public function isAdminOfTenant(string $tenantId): bool
-    {
-        return $this->tenants()
-            ->where('tenant_id', $tenantId)
-            ->wherePivotIn('role', [TenantRole::OWNER->value, TenantRole::ADMIN->value])
-            ->exists();
-    }
-
-    public function getCurrentTenantAttribute(): ?Tenant
-    {
-        $tenantId = session('tenant_id');
-        if (!$tenantId) {
-            return null;
-        }
-        return $this->tenants()->find($tenantId);
-    }
-
-    public function switchTenant(string $tenantId): bool
-    {
-        if (!$this->hasAccessToTenant($tenantId)) {
-            return false;
-        }
-        session(['tenant_id' => $tenantId]);
-        return true;
-    }
 
     public function generateOtp(): string
     {

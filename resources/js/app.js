@@ -59,7 +59,7 @@ const routes = [
             },
             {
                 path: "inventory/adjustments",
-                component: () => import('./pages/panel/inventory/AdjustmentsPage.vue')
+                component: () => import('./pages/panel/inventory/adjustments/AdjustmentsPage.vue')
             },
             {
                 path: "inventory/adjustments/entry",
@@ -68,6 +68,10 @@ const routes = [
             {
                 path: "inventory/adjustments/exit",
                 component: () => import('./pages/panel/inventory/adjustments/ExitForm.vue')
+            },
+            {
+                path: "inventory/adjustments/new-adjustment",
+                component: () => import('./pages/panel/inventory/adjustments/AdjustmentForm.vue')
             },
             {
                 path: "inventory/adjustments/transfer",

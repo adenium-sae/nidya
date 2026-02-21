@@ -24,7 +24,7 @@ return new class extends Migration
 
         Schema::create('activity_log', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('tenant_id')->nullable()->constrained()->cascadeOnDelete();
+
             $table->string('log_name')->nullable();
             $table->text('description');
             $table->nullableUuidMorphs('subject');
@@ -34,7 +34,7 @@ return new class extends Migration
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->timestamps();
-            $table->index(['tenant_id', 'created_at']);
+            $table->index('created_at');
             $table->index('log_name');
         });
     }

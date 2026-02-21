@@ -22,13 +22,13 @@ return new class extends Migration
 
         Schema::create('roles', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('tenant_id')->constrained()->cascadeOnDelete();
+
             $table->string('key');
             $table->string('name');
             $table->text('description')->nullable();
             $table->boolean('is_system')->default(false);
             $table->timestamps();
-            $table->unique(['tenant_id', 'key']);
+            $table->unique('key');
         });
 
         Schema::create('role_permissions', function (Blueprint $table) {

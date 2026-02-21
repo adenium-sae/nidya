@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('storage_locations', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('tenant_id')->constrained()->cascadeOnDelete();
+
             $table->foreignUuid('warehouse_id')->constrained()->cascadeOnDelete();
             $table->string('code')->index();
             $table->string('name');
@@ -20,12 +20,12 @@ return new class extends Migration
             $table->integer('capacity')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-            $table->unique(['tenant_id', 'warehouse_id', 'code']);
+            $table->unique(['warehouse_id', 'code']);
         });
 
         Schema::create('stock', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('tenant_id')->constrained()->cascadeOnDelete();
+
             $table->foreignUuid('product_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('warehouse_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('storage_location_id')->nullable()->constrained()->nullOnDelete();
@@ -35,13 +35,13 @@ return new class extends Migration
             $table->decimal('avg_cost', 10, 2)->nullable();
             $table->timestamps();
             $table->unique(['product_id', 'warehouse_id', 'storage_location_id'], 'stock_location_unique');
-            $table->index(['tenant_id', 'product_id']);
-            $table->index(['tenant_id', 'warehouse_id']);
+            $table->index('product_id');
+            $table->index('warehouse_id');
         });
 
         Schema::create('stock_movements', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('tenant_id')->constrained()->cascadeOnDelete();
+
             $table->foreignUuid('product_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('warehouse_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('storage_location_id')->nullable()->constrained()->nullOnDelete();
@@ -56,8 +56,8 @@ return new class extends Migration
             $table->foreignUuid('related_movement_id')->nullable();
             $table->nullableUuidMorphs('movable');
             $table->timestamps();
-            $table->index(['tenant_id', 'product_id', 'created_at']);
-            $table->index(['tenant_id', 'warehouse_id', 'created_at']);
+            $table->index(['product_id', 'created_at']);
+            $table->index(['warehouse_id', 'created_at']);
         });
 
         Schema::table('stock_movements', function (Blueprint $table) {
@@ -66,7 +66,7 @@ return new class extends Migration
 
         Schema::create('stock_transfers', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('tenant_id')->constrained()->cascadeOnDelete();
+
             $table->string('folio')->unique();
             $table->foreignUuid('from_warehouse_id')->constrained('warehouses')->cascadeOnDelete();
             $table->foreignUuid('to_warehouse_id')->constrained('warehouses')->cascadeOnDelete();
@@ -94,7 +94,7 @@ return new class extends Migration
 
         Schema::create('stock_adjustments', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('tenant_id')->constrained()->cascadeOnDelete();
+
             $table->string('folio')->unique();
             $table->foreignUuid('warehouse_id')->constrained()->cascadeOnDelete();
             $table->enum('type', ['increase', 'decrease', 'recount'])->default('recount');

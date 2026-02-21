@@ -2,12 +2,21 @@
 
 namespace App\Services\Organization;
 
+use App\Actions\Organization\Stores\CreateStoreAction;
+use App\Actions\Organization\Stores\UpdateStoreAction;
 use App\Exceptions\Organization\Stores\StoreNotFoundException;
 use App\Models\Store;
 
 class StoreService
 {
-    public function findAllByAdmin(array $filters, string $userId)
+    public function __construct(
+        protected CreateStoreAction $createStoreAction,
+        protected UpdateStoreAction $updateStoreAction,
+    ) {}
+
+    // --- Queries ---
+
+    public function findAll(array $filters)
     {
         $query = Store::with(['branches', 'warehouses']);
         if (!empty($filters['is_active'])) {
@@ -23,11 +32,6 @@ class StoreService
         return $query->get();
     }
 
-    public function create(array $data, string $userId): Store
-    {
-        return Store::create($data);
-    }
-
     public function getById(string $id): Store
     {
         $store = Store::with(['branches', 'warehouses', 'products'])->find($id);
@@ -37,15 +41,15 @@ class StoreService
         return $store;
     }
 
+    // --- Mutations (delegated to Actions) ---
+
+    public function create(array $data): Store
+    {
+        return ($this->createStoreAction)($data);
+    }
+
     public function update(string $id, array $data): Store
     {
-        /** @var Store|null $store */
-        $store = Store::find($id);
-        if (!$store) {
-            throw new StoreNotFoundException();
-        }
-        $store->fill($data);
-        $store->save();
-        return $store->fresh();
+        return ($this->updateStoreAction)($id, $data);
     }
 }

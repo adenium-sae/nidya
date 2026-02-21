@@ -2,15 +2,20 @@
 
 namespace App\Services\Inventory;
 
+use App\Actions\Inventory\StorageLocations\CreateStorageLocationAction;
 use App\Models\StorageLocation;
-use Illuminate\Support\Facades\Auth;
 
 class StorageLocationService
 {
+    public function __construct(
+        protected CreateStorageLocationAction $createStorageLocationAction,
+    ) {}
+
+    // --- Queries ---
+
     public function list(array $filters)
     {
-        $tenantId = session('tenant_id') ?? Auth::user()->tenants()->first()?->id;
-        $query = StorageLocation::where('tenant_id', $tenantId);
+        $query = StorageLocation::query();
         if (!empty($filters['warehouse_id'])) {
             $query->where('warehouse_id', $filters['warehouse_id']);
         }
@@ -27,9 +32,10 @@ class StorageLocationService
         return $query->get();
     }
 
+    // --- Mutations (delegated to Actions) ---
+
     public function create(array $data): StorageLocation
     {
-        $data['tenant_id'] = session('tenant_id') ?? Auth::user()->tenants()->first()?->id;
-        return StorageLocation::create($data);
+        return ($this->createStorageLocationAction)($data);
     }
 }

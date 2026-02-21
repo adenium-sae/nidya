@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Traits\BelongsToTenant;
+
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,10 +10,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StockTransfer extends Model
 {
-    use HasUuids, BelongsToTenant;
+    use HasUuids;
 
     protected $fillable = [
-        'tenant_id',
+        
         'source_warehouse_id',
         'destination_warehouse_id',
         'user_id',

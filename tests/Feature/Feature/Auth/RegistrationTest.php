@@ -1,13 +1,11 @@
 <?php
 
 use App\Models\User;
-use App\Models\Tenant;
-use App\Enums\TenantRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('new users can register as tenant owners', function () {
+test('new users can register', function () {
     $response = $this->postJson('/api/auth/signup', [
         'first_name' => 'Test',
         'last_name' => 'User',
@@ -23,21 +21,10 @@ test('new users can register as tenant owners', function () {
     ]);
 
     $user = User::where('email', 'test@example.com')->first();
-    
-    // Check Tenant created
-    $this->assertDatabaseHas('tenants', [
-        'email' => 'test@example.com',
-    ]);
-    
-    $tenant = Tenant::where('email', 'test@example.com')->first();
+    expect($user)->not->toBeNull();
 
-    // Check Pivot Role
-    $this->assertDatabaseHas('tenant_users', [
-        'user_id' => $user->id,
-        'tenant_id' => $tenant->id,
-        'role' => TenantRole::OWNER->value,
+    // Check store was created
+    $this->assertDatabaseHas('stores', [
+        'slug' => 'test-store',
     ]);
-
-    // Check helper method
-    expect($user->isOwnerOfTenant($tenant->id))->toBeTrue();
 });

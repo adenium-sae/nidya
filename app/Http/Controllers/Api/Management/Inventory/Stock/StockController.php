@@ -3,11 +3,6 @@
 namespace App\Http\Controllers\Api\Management\Inventory\Stock;
 
 use App\Http\Controllers\Controller;
-use App\Actions\Stock\AdjustStockAction;
-use App\Actions\Stock\TransferStockAction;
-use App\Models\Stock;
-use App\Models\StockAdjustment;
-use App\Models\StockMovement;
 use App\Services\Stock\StockService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +11,6 @@ class StockController extends Controller
 {
     public function __construct(
         protected StockService $stockService,
-        protected TransferStockAction $transferStockAction
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -54,8 +48,8 @@ class StockController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $transfer = ($this->transferStockAction)($validated, $request->user()->id);
-        
+        $transfer = $this->stockService->transfer($validated, $request->user()->id);
+
         return response()->json($transfer);
     }
 

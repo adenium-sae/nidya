@@ -2,18 +2,19 @@
 
 namespace App\Services\Sales;
 
-use App\Exceptions\Catalog\Products\ProductNotAvailableException;
-use App\Exceptions\Sales\SaleCancellationException;
-use App\Exceptions\Inventory\Stock\InsufficientStockException;
-use App\Models\Product;
+use App\Actions\Sales\CancelSaleAction;
+use App\Actions\Sales\CreateSaleAction;
 use App\Models\Sale;
-use App\Models\SaleItem;
-use App\Models\Stock;
-use App\Models\StockMovement;
-use Illuminate\Support\Facades\DB;
 
 class SaleService
 {
+    public function __construct(
+        protected CreateSaleAction $createSaleAction,
+        protected CancelSaleAction $cancelSaleAction,
+    ) {}
+
+    // --- Queries ---
+
     public function list(array $filters, int $perPage)
     {
         $query = Sale::with(['user', 'customer', 'branch', 'items.product']);
@@ -52,5 +53,17 @@ class SaleService
                 ];
             }),
         ];
+    }
+
+    // --- Mutations (delegated to Actions) ---
+
+    public function create(array $data, int $userId): Sale
+    {
+        return ($this->createSaleAction)($data, $userId);
+    }
+
+    public function cancel(Sale $sale, int $userId): Sale
+    {
+        return ($this->cancelSaleAction)($sale, $userId);
     }
 }

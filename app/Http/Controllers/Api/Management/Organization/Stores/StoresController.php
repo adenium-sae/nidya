@@ -7,15 +7,13 @@ use App\Http\Requests\Management\Organization\Stores\CreateStoreRequest;
 use App\Http\Requests\Management\Organization\Stores\UpdateStoreRequest;
 use App\Services\Organization\StoreService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class StoresController extends Controller
 {
     public function __construct(private readonly StoreService $storeService) {}
 
     public function index(Request $request) {
-        $user_id = Auth::user()->id;
-        $result = $this->storeService->findAllByAdmin($request->all(), $user_id);
+        $result = $this->storeService->findAll($request->all());
         return response()->json([
             "status" => true,
             "message" => __('messages.stores_retrieved_successfully'),
@@ -25,8 +23,7 @@ class StoresController extends Controller
 
     public function store(CreateStoreRequest $request) {
         $data = $request->validated();
-        $user_id = Auth::user()->id;
-        $store = $this->storeService->create($data, $user_id);
+        $store = $this->storeService->create($data);
         return response()->json([
             "status" => true,
             "message" => __('messages.store_created_successfully'),

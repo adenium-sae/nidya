@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers\Api\Management\Sales;
 
-use App\Actions\Sales\CancelSaleAction;
-use App\Actions\Sales\CreateSaleAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sales\StoreSaleRequest;
 use App\Models\Sale;
@@ -16,8 +14,6 @@ class SaleController extends Controller
 {
     public function __construct(
         protected SaleService $saleService,
-        protected CreateSaleAction $createSaleAction,
-        protected CancelSaleAction $cancelSaleAction,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -28,7 +24,7 @@ class SaleController extends Controller
 
     public function store(StoreSaleRequest $request): JsonResponse
     {
-        $sale = ($this->createSaleAction)($request->validated(), Auth::user()->id);
+        $sale = $this->saleService->create($request->validated(), Auth::user()->id);
 
         return response()->json([
             'message' => __('messages.sale_created_successfully'),
@@ -44,7 +40,7 @@ class SaleController extends Controller
 
     public function cancel(Sale $sale): JsonResponse
     {
-        $sale = ($this->cancelSaleAction)($sale, Auth::user()->id);
+        $sale = $this->saleService->cancel($sale, Auth::user()->id);
         return response()->json([
             'message' => __('messages.sale_cancelled_successfully'),
             'data' => $sale,

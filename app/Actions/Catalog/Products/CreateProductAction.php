@@ -6,7 +6,6 @@ use App\Models\Product;
 use App\Models\Stock;
 use App\Models\Store;
 use App\Models\StoreProduct;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class CreateProductAction
@@ -15,21 +14,20 @@ class CreateProductAction
     {
         return DB::transaction(function () use ($data) {
             $product = $this->createBaseProduct($data);
-            $tenantId = $product->tenant_id;
 
             if (!empty($data['store_id'])) {
-                $this->attachToStore($product->id, $data['store_id'], $data, $tenantId);
+                $this->attachToStore($product->id, $data['store_id'], $data);
                 if ($data['type'] === 'product' && !empty($data['initial_stock']) && $data['initial_stock'] > 0) {
-                    $this->createInitialStock($product->id, $data, $tenantId);
+                    $this->createInitialStock($product->id, $data);
                 }
             } elseif (!empty($data['store_ids'])) {
                 foreach ($data['store_ids'] as $storeId) {
-                    $this->attachToStore($product->id, $storeId, $data, $tenantId);
+                    $this->attachToStore($product->id, $storeId, $data);
                 }
             } elseif (!empty($data['all_stores'])) {
                 $storeIds = Store::pluck('id');
                 foreach ($storeIds as $storeId) {
-                    $this->attachToStore($product->id, $storeId, $data, $tenantId);
+                    $this->attachToStore($product->id, $storeId, $data);
                 }
             }
             return $product;
@@ -38,9 +36,7 @@ class CreateProductAction
 
     private function createBaseProduct(array $data): Product
     {
-        $tenantId = Auth::user()->tenants()->first()?->id;
         return Product::create([
-            'tenant_id' => $tenantId,
             'category_id' => $data['category_id'],
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
@@ -56,10 +52,9 @@ class CreateProductAction
         ]);
     }
 
-    private function attachToStore(string $productId, string $storeId, array $data, string $tenantId): void
+    private function attachToStore(string $productId, string $storeId, array $data): void
     {
         StoreProduct::create([
-            'tenant_id' => $tenantId,
             'store_id' => $storeId,
             'product_id' => $productId,
             'price' => $data['price'],
@@ -69,10 +64,9 @@ class CreateProductAction
         ]);
     }
 
-    private function createInitialStock(string $productId, array $data, string $tenantId): void
+    private function createInitialStock(string $productId, array $data): void
     {
         Stock::create([
-            'tenant_id' => $tenantId,
             'product_id' => $productId,
             'warehouse_id' => $data['warehouse_id'],
             'storage_location_id' => null,

@@ -7,18 +7,14 @@ use App\Models\StockAdjustment;
 use App\Models\StockAdjustmentItem;
 use App\Models\StockMovement;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 
 class AdjustStockAction
 {
     public function __invoke(array $data, string $userId): StockAdjustment
     {
         return DB::transaction(function () use ($data, $userId) {
-            $tenantId = session('tenant_id') ?? Auth::user()->tenants()->first()?->id;
             $year = now()->year;
-            $lastAdjustment = StockAdjustment::withoutTenantScope()
-                ->where('tenant_id', $tenantId)
-                ->whereYear('created_at', $year)
+            $lastAdjustment = StockAdjustment::whereYear('created_at', $year)
                 ->orderBy('created_at', 'desc')
                 ->first();
 
@@ -26,7 +22,6 @@ class AdjustStockAction
             $folio = 'ADJ-' . $year . '-' . str_pad($number, 5, '0', STR_PAD_LEFT);
 
             $adjustment = StockAdjustment::create([
-                'tenant_id' => $tenantId,
                 'folio' => $folio,
                 'warehouse_id' => $data['warehouse_id'],
                 'storage_location_id' => $data['storage_location_id'] ?? null,
@@ -43,7 +38,6 @@ class AdjustStockAction
                     $data['warehouse_id'], 
                     $data['storage_location_id'] ?? null,
                     $itemData['reason'] ?? $data['reason'] ?? 'other', 
-                    $tenantId, 
                     $userId
                 );
             }
@@ -52,7 +46,7 @@ class AdjustStockAction
         });
     }
 
-    private function processAdjustmentItem(StockAdjustment $adjustment, array $itemData, string $warehouseId, ?string $storageLocationId, string $reason, string $tenantId, string $userId): void
+    private function processAdjustmentItem(StockAdjustment $adjustment, array $itemData, string $warehouseId, ?string $storageLocationId, string $reason, string $userId): void
     {
         $stock = Stock::where('product_id', $itemData['product_id'])
             ->where('warehouse_id', $warehouseId)
@@ -66,7 +60,16 @@ class AdjustStockAction
             ->first();
 
         $quantityBefore = $stock ? $stock->quantity : 0;
-        $quantityAfter = $itemData['quantity_after'];
+        $mode = $itemData['mode'] ?? 'absolute';
+        $inputQuantity = $itemData['quantity'] ?? $itemData['quantity_after'] ?? 0;
+
+        $quantityAfter = match ($mode) {
+            'increment' => $quantityBefore + $inputQuantity,
+            'decrement' => max(0, $quantityBefore - $inputQuantity),
+            'absolute' => $inputQuantity,
+            default => $inputQuantity,
+        };
+
         $difference = $quantityAfter - $quantityBefore;
 
         StockAdjustmentItem::create([
@@ -81,7 +84,6 @@ class AdjustStockAction
             $stock->save();
         } else {
             $stock = Stock::create([
-                'tenant_id' => $tenantId,
                 'product_id' => $itemData['product_id'],
                 'warehouse_id' => $warehouseId,
                 'storage_location_id' => $storageLocationId,
@@ -91,7 +93,6 @@ class AdjustStockAction
         }
 
         StockMovement::create([
-            'tenant_id' => $tenantId,
             'product_id' => $itemData['product_id'],
             'warehouse_id' => $warehouseId,
             'storage_location_id' => $storageLocationId,

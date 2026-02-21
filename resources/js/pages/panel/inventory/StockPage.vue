@@ -131,16 +131,23 @@ async function handleSubmit() {
   processing.value = true;
   const token = localStorage.getItem('auth_token');
   try {
+     const modeMap: Record<string, string> = {
+         'increase': 'increment',
+         'decrease': 'decrement',
+         'recount': 'absolute'
+     };
+
      const payload = {
         warehouse_id: form.stockItem.warehouse.id,
-        type: form.type, // This is just for record keeping in the adjustment header
+        type: form.type, // Header type for grouping
         reason: form.reason,
         notes: form.notes,
         items: [
             {
                 product_id: form.stockItem.product.id,
                 storage_location_id: form.stockItem.storage_location?.id || null,
-                quantity_after: calculatedTotal.value
+                quantity: parseFloat(form.quantity as string) || 0,
+                mode: modeMap[form.type] || 'absolute'
             }
         ]
      };

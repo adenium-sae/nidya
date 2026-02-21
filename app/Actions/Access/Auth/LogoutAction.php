@@ -13,6 +13,5 @@ class LogoutAction
         if ($user) {
             $user->tokens()->delete();
         }
-        session()->forget('tenant_id');
     }
 }

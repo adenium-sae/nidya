@@ -14,14 +14,6 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $tenantId = $user->tenants()->first()?->id;
-        if (!$tenantId) {
-            return response()->json([
-                'stats' => [],
-                'salesByDay' => [],
-                'topProducts' => [],
-            ]);
-        }
         $today = Carbon::today();
         $startOfMonth = Carbon::now()->startOfMonth();
         $startOfLastMonth = Carbon::now()->subMonth()->startOfMonth();
@@ -30,11 +22,8 @@ class DashboardController extends Controller
         $monthSales = 0;
         $salesChange = 0;
         $totalCustomers = 0;
-        $totalProducts = Product::where('tenant_id', $tenantId)
-            ->where('is_active', true)
-            ->count();
-        $lowStockProducts = Product::where('tenant_id', $tenantId)
-            ->where('is_active', true)
+        $totalProducts = Product::where('is_active', true)->count();
+        $lowStockProducts = Product::where('is_active', true)
             ->where('track_inventory', true)
             ->whereHas('stock', function ($q) {
                 $q->havingRaw('SUM(quantity - reserved) <= products.min_stock');

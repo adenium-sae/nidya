@@ -2,19 +2,25 @@
 
 namespace App\Services\Inventory;
 
+use App\Actions\Inventory\Warehouses\CreateWarehouseAction;
+use App\Actions\Inventory\Warehouses\DeleteWarehouseAction;
+use App\Actions\Inventory\Warehouses\UpdateWarehouseAction;
 use App\Exceptions\Inventory\Warehouses\WarehouseNotFoundException;
 use App\Models\Warehouse;
-use Illuminate\Support\Facades\Auth;
 
 class WarehouseService
 {
+    public function __construct(
+        protected CreateWarehouseAction $createWarehouseAction,
+        protected UpdateWarehouseAction $updateWarehouseAction,
+        protected DeleteWarehouseAction $deleteWarehouseAction,
+    ) {}
+
+    // --- Queries ---
+
     public function findAll(array $filters)
     {
         $query = Warehouse::with(['store', 'branch', 'address']);
-        $tenantId = session('tenant_id') ?? Auth::user()->tenants()->first()?->id;
-        if ($tenantId) {
-            $query->where('tenant_id', $tenantId);
-        }
         if (!empty($filters['store_id'])) {
             $query->where('store_id', $filters['store_id']);
         }
@@ -46,36 +52,20 @@ class WarehouseService
         return $warehouse;
     }
 
+    // --- Mutations (delegated to Actions) ---
+
     public function create(array $data): Warehouse
     {
-        $tenantId = session('tenant_id') ?? Auth::user()->tenants()->first()?->id;
-        if (!$tenantId) {
-            throw new \Exception("No tenant context found for creating warehouse.");
-        }
-        $data['tenant_id'] = $tenantId;
-        return Warehouse::create($data);
+        return ($this->createWarehouseAction)($data);
     }
 
     public function update(string $id, array $data): Warehouse
     {
-        /** @var Warehouse|null $warehouse */
-        $warehouse = Warehouse::find($id);
-        if (!$warehouse) {
-            throw new WarehouseNotFoundException();
-        }
-        $warehouse->fill($data);
-        $warehouse->save();
-        return $warehouse->fresh(['store', 'branch', 'address']);
+        return ($this->updateWarehouseAction)($id, $data);
     }
 
     public function delete(string $id): void
     {
-        /** @var \App\Models\Warehouse|null $warehouse */
-        $warehouse = Warehouse::find($id);
-        if (!$warehouse) {
-            throw new WarehouseNotFoundException();
-        }
-        $warehouse->delete();
+        ($this->deleteWarehouseAction)($id);
     }
 }
-

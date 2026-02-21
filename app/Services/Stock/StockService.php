@@ -3,17 +3,22 @@
 namespace App\Services\Stock;
 
 use App\Actions\Stock\AdjustStockAction;
+use App\Actions\Stock\TransferStockAction;
+use App\Actions\Stock\UpdateStockQuantityAction;
 use App\Models\Stock;
 use App\Models\StockAdjustment;
 use App\Models\StockMovement;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
+use App\Models\StockTransfer;
 
 class StockService
 {
     public function __construct(
-        protected AdjustStockAction $adjustStockAction
+        protected AdjustStockAction $adjustStockAction,
+        protected TransferStockAction $transferStockAction,
+        protected UpdateStockQuantityAction $updateStockQuantityAction,
     ) {}
+
+    // --- Queries ---
 
     public function list(array $filters, int $perPage)
     {
@@ -24,7 +29,7 @@ class StockService
         if (!empty($filters['product_id'])) {
             $query->where('product_id', $filters['product_id']);
         }
-        
+
         if (array_key_exists('storage_location_id', $filters)) {
             $loc = $filters['storage_location_id'];
             if ($loc === 'null' || is_null($loc) || $loc === '') {
@@ -40,44 +45,7 @@ class StockService
             });
         }
 
-        return $query->get(); // Standard admin view often doesn't need pagination for simple tables, but we'll keep it flexible if needed. Actually StockPage expects data property or raw array.
-    }
-
-    public function adjust(array $data, string $userId): StockAdjustment
-    {
-        return ($this->adjustStockAction)($data, $userId);
-    }
-
-    public function updateQuantity(string $stockId, array $data, string $userId): Stock
-    {
-        return DB::transaction(function () use ($stockId, $data, $userId) {
-            /** @var Stock $stock */
-            $stock = Stock::findOrFail($stockId);
-            $tenantId = $stock->tenant_id;
-
-            $quantityBefore = $stock->quantity;
-            $quantityAfter = $data['quantity'];
-            $difference = $quantityAfter - $quantityBefore;
-
-            $stock->quantity = $quantityAfter;
-            $stock->save();
-
-            StockMovement::create([
-                'tenant_id' => $tenantId,
-                'product_id' => $stock->product_id,
-                'warehouse_id' => $stock->warehouse_id,
-                'storage_location_id' => $stock->storage_location_id,
-                'type' => 'correction',
-                'quantity' => $difference,
-                'quantity_before' => $quantityBefore,
-                'quantity_after' => $quantityAfter,
-                'reason' => $data['reason'] ?? 'recount',
-                'user_id' => $userId,
-                'notes' => $data['notes'] ?? null,
-            ]);
-
-            return $stock->load(['product', 'warehouse', 'storageLocation']);
-        });
+        return $query->get();
     }
 
     public function listMovements(array $filters, int $perPage)
@@ -120,5 +88,22 @@ class StockService
             $query->whereDate('created_at', '<=', $filters['date_to']);
         }
         return $query->latest()->paginate($perPage);
+    }
+
+    // --- Mutations (delegated to Actions) ---
+
+    public function adjust(array $data, string $userId): StockAdjustment
+    {
+        return ($this->adjustStockAction)($data, $userId);
+    }
+
+    public function transfer(array $data, string $userId): StockTransfer
+    {
+        return ($this->transferStockAction)($data, $userId);
+    }
+
+    public function updateQuantity(string $stockId, array $data, string $userId): Stock
+    {
+        return ($this->updateStockQuantityAction)($stockId, $data, $userId);
     }
 }

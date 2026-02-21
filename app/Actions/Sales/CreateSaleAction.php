@@ -16,10 +16,8 @@ class CreateSaleAction
     public function __invoke(array $data, int $userId): Sale
     {
         return DB::transaction(function () use ($data, $userId) {
-            $tenantId = session('tenant_id');
-            $folio = Sale::generateFolio($tenantId);
+            $folio = Sale::generateFolio();
             $sale = Sale::create([
-                'tenant_id' => $tenantId,
                 'folio' => $folio,
                 'store_id' => $data['store_id'],
                 'branch_id' => $data['branch_id'],
@@ -36,7 +34,7 @@ class CreateSaleAction
                 'status' => 'completed',
             ]);
             foreach ($data['items'] as $itemData) {
-                $this->processSaleItem($sale, $itemData, $data['store_id'], $data['warehouse_id'], $tenantId, $userId);
+                $this->processSaleItem($sale, $itemData, $data['store_id'], $data['warehouse_id'], $userId);
             }
             $sale->calculateTotals();
             $sale->complete();
@@ -44,7 +42,7 @@ class CreateSaleAction
         });
     }
 
-    private function processSaleItem(Sale $sale, array $itemData, string $storeId, string $warehouseId, string $tenantId, int $userId): void
+    private function processSaleItem(Sale $sale, array $itemData, string $storeId, string $warehouseId, int $userId): void
     {
         $product = Product::findOrFail($itemData['product_id']);
         $storeProduct = $product->storeProducts()
@@ -68,11 +66,11 @@ class CreateSaleAction
             'total' => $total,
         ]);
         if ($product->track_inventory) {
-            $this->decrementStock($product, $warehouseId, $quantity, $tenantId, $userId, $sale);
+            $this->decrementStock($product, $warehouseId, $quantity, $userId, $sale);
         }
     }
 
-    private function decrementStock(Product $product, string $warehouseId, int $quantity, string $tenantId, int $userId, Sale $sale): void
+    private function decrementStock(Product $product, string $warehouseId, int $quantity, int $userId, Sale $sale): void
     {
         $stock = Stock::where('product_id', $product->id)
             ->where('warehouse_id', $warehouseId)
@@ -86,7 +84,6 @@ class CreateSaleAction
         $quantityBefore = $stock->quantity;
         $stock->removeStock($quantity);
         StockMovement::create([
-            'tenant_id' => $tenantId,
             'product_id' => $product->id,
             'warehouse_id' => $warehouseId,
             'storage_location_id' => $stock->storage_location_id,
