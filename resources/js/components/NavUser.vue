@@ -4,6 +4,7 @@ import {
   LogOut,
   Settings,
   User,
+  Languages,
 } from "lucide-vue-next"
 
 import {
@@ -19,6 +20,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu"
 import {
   SidebarMenu,
@@ -27,7 +32,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useRouter } from "vue-router"
-import axios from "axios"
+import { useAuthStore } from '@/stores/auth.store'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   user: {
@@ -39,6 +45,8 @@ const props = defineProps<{
 
 const { isMobile } = useSidebar()
 const router = useRouter()
+const authStore = useAuthStore()
+const { t, locale } = useI18n()
 
 const getInitials = (name: string) => {
   return name
@@ -51,18 +59,17 @@ const getInitials = (name: string) => {
 
 const handleLogout = async () => {
   try {
-    const token = localStorage.getItem('auth_token')
-    await axios.post('/api/auth/signout', {}, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
+    await authStore.logout()
   } catch (error) {
     console.error('Error during logout:', error)
   } finally {
-    localStorage.removeItem('auth_token')
     router.push('/sign-in')
   }
+}
+
+const changeLanguage = (lang: string) => {
+  locale.value = lang
+  localStorage.setItem('locale', lang)
 }
 
 const goToProfileSettings = () => {
@@ -120,17 +127,36 @@ const goToGeneralSettings = () => {
           <DropdownMenuGroup>
             <DropdownMenuItem @click="goToProfileSettings">
               <User class="mr-2 h-4 w-4" />
-              Configuración del perfil
+              {{ t('common.profile') }}
             </DropdownMenuItem>
             <DropdownMenuItem @click="goToGeneralSettings">
               <Settings class="mr-2 h-4 w-4" />
-              Configuración general
+              {{ t('common.settings') }}
             </DropdownMenuItem>
+            
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Languages class="mr-2 h-4 w-4" />
+                {{ t('common.language') }}
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem @click="changeLanguage('es')">
+                    Español (MX)
+                    <span v-if="locale === 'es'" class="ml-auto text-xs opacity-60">✓</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="changeLanguage('en')">
+                    English (US)
+                    <span v-if="locale === 'en'" class="ml-auto text-xs opacity-60">✓</span>
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem @click="handleLogout">
             <LogOut class="mr-2 h-4 w-4" />
-            Cerrar sesión
+            {{ t('common.logout') }}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

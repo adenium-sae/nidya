@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, reactive, computed } from 'vue'
-import axios from 'axios'
+import { ref, onMounted, reactive, computed } from 'vue';
+import { stockApi } from '@/api/stock.api';
+import { useApiList } from '@/composables/useApiList';
 import {
   Table,
   TableBody,
@@ -8,9 +9,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -18,63 +19,57 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { 
-  ArrowRightLeft, 
-  Search,
-  History
-} from 'lucide-vue-next'
-import { useToast } from '@/components/ui/toast/use-toast'
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { ArrowRightLeft, Search, History } from 'lucide-vue-next';
+import { useToast } from '@/components/ui/toast/use-toast';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import PageHeader from '@/components/app/PageHeader.vue';
+import { useRouter } from 'vue-router';
 
 interface StockItem {
-  id: string
-  quantity: number
-  reserved: number
-  product: {
-    id: string
-    name: string
-    sku: string
-  }
-  warehouse: {
-    id: string
-    name: string
-  }
-  storage_location?: {
-    id: string
-    name: string
-    code: string
-  }
+  id: string;
+  quantity: number;
+  reserved: number;
+  product: { id: string; name: string; sku: string };
+  warehouse: { id: string; name: string };
+  storage_location?: { id: string; name: string; code: string };
 }
 
-const { toast } = useToast()
-const stockItems = ref<StockItem[]>([])
-const isLoading = ref(true)
-const searchQuery = ref('')
-const isDialogOpen = ref(false)
-const processing = ref(false)
+const router = useRouter();
+const { toast } = useToast();
+
+const {
+  items: stockItems,
+  isLoading,
+  searchQuery,
+  fetch: fetchStock,
+  search,
+} = useApiList(stockApi.list);
+
+const isDialogOpen = ref(false);
+const processing = ref(false);
 
 const form = reactive({
   stockItem: null as StockItem | null,
-  type: 'recount', // increase, decrease, recount
-  quantity: '', // The amount to add/sub or the new total
-  reason: 'recount', // damaged, lost, found, expired, recount, other
-  notes: ''
-})
+  type: 'recount',
+  quantity: '',
+  reason: 'recount',
+  notes: '',
+});
 
 const adjustmentTypes = [
   { value: 'increase', label: 'Entrada (Aumentar)' },
   { value: 'decrease', label: 'Salida (Disminuir)' },
-  { value: 'recount', label: 'Recuento (Fijar Total)' }
-]
+  { value: 'recount', label: 'Recuento (Fijar Total)' },
+];
 
 const reasons = [
   { value: 'recount', label: 'Recuento Cíclico' },
@@ -83,23 +78,7 @@ const reasons = [
   { value: 'found', label: 'Hallazgo' },
   { value: 'expired', label: 'Caducado' },
   { value: 'other', label: 'Otro' },
-]
-
-async function fetchStock() {
-  isLoading.value = true;
-  try {
-    const token = localStorage.getItem('auth_token');
-    const response = await axios.get('/api/admin/inventory/stock', {
-      headers: { Authorization: `Bearer ${token}` },
-      params: { search: searchQuery.value }
-    });
-    stockItems.value = response.data.data || response.data;
-  } catch (error) {
-    console.error('Error fetching stock:', error);
-  } finally {
-    isLoading.value = false;
-  }
-}
+];
 
 function handleSearch() {
   fetchStock();
@@ -114,12 +93,10 @@ function openAdjustDialog(item: StockItem) {
   isDialogOpen.value = true;
 }
 
-const calculatedTotal = computed(function() {
+const calculatedTotal = computed(() => {
   if (!form.stockItem || !form.quantity) return form.stockItem?.quantity || 0;
-  
   const current = form.stockItem.quantity;
   const input = parseInt(form.quantity as string) || 0;
-
   if (form.type === 'increase') return current + input;
   if (form.type === 'decrease') return Math.max(0, current - input);
   return input;
@@ -127,35 +104,31 @@ const calculatedTotal = computed(function() {
 
 async function handleSubmit() {
   if (!form.stockItem) return;
-  
+
   processing.value = true;
-  const token = localStorage.getItem('auth_token');
   try {
-     const modeMap: Record<string, string> = {
-         'increase': 'increment',
-         'decrease': 'decrement',
-         'recount': 'absolute'
-     };
+    const modeMap: Record<string, string> = {
+      increase: 'increment',
+      decrease: 'decrement',
+      recount: 'absolute',
+    };
 
-     const payload = {
-        warehouse_id: form.stockItem.warehouse.id,
-        type: form.type, // Header type for grouping
-        reason: form.reason,
-        notes: form.notes,
-        items: [
-            {
-                product_id: form.stockItem.product.id,
-                storage_location_id: form.stockItem.storage_location?.id || null,
-                quantity: parseFloat(form.quantity as string) || 0,
-                mode: modeMap[form.type] || 'absolute'
-            }
-        ]
-     };
+    const payload = {
+      warehouse_id: form.stockItem.warehouse.id,
+      type: form.type,
+      reason: form.reason,
+      notes: form.notes,
+      items: [
+        {
+          product_id: form.stockItem.product.id,
+          storage_location_id: form.stockItem.storage_location?.id || null,
+          quantity: parseFloat(form.quantity as string) || 0,
+          mode: modeMap[form.type] || 'absolute',
+        },
+      ],
+    };
 
-    await axios.post('/api/admin/inventory/stock/adjust', payload, {
-        headers: { Authorization: `Bearer ${token}` }
-    });
-    
+    await stockApi.adjust(payload);
     toast({ title: 'Éxito', description: 'Inventario ajustado correctamente.' });
     isDialogOpen.value = false;
     fetchStock();
@@ -171,31 +144,27 @@ async function handleSubmit() {
   }
 }
 
-onMounted(function() {
-  fetchStock();
-});
+onMounted(() => fetchStock());
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight">Existencias</h1>
-        <p class="text-muted-foreground">Consulta y ajusta el inventario por almacén.</p>
-      </div>
-      <Button variant="outline">
-        <History class="mr-2 h-4 w-4" />
-        Ver Movimientos
-      </Button>
-    </div>
+    <PageHeader title="Existencias" description="Consulta y ajusta el inventario por almacén.">
+      <template #actions>
+        <Button variant="outline" @click="router.push('/panel/inventory/movements')">
+          <History class="mr-2 h-4 w-4" />
+          Ver Movimientos
+        </Button>
+      </template>
+    </PageHeader>
 
     <div class="flex items-center gap-2">
       <div class="relative flex-1 max-w-sm">
         <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input 
-          v-model="searchQuery" 
-          placeholder="Buscar producto o SKU..." 
-          class="pl-8" 
+        <Input
+          v-model="searchQuery"
+          placeholder="Buscar producto o SKU..."
+          class="pl-8"
           @keyup.enter="handleSearch"
         />
       </div>
@@ -215,8 +184,8 @@ onMounted(function() {
           </TableRow>
         </TableHeader>
         <TableBody>
-           <TableRow v-if="stockItems.length === 0 && !isLoading">
-            <TableCell colspan="6" class="text-center h-24 text-muted-foreground">
+          <TableRow v-if="stockItems.length === 0 && !isLoading">
+            <TableCell colspan="7" class="text-center h-24 text-muted-foreground">
               No hay existencias registradas.
             </TableCell>
           </TableRow>
@@ -243,7 +212,7 @@ onMounted(function() {
       </Table>
     </div>
 
-     <!-- Adjust Dialog -->
+    <!-- Adjust Dialog -->
     <Dialog v-model:open="isDialogOpen">
       <DialogContent class="sm:max-w-[500px]">
         <DialogHeader>
@@ -253,51 +222,43 @@ onMounted(function() {
           </DialogDescription>
         </DialogHeader>
         <div class="grid gap-4 py-4" v-if="form.stockItem">
-           <div class="grid grid-cols-2 gap-4">
-              <div class="grid gap-2">
-                  <Label htmlFor="type">Tipo de Ajuste</Label>
-                  <Select v-model="form.type">
-                      <SelectTrigger>
-                          <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                          <SelectItem v-for="t in adjustmentTypes" :key="t.value" :value="t.value">
-                              {{ t.label }}
-                          </SelectItem>
-                      </SelectContent>
-                  </Select>
-              </div>
-               <div class="grid gap-2">
-                  <Label htmlFor="reason">Razón</Label>
-                  <Select v-model="form.reason">
-                      <SelectTrigger>
-                          <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                          <SelectItem v-for="r in reasons" :key="r.value" :value="r.value">
-                              {{ r.label }}
-                          </SelectItem>
-                      </SelectContent>
-                  </Select>
-              </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="grid gap-2">
+              <Label htmlFor="type">Tipo de Ajuste</Label>
+              <Select v-model="form.type">
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="t in adjustmentTypes" :key="t.value" :value="t.value">
+                    {{ t.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="grid gap-2">
+              <Label htmlFor="reason">Razón</Label>
+              <Select v-model="form.reason">
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="r in reasons" :key="r.value" :value="r.value">
+                    {{ r.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-
           <div class="grid gap-2">
-              <Label>Cantidad Actual: {{ form.stockItem.quantity }}</Label>
+            <Label>Cantidad Actual: {{ form.stockItem.quantity }}</Label>
           </div>
-
           <div class="grid gap-2">
             <Label htmlFor="quantity">
-               {{ form.type === 'recount' ? 'Nueva Cantidad Total' : 'Cantidad a Ajustar' }}
+              {{ form.type === 'recount' ? 'Nueva Cantidad Total' : 'Cantidad a Ajustar' }}
             </Label>
             <Input id="quantity" type="number" v-model="form.quantity" />
           </div>
-
-           <div class="p-3 bg-muted rounded-md text-sm text-center">
-              <span class="text-muted-foreground">Cantidad Resultante:</span>
-              <span class="font-bold text-lg ml-2">{{ calculatedTotal }}</span>
+          <div class="p-3 bg-muted rounded-md text-sm text-center">
+            <span class="text-muted-foreground">Cantidad Resultante:</span>
+            <span class="font-bold text-lg ml-2">{{ calculatedTotal }}</span>
           </div>
-
           <div class="grid gap-2">
             <Label htmlFor="notes">Notas (Opcional)</Label>
             <Textarea id="notes" v-model="form.notes" />
@@ -306,7 +267,7 @@ onMounted(function() {
         <DialogFooter>
           <Button variant="outline" @click="isDialogOpen = false">Cancelar</Button>
           <Button type="submit" :disabled="processing" @click="handleSubmit">
-              {{ processing ? 'Procesando...' : 'Confirmar Ajuste' }}
+            {{ processing ? 'Procesando...' : 'Confirmar Ajuste' }}
           </Button>
         </DialogFooter>
       </DialogContent>

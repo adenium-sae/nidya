@@ -14,13 +14,21 @@ const router = useRouter();
 const { toast } = useToast();
 const isSubmitting = ref(false);
 
+interface TransferItem {
+  product_id: string | null;
+  quantity: number;
+  current_source_stock: number;
+  source_location_id: string | null;
+  destination_location_id: string | null;
+}
+
 const form = reactive({
-  source_warehouse_id: '',
-  destination_warehouse_id: '',
+  source_warehouse_id: null as string | null,
+  destination_warehouse_id: null as string | null,
   notes: '',
   items: [
-    { product_id: '', quantity: 0, current_source_stock: 0, source_location_id: '', destination_location_id: '' }
-  ]
+    { product_id: null, quantity: 0, current_source_stock: 0, source_location_id: null, destination_location_id: null }
+  ] as TransferItem[]
 });
 
 const sourceLocationEndpoint = computed(() => {
@@ -38,24 +46,24 @@ const productEndpoint = computed(() => {
 
 function addItem() {
   form.items.push({ 
-    product_id: '', 
+    product_id: null, 
     quantity: 0, 
     current_source_stock: 0, 
-    source_location_id: '', 
-    destination_location_id: '' 
+    source_location_id: null, 
+    destination_location_id: null 
   });
 }
 
 function handleSourceWarehouseChange() {
   // Clear items when source warehouse changes
-  form.items = [{ product_id: '', quantity: 0, current_source_stock: 0, source_location_id: '', destination_location_id: '' }];
+  form.items = [{ product_id: null, quantity: 0, current_source_stock: 0, source_location_id: null, destination_location_id: null }];
 }
 
 function removeItem(index: number) {
   form.items.splice(index, 1);
 }
 
-async function handleProductSelect(productId: string, index: number) {
+async function handleProductSelect(productId: string | null, index: number) {
   if (!productId || !form.source_warehouse_id) return;
   
   try {
@@ -199,7 +207,7 @@ async function handleSubmit() {
                         value-key="id"
                         placeholder="Buscar producto..."
                         :disabled="!form.source_warehouse_id"
-                        @update:model-value="val => handleProductSelect(val, index)"
+                        @update:model-value="(val: any) => handleProductSelect(val, index)"
                     />
                 </div>
                 <div class="lg:col-span-3 space-y-2">

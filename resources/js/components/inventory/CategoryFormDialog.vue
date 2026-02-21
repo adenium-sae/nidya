@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue';
-import axios from 'axios';
+import { categoriesApi } from '@/api/categories.api';
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,7 @@ interface Category {
   id: string;
   name: string;
   description?: string;
-  is_active: boolean;
+  is_active?: boolean;
 }
 
 const props = defineProps<{
@@ -59,32 +59,23 @@ async function handleSubmit() {
   if (!form.name.trim()) return;
 
   isLoading.value = true;
-  const token = localStorage.getItem('auth_token');
 
   try {
     let response;
     
     if (props.category) {
-      // Edit
-      response = await axios.put(`/api/admin/categories/${props.category.id}`, {
+      response = await categoriesApi.update(props.category.id, {
         name: form.name,
         description: form.description,
-        is_active: props.category.is_active
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+        is_active: props.category.is_active ?? true,
       });
-      
       toast({ title: 'Éxito', description: 'Categoría actualizada correctamente.' });
     } else {
-      // Create
-      response = await axios.post('/api/admin/categories', {
+      response = await categoriesApi.create({
         name: form.name,
         description: form.description,
-        is_active: true
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+        is_active: true,
       });
-      
       toast({ title: 'Éxito', description: 'Categoría creada correctamente.' });
     }
 

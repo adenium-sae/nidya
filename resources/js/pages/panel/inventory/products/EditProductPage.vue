@@ -1,40 +1,32 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import axios from 'axios'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { categoriesApi } from '@/api/categories.api';
+import { productsApi } from '@/api/products.api';
+import client from '@/api/client';
+import ProductForm from '@/components/products/ProductForm.vue';
+import { useToast } from '@/components/ui/toast/use-toast';
+import PageHeader from '@/components/app/PageHeader.vue';
+import type { Category } from '@/types/models';
 
-import ProductForm from '@/components/products/ProductForm.vue'
-import { Button } from '@/components/ui/button'
-import { useToast } from '@/components/ui/toast/use-toast'
-import { ChevronLeft } from 'lucide-vue-next'
+const router = useRouter();
+const route = useRoute();
+const { toast } = useToast();
 
-const router = useRouter()
-const route = useRoute()
-const { toast } = useToast()
+const productId = route.params.id as string;
+const categories = ref<Category[]>([]);
+const isLoading = ref(false);
+const isFetching = ref(true);
+const initialData = ref<any>({});
+const serverErrors = ref<Record<string, string[]>>({});
 
-interface Category {
-  id: string
-  name: string
-}
-
-const productId = route.params.id as string
-const categories = ref<Category[]>([])
-const isLoading = ref(false)
-const isFetching = ref(true)
-const initialData = ref<any>({})
-const serverErrors = ref<Record<string, string[]>>({})
-
-onMounted(async function() {
-  const token = localStorage.getItem('auth_token');
+onMounted(async () => {
   try {
-    const catRes = await axios.get('/api/admin/categories', { 
-      headers: { Authorization: `Bearer ${token}` } 
-    });
-    categories.value = catRes.data;
-
-    const productRes = await axios.get(`/api/admin/products/${productId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const [catRes, productRes] = await Promise.all([
+      categoriesApi.list(),
+      productsApi.show(productId),
+    ]);
+    categories.value = catRes.data.data || catRes.data;
 
     const product = productRes.data;
     initialData.value = {
@@ -64,35 +56,25 @@ onMounted(async function() {
 async function handleSubmit(formData: any, imageFile: File | null) {
   isLoading.value = true;
   serverErrors.value = {};
-  const token = localStorage.getItem('auth_token');
-  
+
   try {
     const data = new FormData();
     data.append('name', formData.name);
     data.append('sku', formData.sku);
-    if (formData.description) {
-      data.append('description', formData.description);
-    }
-    if (formData.barcode) {
-      data.append('barcode', formData.barcode);
-    }
+    if (formData.description) data.append('description', formData.description);
+    if (formData.barcode) data.append('barcode', formData.barcode);
     data.append('cost', formData.cost);
     data.append('category_id', formData.category_id);
     data.append('type', formData.type);
     data.append('is_active', formData.is_active ? '1' : '0');
-    if (formData.min_stock) {
-      data.append('min_stock', formData.min_stock);
-    }
-    if (imageFile) {
-      data.append('image', imageFile);
-    }
+    if (formData.min_stock) data.append('min_stock', formData.min_stock);
+    if (imageFile) data.append('image', imageFile);
     data.append('_method', 'PUT');
-    await axios.post(`/api/admin/products/${productId}`, data, {
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data'
-      }
+
+    await client.post(`/admin/products/${productId}`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
+
     toast({ title: 'Éxito', description: 'Producto actualizado correctamente.' });
     router.push('/panel/inventory/products');
   } catch (error: any) {
@@ -108,7 +90,7 @@ async function handleSubmit(formData: any, imageFile: File | null) {
       title: 'Error de validación',
       description: msg,
       variant: 'destructive',
-      duration: 5000
+      duration: 5000,
     });
   } finally {
     isLoading.value = false;
@@ -126,16 +108,11 @@ function handleCategoryCreated(category: Category) {
 
 <template>
   <div class="flex flex-col gap-8 w-full max-w-[1100px] mx-auto pb-12">
-    <!-- Header -->
-    <div class="flex items-center gap-4">
-      <Button variant="outline" size="icon" @click="router.back()">
-        <ChevronLeft class="h-4 w-4" />
-      </Button>
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight">Editar Producto</h1>
-        <p class="text-muted-foreground">Modifica la información del producto.</p>
-      </div>
-    </div>
+    <PageHeader
+      title="Editar Producto"
+      description="Modifica la información del producto."
+      show-back
+    />
 
     <ProductForm
       :categories="categories"

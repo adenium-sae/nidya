@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from "vue"
-import { ref, onMounted } from "vue"
-import axios from "axios"
+import { computed } from "vue"
 import { RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.store'
+import { useI18n } from 'vue-i18n'
 
 import { 
   ChevronRight, 
@@ -35,6 +36,8 @@ import {
 } from "@/components/ui/sidebar"
 import NavUser from "@/components/NavUser.vue"
 
+const { t } = useI18n()
+
 interface SidebarProps {
   side?: "left" | "right"
   variant?: "sidebar" | "floating" | "inset"
@@ -44,73 +47,41 @@ interface SidebarProps {
 
 const props = defineProps<SidebarProps>()
 
-// User data
-const user = ref({
-  name: '',
-  email: '',
-  avatar: ''
-})
+// User data from auth store (no more duplicate API call)
+const authStore = useAuthStore()
 
-const isLoading = ref(true)
+const user = computed(() => ({
+  name: authStore.fullName,
+  email: authStore.email,
+  avatar: authStore.avatarUrl,
+}))
 
-onMounted(async function() {
-  try {
-    const token = localStorage.getItem('auth_token');
-    const response = await axios.get('/api/user', {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    
-    const userData = response.data;
-    const profile = userData.profile;
-    
-    // Build full name from profile
-    let fullName = userData.email;
-    if (profile) {
-      const nameParts = [profile.first_name];
-      if (profile.middle_name) nameParts.push(profile.middle_name);
-      if (profile.last_name) nameParts.push(profile.last_name);
-      if (profile.second_last_name) nameParts.push(profile.second_last_name);
-      fullName = nameParts.join(' ');
-    }
-    
-    user.value = {
-      name: fullName,
-      email: userData.email,
-      avatar: profile?.avatar_url || ''
-    };
-  } catch (error) {
-    console.error('Error fetching user data:', error);
-  } finally {
-    isLoading.value = false;
-  }
-});
+const isLoading = computed(() => authStore.isLoadingUser)
 
 // Navigation data based on database models
-const navMain = [
+const navMain = computed(() => [
   {
-    title: "Dashboard",
+    title: t('sidebar.dashboard'),
     url: "/panel/dashboard",
     icon: LayoutDashboard,
     items: [],
   },
   {
-    title: "Ventas",
+    title: t('sidebar.sales'),
     url: "#",
     icon: ShoppingCart,
     isOpen: true,
     items: [
       {
-        title: "Punto de Venta",
+        title: t('sidebar.pos'),
         url: "/panel/sales/pos",
       },
       {
-        title: "Historial de Ventas",
+        title: t('sidebar.history'),
         url: "/panel/sales/history",
       },
       {
-        title: "Clientes",
+        title: t('dashboard.customers'),
         url: "/panel/sales/customers",
       },
       {
@@ -118,7 +89,7 @@ const navMain = [
         url: "/panel/sales/cash-register",
       },
       {
-        title: "Movimientos de Caja",
+        title: t('sidebar.movements'),
         url: "/panel/sales/cash-movements",
       },
     ],
@@ -134,7 +105,7 @@ const navMain = [
         url: "/panel/purchases/new",
       },
       {
-        title: "Historial de Compras",
+        title: t('sidebar.history'),
         url: "/panel/purchases/history",
       },
       {
@@ -148,39 +119,39 @@ const navMain = [
     ],
   },
   {
-    title: "Almacén",
+    title: t('sidebar.inventory'),
     url: "#",
     icon: Warehouse,
     isOpen: false,
     items: [
       {
-        title: "Productos",
+        title: t('dashboard.products'),
         url: "/panel/inventory/products",
       },
       {
-        title: "Categorías",
+        title: t('dashboard.categories'),
         url: "/panel/inventory/categories",
       },
       {
-        title: "Stock",
+        title: t('sidebar.stock'),
         url: "/panel/inventory/stock",
       },
       {
-        title: "Movimientos",
+        title: t('sidebar.movements'),
         url: "/panel/inventory/movements",
       },
       {
-        title: "Ajustes de Inventario",
+        title: t('sidebar.adjustments'),
         url: "/panel/inventory/adjustments",
       },
       {
-        title: "Almacenes",
+        title: t('sidebar.warehouses'),
         url: "/panel/inventory/warehouses",
       },
     ],
   },
   {
-    title: "Usuarios",
+    title: t('sidebar.users'),
     url: "#",
     icon: Users,
     isOpen: false,
@@ -190,32 +161,32 @@ const navMain = [
         url: "/panel/users/list",
       },
       {
-        title: "Roles",
+        title: t('sidebar.roles'),
         url: "/panel/users/roles",
       },
       {
-        title: "Permisos",
+        title: t('sidebar.permissions'),
         url: "/panel/users/permissions",
       },
     ],
   },
   {
-    title: "Organización",
+    title: t('sidebar.organization'),
     url: "#",
     icon: Store,
     isOpen: false,
     items: [
       {
-        title: "Tiendas",
+        title: t('sidebar.stores'),
         url: "/panel/organization/stores",
       },
       {
-        title: "Sucursales",
+        title: t('sidebar.branches'),
         url: "/panel/organization/branches",
       },
     ],
   },
-]
+])
 </script>
 
 <template>
@@ -239,7 +210,7 @@ const navMain = [
     </SidebarHeader>
     <SidebarContent>
       <SidebarGroup>
-        <SidebarGroupLabel>Menú Principal</SidebarGroupLabel>
+        <SidebarGroupLabel>{{ t('sidebar.main_menu') }}</SidebarGroupLabel>
         <SidebarMenu>
           <!-- Dashboard (no subitems) -->
           <SidebarMenuItem>

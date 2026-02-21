@@ -1,104 +1,61 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
-import axios from 'axios';
+import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { 
-  Plus, 
-  Minus, 
-  ArrowRightLeft, 
-  History,
-  ArrowRight,
+import { stockApi } from '@/api/stock.api';
+import { useApiList } from '@/composables/useApiList';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
   TrendingUp,
   TrendingDown,
-  Settings2
+  Settings2,
+  ArrowRightLeft,
 } from 'lucide-vue-next';
-import { useToast } from '@/components/ui/toast/use-toast';
-import { Button } from '@/components/ui/button';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
 
-interface Adjustment {
-  id: string;
-  folio: string;
-  type: string;
-  reason: string;
-  created_at: string;
-  warehouse: {
-    name: string;
-  };
-  user: {
-    email: string;
-  };
-  items: {
-    product: {
-      name: string;
-    };
-    quantity_before: number;
-    quantity_after: number;
-  }[];
-}
+import { StockAdjustment } from '@/types/models';
 
 const router = useRouter();
-const { toast } = useToast();
-const adjustments = ref<Adjustment[]>([]);
-const isLoading = ref(true);
 
-async function fetchAdjustments() {
-  isLoading.value = true;
-  try {
-    const token = localStorage.getItem('auth_token');
-    const response = await axios.get('/api/admin/inventory/stock/adjustments', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    adjustments.value = response.data.data || response.data;
-  } catch (error) {
-    console.error('Error fetching adjustments:', error);
-    toast({
-      title: 'Error',
-      description: 'No se pudieron cargar los ajustes.',
-      variant: 'destructive'
-    });
-  } finally {
-    isLoading.value = false;
-  }
-}
+const {
+  items: adjustments,
+  isLoading,
+  fetch: fetchAdjustments,
+} = useApiList<StockAdjustment>(stockApi.adjustments);
 
 function getAdjustmentLabel(type: string): string {
   const labels: Record<string, string> = {
-    'increase': 'Entrada',
-    'decrease': 'Salida',
-    'adjustment': 'Ajuste Directo',
-    'recount': 'Recuento'
+    increase: 'Entrada',
+    decrease: 'Salida',
+    adjustment: 'Ajuste Directo',
+    recount: 'Recuento',
   };
   return labels[type] || type;
 }
 
 function getAdjustmentClass(type: string): string {
   const classes: Record<string, string> = {
-    'increase': 'bg-green-100 text-green-800',
-    'decrease': 'bg-red-100 text-red-800',
-    'adjustment': 'bg-blue-100 text-blue-800',
-    'recount': 'bg-yellow-100 text-yellow-800'
+    increase: 'bg-green-100 text-green-800',
+    decrease: 'bg-red-100 text-red-800',
+    adjustment: 'bg-blue-100 text-blue-800',
+    recount: 'bg-yellow-100 text-yellow-800',
   };
   return classes[type] || 'bg-gray-100 text-gray-800';
 }
 
-onMounted(() => {
-  fetchAdjustments();
-});
+onMounted(() => fetchAdjustments());
 </script>
 
 <template>
@@ -180,7 +137,7 @@ onMounted(() => {
                 <TableCell class="font-mono text-xs">{{ adj.folio }}</TableCell>
                 <TableCell>{{ new Date(adj.created_at).toLocaleDateString() }}</TableCell>
                 <TableCell>
-                  <span 
+                  <span
                     :class="getAdjustmentClass(adj.type)"
                     class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
                   >
@@ -190,7 +147,7 @@ onMounted(() => {
                 <TableCell>{{ adj.warehouse?.name }}</TableCell>
                 <TableCell>
                   <div class="max-w-[300px] truncate">
-                    {{ adj.items?.map(i => i.product?.name).join(', ') }}
+                    {{ adj.items?.map((i: any) => i.product?.name).join(', ') }}
                   </div>
                 </TableCell>
                 <TableCell class="text-xs">{{ adj.user?.email }}</TableCell>

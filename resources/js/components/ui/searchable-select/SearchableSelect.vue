@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import axios from 'axios'
+import client from '@/api/client'
 import { useDebounceFn } from '@vueuse/core'
 import { Check, ChevronsUpDown, Search, Loader2, Plus } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
@@ -25,12 +25,12 @@ export interface SearchableSelectOption {
   [key: string]: any
 }
 
-const props = withDefaults(defineProps<{
-  modelValue?: string | null
+export interface SearchableSelectProps {
+  modelValue?: any
   placeholder?: string
   searchPlaceholder?: string
   emptyMessage?: string
-  endpoint?: string
+  endpoint?: string | null
   options?: SearchableSelectOption[]
   labelKey?: string
   valueKey?: string
@@ -40,7 +40,9 @@ const props = withDefaults(defineProps<{
   debounceMs?: number
   showAddOption?: boolean
   addOptionLabel?: string
-}>(), {
+}
+
+const props = withDefaults(defineProps<SearchableSelectProps>(), {
   placeholder: 'Seleccionar...',
   searchPlaceholder: 'Buscar...',
   emptyMessage: 'No se encontraron resultados.',
@@ -52,7 +54,8 @@ const props = withDefaults(defineProps<{
   minSearchLength: 0,
   debounceMs: 300,
   showAddOption: false,
-  addOptionLabel: 'Agregar nuevo'
+  addOptionLabel: 'Agregar nuevo',
+  endpoint: null
 })
 
 const emit = defineEmits<{
@@ -108,9 +111,7 @@ async function fetchOptions(query: string) {
   
   isLoading.value = true
   try {
-    const token = localStorage.getItem('auth_token')
-    const response = await axios.get(props.endpoint, {
-      headers: { Authorization: `Bearer ${token}` },
+    const response = await client.get(props.endpoint, {
       params: { [props.searchKey]: query }
     })
     

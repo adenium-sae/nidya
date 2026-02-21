@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Nidya SAE</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <title>Nidya</title>
+    @vite(['resources/css/app.css', 'resources/js/app.ts'])
 </head>
 <body class="font-sans antialiased">
     <div id="app"></div>

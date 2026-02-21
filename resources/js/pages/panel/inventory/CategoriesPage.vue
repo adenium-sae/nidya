@@ -1,154 +1,119 @@
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue';
-import axios from 'axios';
-
+import { onMounted, computed } from 'vue';
+import { categoriesApi } from '@/api/categories.api';
+import { useApiList } from '@/composables/useApiList';
+import { useConfirmDelete } from '@/composables/useConfirmDelete';
 import { DataTable, type Column, type Action } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
-import { Plus, FolderTree } from 'lucide-vue-next';
+import { Package, Plus } from 'lucide-vue-next';
 import { useToast } from '@/components/ui/toast/use-toast';
 import CategoryFormDialog from '@/components/inventory/CategoryFormDialog.vue';
-
-interface Category {
-  id: string;
-  name: string;
-  description?: string;
-  slug: string;
-  is_active: boolean;
-  created_at: string;
-}
+import ConfirmDialog from '@/components/app/ConfirmDialog.vue';
+import { ref } from 'vue';
+import type { Category } from '@/types/models';
 
 const { toast } = useToast();
-const categories = ref<Category[]>([]);
-const isLoading = ref(true);
-const searchQuery = ref('');
-const isDialogOpen = ref(false);
-const selectedCategory = ref<Category | null>(null);
 
-// DataTable Configuration
+// List composable
+const {
+  items: categories,
+  isLoading,
+  searchQuery,
+  pagination,
+  fetch: fetchCategories,
+  search,
+  changePage,
+  changePerPage,
+  removeItem,
+} = useApiList(categoriesApi.list);
+
+// Delete composable
+const {
+  isOpen: deleteDialogOpen,
+  isDeleting,
+  itemToDelete,
+  openDialog: openDeleteDialog,
+  closeDialog: closeDeleteDialog,
+  confirmDelete,
+} = useConfirmDelete(categoriesApi.destroy, {
+  successMessage: 'Categoría eliminada correctamente.',
+  onSuccess: (item: any) => removeItem(item.id),
+});
+
+// Form dialog state
+const formDialogOpen = ref(false);
+const editingCategory = ref<Category | null>(null);
+
 const columns: Column[] = [
-  { 
-    key: 'name', 
-    label: 'Nombre', 
-    sortable: true,
-    type: 'text'
-  },
-  { 
-    key: 'description', 
-    label: 'Descripción', 
-    type: 'text' 
-  },
-  {
-    key: 'created_at',
-    label: 'Fecha Creación',
-    type: 'date'
-  }
+  { key: 'name', label: 'Nombre', type: 'text', sortable: true },
+  { key: 'description', label: 'Descripción', type: 'text' },
+  { key: 'is_active', label: 'Estado', type: 'boolean' },
 ];
 
 const actions: Action[] = [
   { key: 'edit', label: 'Editar' },
-  { key: 'delete', label: 'Eliminar', variant: 'destructive' }
+  { key: 'delete', label: 'Eliminar', variant: 'destructive' },
 ];
 
-async function fetchCategories() {
-  isLoading.value = true;
-  try {
-    const token = localStorage.getItem('auth_token');
-    const response = await axios.get('/api/admin/categories', {
-      headers: { Authorization: `Bearer ${token}` },
-      params: { search: searchQuery.value }
-    });
-    categories.value = response.data;
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-    toast({
-      title: 'Error',
-      description: 'No se pudieron cargar las categorías.',
-      variant: 'destructive',
-    });
-  } finally {
-    isLoading.value = false;
-  }
-}
-
-function handleSearch(value: string) {
-  searchQuery.value = value;
-  fetchCategories();
-}
-
-function handleAction(actionKey: string, row: Category) {
-  if (actionKey === 'edit') {
-    selectedCategory.value = row;
-    isDialogOpen.value = true;
-  } else if (actionKey === 'delete') {
-    handleDelete(row.id);
+function handleAction(action: string, row: any) {
+  if (action === 'edit') {
+    editingCategory.value = row;
+    formDialogOpen.value = true;
+  } else if (action === 'delete') {
+    openDeleteDialog(row);
   }
 }
 
 function openCreateDialog() {
-  selectedCategory.value = null;
-  isDialogOpen.value = true;
+  editingCategory.value = null;
+  formDialogOpen.value = true;
 }
 
-function handleCategorySaved() {
+function handleSaved() {
   fetchCategories();
 }
 
-async function handleDelete(id: string) {
-  if (!confirm('¿Estás seguro de eliminar esta categoría?')) return;
-
-  const token = localStorage.getItem('auth_token');
-  try {
-    await axios.delete(`/api/admin/categories/${id}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    toast({ title: 'Éxito', description: 'Categoría eliminada.' });
-    fetchCategories();
-  } catch (error) {
-    console.error('Error deleting category:', error);
-    toast({
-      title: 'Error',
-      description: 'No se pudo eliminar la categoría.',
-      variant: 'destructive',
-    });
-  }
-}
-
-onMounted(function() {
-  fetchCategories();
-});
+onMounted(() => fetchCategories());
 </script>
 
 <template>
   <div class="h-[calc(100vh-120px)] flex flex-col">
-    <div class="flex flex-col gap-6 h-full">
-      <!-- DataTable with full height -->
-      <DataTable
-        :columns="columns"
-        :data="categories"
-        :actions="actions"
-        :is-loading="isLoading"
-        :search-value="searchQuery"
-        search-placeholder="Buscar categorías..."
-        empty-message="No hay categorías registradas."
-        :empty-icon="FolderTree"
-        class="flex-1 min-h-0"
-        @search="handleSearch"
-        @action="handleAction"
-      >
-        <template #toolbar-end>
-          <Button @click="openCreateDialog">
-            <Plus class="mr-2 h-4 w-4" />
-            Nueva Categoría
-          </Button>
-        </template>
-      </DataTable>
+    <DataTable
+      :columns="columns"
+      :data="categories"
+      :actions="actions"
+      :is-loading="isLoading"
+      :search-value="searchQuery"
+      :pagination="pagination"
+      search-placeholder="Buscar categorías..."
+      empty-message="No hay categorías registradas."
+      :empty-icon="Package"
+      class="flex-1 min-h-0"
+      @search="search"
+      @page-change="changePage"
+      @per-page-change="changePerPage"
+      @action="handleAction"
+    >
+      <template #toolbar-end>
+        <Button @click="openCreateDialog">
+          <Plus class="mr-2 h-4 w-4" />
+          Nueva Categoría
+        </Button>
+      </template>
+    </DataTable>
 
-      <!-- Dialog Create/Edit -->
-      <CategoryFormDialog 
-        v-model:open="isDialogOpen"
-        :category="selectedCategory"
-        @saved="handleCategorySaved"
-      />
-    </div>
+    <CategoryFormDialog
+      v-model:open="formDialogOpen"
+      :category="editingCategory"
+      @saved="handleSaved"
+    />
+
+    <ConfirmDialog
+      v-model:open="deleteDialogOpen"
+      title="¿Eliminar categoría?"
+      :description="`Se eliminará la categoría '${itemToDelete?.name}'. Esta acción no se puede deshacer.`"
+      :loading="isDeleting"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>

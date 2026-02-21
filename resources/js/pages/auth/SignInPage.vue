@@ -3,79 +3,75 @@ import { ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import axios from 'axios';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth.store';
 import AuthLayout from '@/layouts/AuthLayout.vue';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const router = useRouter();
+const authStore = useAuthStore();
 const email = ref('');
 const password = ref('');
 const loading = ref(false);
 const error = ref('');
 
 async function handleLogin() {
-    loading.value = true;
-    error.value = '';
+  loading.value = true;
+  error.value = '';
 
-    try {
-        await axios.get('/sanctum/csrf-cookie');
-
-        const response = await axios.post('/api/auth/signin', {
-            email: email.value,
-            password: password.value
-        });
-        
-        if (response.data.data.token) {
-            localStorage.setItem('auth_token', response.data.data.token);
-             axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.data.token}`;
-        }
-        router.push('/home');
-    } catch (err) {
-        console.error('Login failed', err);
-        error.value = err.response?.data?.message || 'Invalid credentials.';
-    } finally {
-        loading.value = false;
-    }
+  try {
+    await authStore.login({
+      email: email.value,
+      password: password.value,
+    });
+    router.push('/panel/dashboard');
+  } catch (err) {
+    console.error('Login failed', err);
+    error.value = err.response?.data?.message || t('auth.invalid_credentials');
+  } finally {
+    loading.value = false;
+  }
 }
 </script>
 
 <template>
-    <AuthLayout>
-        <div class="w-full max-w-md space-y-8">
-            <div class="space-y-2 text-center">
-                <h1 class="text-3xl font-bold tracking-tight">
-                    Sign In
-                </h1>
-                <p class="text-muted-foreground">
-                    Enter your email and password to access your account
-                </p>
-            </div>
+  <AuthLayout>
+    <div class="w-full max-w-md space-y-8">
+      <div class="space-y-2 text-center">
+        <h1 class="text-3xl font-bold tracking-tight">
+          {{ t('auth.sign_in') }}
+        </h1>
+        <p class="text-muted-foreground">
+          {{ t('auth.login_message') }}
+        </p>
+      </div>
 
-            <div class="space-y-4">
-                <div v-if="error" class="p-3 text-sm text-red-500 bg-red-50 rounded-md">
-                    {{ error }}
-                </div>
-                <div class="space-y-2">
-                    <Label for="email">Email</Label>
-                    <Input id="email" type="email" placeholder="m@example.com" v-model="email" />
-                </div>
-                <div class="space-y-2">
-                    <Label for="password">Password</Label>
-                    <Input id="password" type="password" v-model="password" />
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-4">
-                <Button class="w-full" :disabled="loading" @click="handleLogin">
-                    <span v-if="loading">Signing in...</span>
-                    <span v-else>Sign In</span>
-                </Button>
-                
-                <div class="text-center text-sm text-muted-foreground">
-                    Don't have an account? 
-                    <router-link to="/sign-up" class="underline text-primary">Sign up</router-link>
-                </div>
-            </div>
+      <div class="space-y-4">
+        <div v-if="error" class="p-3 text-sm text-red-500 bg-red-50 rounded-md">
+          {{ error }}
         </div>
-    </AuthLayout>
+        <div class="space-y-2">
+          <Label for="email">{{ t('auth.email') }}</Label>
+          <Input id="email" type="email" placeholder="m@example.com" v-model="email" />
+        </div>
+        <div class="space-y-2">
+          <Label for="password">{{ t('auth.password') }}</Label>
+          <Input id="password" type="password" v-model="password" @keyup.enter="handleLogin" />
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-4">
+        <Button class="w-full" :disabled="loading" @click="handleLogin">
+          <span v-if="loading">{{ t('auth.signing_in') }}</span>
+          <span v-else>{{ t('auth.sign_in') }}</span>
+        </Button>
+
+        <div class="text-center text-sm text-muted-foreground">
+          {{ t('auth.no_account') }}
+          <router-link to="/sign-up" class="underline text-primary">{{ t('auth.sign_up') }}</router-link>
+        </div>
+      </div>
+    </div>
+  </AuthLayout>
 </template>
