@@ -83,6 +83,9 @@ Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->grou
         Route::post("/adjust", [StockController::class, "adjust"]);
         Route::post("/transfer", [StockController::class, "transfer"]);
         Route::get("/movements", [StockController::class, "movements"]);
+        Route::post("/movements/{id}/confirm", [StockController::class, "confirmMovement"]);
         Route::get("/adjustments", [StockController::class, "adjustments"]);
+        Route::post("/adjustments/{id}/confirm", [StockController::class, "confirmAdjustment"]);
+        Route::post("/transfer/{id}/confirm", [StockController::class, "confirmTransfer"]);
     });
 });

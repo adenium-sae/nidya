@@ -5,6 +5,7 @@ namespace App\Services\Stock;
 use App\Actions\Stock\AdjustStockAction;
 use App\Actions\Stock\TransferStockAction;
 use App\Actions\Stock\UpdateStockQuantityAction;
+use App\Actions\Stock\ConfirmMovementAction;
 use App\Models\Stock;
 use App\Models\StockAdjustment;
 use App\Models\StockMovement;
@@ -16,6 +17,7 @@ class StockService
         protected AdjustStockAction $adjustStockAction,
         protected TransferStockAction $transferStockAction,
         protected UpdateStockQuantityAction $updateStockQuantityAction,
+        protected ConfirmMovementAction $confirmMovementAction,
     ) {}
 
     // --- Queries ---
@@ -105,5 +107,20 @@ class StockService
     public function updateQuantity(string $stockId, array $data, string $userId): Stock
     {
         return ($this->updateStockQuantityAction)($stockId, $data, $userId);
+    }
+
+    public function confirmMovement(string $movementId): StockMovement
+    {
+        return $this->confirmMovementAction->confirmMovement($movementId);
+    }
+
+    public function confirmAdjustment(string $adjustmentId): StockAdjustment
+    {
+        return $this->confirmMovementAction->confirmAdjustment($adjustmentId);
+    }
+
+    public function confirmTransfer(string $transferId): StockTransfer
+    {
+        return $this->confirmMovementAction->confirmTransfer($transferId);
     }
 }

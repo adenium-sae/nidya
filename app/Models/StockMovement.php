@@ -19,6 +19,7 @@ class StockMovement extends Model
         'warehouse_id',
         'storage_location_id',
         'type',
+        'status',
         'quantity',
         'quantity_before',
         'quantity_after',
@@ -30,6 +31,10 @@ class StockMovement extends Model
         'movable_type',
         'movable_id',
     ];
+
+    const STATUS_PENDING = 'pending';
+    const STATUS_COMPLETED = 'completed';
+    const STATUS_CANCELLED = 'cancelled';
 
     protected $casts = [
         'quantity' => 'integer',

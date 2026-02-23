@@ -18,6 +18,7 @@ class StockAdjustment extends Model
         'warehouse_id',
         'folio',
         'type',
+        'status',
         'reason',
         'user_id',
         'notes',

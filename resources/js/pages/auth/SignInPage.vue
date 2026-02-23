@@ -1,8 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import Button from '@/components/ui/button/Button.vue';
+import Input from '@/components/ui/input/Input.vue';
+import Label from '@/components/ui/label/Label.vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth.store';
 import AuthLayout from '@/layouts/AuthLayout.vue';
@@ -26,7 +26,7 @@ async function handleLogin() {
       password: password.value,
     });
     router.push('/panel/dashboard');
-  } catch (err) {
+  } catch (err: any) {
     console.error('Login failed', err);
     error.value = err.response?.data?.message || t('auth.invalid_credentials');
   } finally {

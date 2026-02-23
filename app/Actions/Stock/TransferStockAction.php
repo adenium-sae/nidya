@@ -17,7 +17,7 @@ class TransferStockAction
                 'destination_warehouse_id' => $data['destination_warehouse_id'],
                 'user_id' => $userId,
                 'notes' => $data['notes'] ?? null,
-                'status' => 'completed',
+                'status' => 'pending',
             ]);
 
             foreach ($data['items'] as $itemData) {
@@ -70,6 +70,7 @@ class TransferStockAction
             'warehouse_id' => $srcWhId,
             'storage_location_id' => $itemData['source_location_id'] ?? null,
             'type' => 'transfer_out',
+            'status' => 'pending',
             'quantity' => -$qty,
             'quantity_before' => $sourceStock->quantity + $qty,
             'quantity_after' => $sourceStock->quantity,
@@ -83,6 +84,7 @@ class TransferStockAction
             'warehouse_id' => $dstWhId,
             'storage_location_id' => $itemData['destination_location_id'] ?? null,
             'type' => 'transfer_in',
+            'status' => 'pending',
             'quantity' => $qty,
             'quantity_before' => $destStock->quantity - $qty,
             'quantity_after' => $destStock->quantity,

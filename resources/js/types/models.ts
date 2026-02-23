@@ -121,6 +121,7 @@ export interface StockMovement {
     email: string
   }
   type: string
+  status: 'pending' | 'completed' | 'cancelled'
   quantity: number
   quantity_before: number
   quantity_after: number
@@ -133,6 +134,7 @@ export interface StockAdjustment {
   id: string
   folio: string
   type: string
+  status: 'pending' | 'completed' | 'cancelled'
   reason: string
   created_at: string
   warehouse: {

@@ -26,6 +26,7 @@ class UpdateStockQuantityAction
                 'warehouse_id' => $stock->warehouse_id,
                 'storage_location_id' => $stock->storage_location_id,
                 'type' => 'correction',
+                'status' => 'pending',
                 'quantity' => $difference,
                 'quantity_before' => $quantityBefore,
                 'quantity_after' => $quantityAfter,

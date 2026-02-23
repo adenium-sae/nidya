@@ -21,13 +21,23 @@ import {
 import {
   TrendingUp,
   TrendingDown,
-  Settings2,
   ArrowRightLeft,
+  CheckCircle,
+  Settings2,
 } from 'lucide-vue-next';
+import { useToast } from '@/components/ui/toast/use-toast';
+import Button from '@/components/ui/button/Button.vue';
 
 import { StockAdjustment } from '@/types/models';
 
 const router = useRouter();
+const { toast } = useToast();
+
+const statusLabels: Record<string, string> = {
+  pending: 'Pendiente',
+  completed: 'Completado',
+  cancelled: 'Cancelado',
+};
 
 const {
   items: adjustments,
@@ -55,16 +65,38 @@ function getAdjustmentClass(type: string): string {
   return classes[type] || 'bg-gray-100 text-gray-800';
 }
 
+function getStatusClass(status: string): string {
+  const classes: Record<string, string> = {
+    pending: 'bg-yellow-100 text-yellow-800',
+    completed: 'bg-green-100 text-green-800',
+    cancelled: 'bg-red-100 text-red-800',
+  };
+  return classes[status] || 'bg-gray-100 text-gray-800';
+}
+
+async function confirmAdjustment(adj: any) {
+  try {
+    if (adj.type === 'transfer') {
+        // Find transfer ID if it's a transfer adjustment
+        // Actually adjustments list might not include transfers if they were created via StockTransfer
+        // I should check if StockAdjustment can be a transfer.
+        // Based on my migration, I only added status to stock_adjustments and stock_movements.
+        await stockApi.confirmAdjustment(adj.id);
+    } else {
+        await stockApi.confirmAdjustment(adj.id);
+    }
+    toast({ title: 'Éxito', description: 'Ajuste confirmado correctamente.' });
+    fetchAdjustments();
+  } catch (error) {
+    toast({ title: 'Error', description: 'No se pudo confirmar el ajuste.', variant: 'destructive' });
+  }
+}
+
 onMounted(() => fetchAdjustments());
 </script>
 
 <template>
   <div class="flex flex-col gap-8">
-    <div>
-      <h1 class="text-3xl font-bold tracking-tight">Ajustes de Inventario</h1>
-      <p class="text-muted-foreground">Gestiona las entradas, salidas y correcciones de stock.</p>
-    </div>
-
     <!-- Quick Actions -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <Card class="hover:border-primary transition-colors cursor-pointer" @click="router.push('/panel/inventory/adjustments/entry')">
@@ -150,7 +182,27 @@ onMounted(() => fetchAdjustments());
                     {{ adj.items?.map((i: any) => i.product?.name).join(', ') }}
                   </div>
                 </TableCell>
-                <TableCell class="text-xs">{{ adj.user?.email }}</TableCell>
+                <TableCell>
+                    <span
+                      :class="getStatusClass(adj.status)"
+                      class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    >
+                      {{ statusLabels[adj.status] || adj.status }}
+                    </span>
+                 </TableCell>
+                 <TableCell class="text-xs">{{ adj.user?.email }}</TableCell>
+                 <TableCell class="text-right">
+                    <Button
+                        v-if="adj.status === 'pending'"
+                        variant="ghost"
+                        size="sm"
+                        class="h-8 px-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                        @click="confirmAdjustment(adj)"
+                    >
+                        <CheckCircle class="h-4 w-4 mr-1" />
+                        Confirmar
+                    </Button>
+                 </TableCell>
               </TableRow>
             </TableBody>
           </Table>

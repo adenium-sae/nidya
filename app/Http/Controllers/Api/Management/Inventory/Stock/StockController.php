@@ -65,4 +65,22 @@ class StockController extends Controller
 
         return response()->json($stock);
     }
+
+    public function confirmMovement(string $id): JsonResponse
+    {
+        $movement = $this->stockService->confirmMovement($id);
+        return response()->json($movement);
+    }
+
+    public function confirmAdjustment(string $id): JsonResponse
+    {
+        $adjustment = $this->stockService->confirmAdjustment($id);
+        return response()->json($adjustment);
+    }
+
+    public function confirmTransfer(string $id): JsonResponse
+    {
+        $transfer = $this->stockService->confirmTransfer($id);
+        return response()->json($transfer);
+    }
 }

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Button } from '@/components/ui/button'
+import Button from '@/components/ui/button/Button.vue'
 import { ArrowLeft } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 
 const props = defineProps({
-  title: { type: String, required: true },
+  title: { type: String },
   description: { type: String, default: '' },
   showBack: { type: Boolean, default: false },
 })
@@ -19,7 +19,7 @@ const router = useRouter()
         <ArrowLeft class="h-4 w-4" />
       </Button>
       <div>
-        <h1 class="text-3xl font-bold tracking-tight">{{ title }}</h1>
+        <h1 v-if="title" class="text-3xl font-bold tracking-tight">{{ title }}</h1>
         <p v-if="description" class="text-muted-foreground">{{ description }}</p>
       </div>
     </div>

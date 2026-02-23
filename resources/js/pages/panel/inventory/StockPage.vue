@@ -149,15 +149,6 @@ onMounted(() => fetchStock());
 
 <template>
   <div class="flex flex-col gap-6">
-    <PageHeader title="Existencias" description="Consulta y ajusta el inventario por almacén.">
-      <template #actions>
-        <Button variant="outline" @click="router.push('/panel/inventory/movements')">
-          <History class="mr-2 h-4 w-4" />
-          Ver Movimientos
-        </Button>
-      </template>
-    </PageHeader>
-
     <div class="flex items-center gap-2">
       <div class="relative flex-1 max-w-sm">
         <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

@@ -33,4 +33,16 @@ export const stockApi = {
   createLocation(data: any): Promise<AxiosResponse> {
     return client.post('/admin/inventory/locations', data)
   },
+  
+  confirmMovement(id: string): Promise<AxiosResponse> {
+    return client.post(`/admin/inventory/stock/movements/${id}/confirm`)
+  },
+
+  confirmAdjustment(id: string): Promise<AxiosResponse> {
+    return client.post(`/admin/inventory/stock/adjustments/${id}/confirm`)
+  },
+
+  confirmTransfer(id: string): Promise<AxiosResponse> {
+    return client.post(`/admin/inventory/stock/transfer/${id}/confirm`)
+  },
 }
