@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { SearchableSelect } from '@/components/ui/searchable-select';
-import { Plus, Trash2, MoveHorizontal } from 'lucide-vue-next';
+import { Plus, Trash2, MoveHorizontal, AlertTriangle } from 'lucide-vue-next';
 import PageHeader from '@/components/app/PageHeader.vue';
 
 const router = useRouter();
@@ -87,6 +87,20 @@ async function handleProductSelect(productId: string | null, index: number) {
   }
 }
 
+const validationErrors = computed(() => {
+  const errors: string[] = [];
+  form.items.forEach((item, index) => {
+    if (item.product_id && item.quantity > 0 && item.quantity > item.current_source_stock) {
+      errors.push(
+        `Producto #${index + 1}: la cantidad solicitada (${item.quantity}) excede el stock disponible (${item.current_source_stock}).`
+      );
+    }
+  });
+  return errors;
+});
+
+const hasStockErrors = computed(() => validationErrors.value.length > 0);
+
 async function handleSubmit() {
   if (
     !form.source_warehouse_id ||
@@ -110,15 +124,31 @@ async function handleSubmit() {
     return;
   }
 
+  if (hasStockErrors.value) {
+    toast({
+      title: 'Stock insuficiente',
+      description: validationErrors.value[0],
+      variant: 'destructive',
+    });
+    return;
+  }
+
   isSubmitting.value = true;
   try {
-    await stockApi.transfer(form);
-    toast({ title: 'Éxito', description: 'Transferencia realizada correctamente.' });
-    router.push('/panel/inventory/adjustments');
-  } catch (error) {
+    const result = await stockApi.transfer(form);
+    const folio = result?.data?.data?.folio;
+    toast({
+      title: 'Éxito',
+      description: folio
+        ? `Transferencia ${folio} registrada correctamente.`
+        : 'Transferencia registrada correctamente.',
+    });
+    router.push('/panel/inventory/transfers');
+  } catch (error: any) {
+    const message = error?.response?.data?.message || 'No se pudo realizar la transferencia.';
     toast({
       title: 'Error',
-      description: 'No se pudo realizar la transferencia.',
+      description: message,
       variant: 'destructive',
     });
   } finally {
@@ -230,9 +260,18 @@ async function handleSubmit() {
           </div>
           <div class="lg:col-span-2 space-y-2 relative">
             <Label>Cant.</Label>
-            <Input type="number" v-model.number="item.quantity" min="1" class="h-10" />
-            <div class="absolute -bottom-5 left-0 text-[10px] text-muted-foreground whitespace-nowrap">
-              Disponible: <span class="font-medium text-primary">{{ item.current_source_stock }}</span>
+            <Input
+              type="number"
+              v-model.number="item.quantity"
+              min="1"
+              :max="item.current_source_stock || undefined"
+              class="h-10"
+              :class="{ 'border-destructive focus-visible:ring-destructive': item.product_id && item.quantity > 0 && item.quantity > item.current_source_stock }"
+            />
+            <div class="absolute -bottom-5 left-0 text-[10px] whitespace-nowrap"
+              :class="item.product_id && item.quantity > item.current_source_stock ? 'text-destructive font-medium' : 'text-muted-foreground'"
+            >
+              Disponible: <span class="font-medium" :class="item.product_id && item.quantity > item.current_source_stock ? 'text-destructive' : 'text-primary'">{{ item.current_source_stock }}</span>
             </div>
           </div>
           <div class="lg:col-span-1 pt-8 flex justify-end">
@@ -257,8 +296,21 @@ async function handleSubmit() {
       </div>
     </div>
 
+    <!-- Validation warnings -->
+    <div v-if="hasStockErrors" class="rounded-md border border-destructive/50 bg-destructive/5 p-4">
+      <div class="flex items-start gap-3">
+        <AlertTriangle class="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+        <div class="space-y-1">
+          <p class="text-sm font-medium text-destructive">Stock insuficiente</p>
+          <ul class="text-xs text-destructive/80 space-y-0.5">
+            <li v-for="(error, i) in validationErrors" :key="i">{{ error }}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
     <div class="w-full lg:w-[300px] flex items-end">
-      <Button class="w-full" :disabled="isSubmitting" @click="handleSubmit">
+      <Button class="w-full" :disabled="isSubmitting || hasStockErrors" @click="handleSubmit">
         <MoveHorizontal class="mr-2 h-5 w-5" />
         {{ isSubmitting ? 'Procesando...' : 'Confirmar Transferencia' }}
       </Button>

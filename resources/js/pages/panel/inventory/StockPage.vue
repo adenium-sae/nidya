@@ -2,14 +2,7 @@
 import { ref, onMounted, reactive, computed } from 'vue';
 import { stockApi } from '@/api/stock.api';
 import { useApiList } from '@/composables/useApiList';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { DataTable, type Column } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -21,7 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { ArrowRightLeft, Search, History } from 'lucide-vue-next';
+import { ArrowRightLeft, Search } from 'lucide-vue-next';
 import { useToast } from '@/components/ui/toast/use-toast';
 import {
   Select,
@@ -40,7 +33,7 @@ interface StockItem {
   reserved: number;
   product: { id: string; name: string; sku: string };
   warehouse: { id: string; name: string };
-  storage_location?: { id: string; name: string; code: string };
+  storage_location?: { id: string; name: string; code: string } | null;
 }
 
 const router = useRouter();
@@ -115,15 +108,16 @@ async function handleSubmit() {
 
     const payload = {
       warehouse_id: form.stockItem.warehouse.id,
+      storage_location_id: form.stockItem.storage_location?.id || null,
       type: form.type,
       reason: form.reason,
       notes: form.notes,
       items: [
         {
           product_id: form.stockItem.product.id,
-          storage_location_id: form.stockItem.storage_location?.id || null,
           quantity: parseFloat(form.quantity as string) || 0,
           mode: modeMap[form.type] || 'absolute',
+          reason: form.reason,
         },
       ],
     };
@@ -145,6 +139,16 @@ async function handleSubmit() {
 }
 
 onMounted(() => fetchStock());
+
+const columns: Column[] = [
+  { key: 'product', label: 'Producto', type: 'custom' },
+  { key: 'sku', label: 'SKU', type: 'custom' },
+  { key: 'warehouse', label: 'Almacén', type: 'custom' },
+  { key: 'location', label: 'Ubicación', type: 'custom' },
+  { key: 'quantity', label: 'Disponible', type: 'custom', align: 'right' },
+  { key: 'reserved', label: 'Reservado', type: 'custom', align: 'right' },
+  { key: 'actions', label: '', type: 'custom', align: 'right' },
+];
 </script>
 
 <template>
@@ -161,46 +165,58 @@ onMounted(() => fetchStock());
       </div>
     </div>
 
-    <div class="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Producto</TableHead>
-            <TableHead>SKU</TableHead>
-            <TableHead>Almacén</TableHead>
-            <TableHead>Ubicación</TableHead>
-            <TableHead class="text-right">Disponible</TableHead>
-            <TableHead class="text-right">Reservado</TableHead>
-            <TableHead class="text-right">Acciones</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow v-if="stockItems.length === 0 && !isLoading">
-            <TableCell colspan="7" class="text-center h-24 text-muted-foreground">
-              No hay existencias registradas.
-            </TableCell>
-          </TableRow>
-          <TableRow v-for="item in stockItems" :key="item.id">
-            <TableCell class="font-medium">{{ item.product?.name }}</TableCell>
-            <TableCell>{{ item.product?.sku }}</TableCell>
-            <TableCell>{{ item.warehouse?.name }}</TableCell>
-            <TableCell>
-              <span v-if="item.storage_location" class="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
-                {{ item.storage_location.code }}
-              </span>
-              <span v-else class="text-muted-foreground italic text-xs">Sin ubicar</span>
-            </TableCell>
-            <TableCell class="text-right font-bold">{{ item.quantity }}</TableCell>
-            <TableCell class="text-right text-muted-foreground">{{ item.reserved }}</TableCell>
-            <TableCell class="text-right">
-              <Button variant="outline" size="sm" @click="openAdjustDialog(item)">
-                <ArrowRightLeft class="mr-2 h-3 w-3" />
-                Ajustar
-              </Button>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
+    <div class="h-[calc(100vh-160px)] flex flex-col rounded-md border">
+      <DataTable
+        :columns="columns"
+        :data="stockItems"
+        :is-loading="isLoading"
+        :search-value="searchQuery"
+        search-placeholder="Buscar producto o SKU..."
+        empty-message="No hay existencias registradas."
+        :empty-icon="ArrowRightLeft"
+        class="flex-1 min-h-0"
+        @search="search"
+      >
+        <template #cell-product="{ row }">
+          <div>
+            <div class="font-medium">{{ row.product?.name }}</div>
+          </div>
+        </template>
+
+        <template #cell-sku="{ row }">
+          <div class="text-sm text-muted-foreground">{{ row.product?.sku }}</div>
+        </template>
+
+        <template #cell-warehouse="{ row }">
+          {{ row.warehouse?.name || '-' }}
+        </template>
+
+        <template #cell-location="{ row }">
+          <div>
+            <span v-if="row.storage_location" class="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+              {{ row.storage_location.code }}
+            </span>
+            <span v-else class="text-muted-foreground italic text-xs">Sin ubicar</span>
+          </div>
+        </template>
+
+        <template #cell-quantity="{ row }">
+          <div class="text-right font-bold">{{ row.quantity }}</div>
+        </template>
+
+        <template #cell-reserved="{ row }">
+          <div class="text-right text-muted-foreground">{{ row.reserved }}</div>
+        </template>
+
+        <template #cell-actions="{ row }">
+          <div class="flex items-center justify-end">
+            <Button variant="outline" size="sm" @click="openAdjustDialog(row)">
+              <ArrowRightLeft class="mr-2 h-3 w-3" />
+              Ajustar
+            </Button>
+          </div>
+        </template>
+      </DataTable>
     </div>
 
     <!-- Adjust Dialog -->

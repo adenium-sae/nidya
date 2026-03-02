@@ -26,6 +26,10 @@ export const stockApi = {
     return client.get('/admin/inventory/stock/adjustments', { params })
   },
 
+  transfers(params: Record<string, any> = {}): Promise<AxiosResponse> {
+    return client.get('/admin/inventory/stock/transfers', { params })
+  },
+
   locations(params: Record<string, any> = {}): Promise<AxiosResponse> {
     return client.get('/admin/inventory/locations', { params })
   },
@@ -33,9 +37,13 @@ export const stockApi = {
   createLocation(data: any): Promise<AxiosResponse> {
     return client.post('/admin/inventory/locations', data)
   },
-  
+
   confirmMovement(id: string): Promise<AxiosResponse> {
     return client.post(`/admin/inventory/stock/movements/${id}/confirm`)
+  },
+
+  cancelMovement(id: string): Promise<AxiosResponse> {
+    return client.post(`/admin/inventory/stock/movements/${id}/cancel`)
   },
 
   confirmAdjustment(id: string): Promise<AxiosResponse> {
@@ -44,5 +52,9 @@ export const stockApi = {
 
   confirmTransfer(id: string): Promise<AxiosResponse> {
     return client.post(`/admin/inventory/stock/transfer/${id}/confirm`)
+  },
+
+  cancelTransfer(id: string): Promise<AxiosResponse> {
+    return client.post(`/admin/inventory/stock/transfer/${id}/cancel`)
   },
 }

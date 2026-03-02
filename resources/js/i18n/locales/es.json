@@ -64,7 +64,8 @@
     "roles": "Roles",
     "permissions": "Permisos",
     "stores": "Tiendas",
-    "branches": "Sucursales"
+    "branches": "Sucursales",
+    "transfers": "Transferencias"
   },
   "inventory": {
     "products": "Productos",
@@ -86,6 +87,7 @@
     "location": "Ubicación",
     "adjust_stock": "Ajustar Inventario",
     "transfer": "Transferencia",
+    "transfers": "Transferencias",
     "entry": "Entrada",
     "exit": "Salida"
   }

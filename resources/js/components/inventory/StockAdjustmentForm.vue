@@ -63,7 +63,7 @@ const config = computed(() => ({
     description: 'Reemplaza el valor de stock directamente.',
     quantityLabel: 'Nueva Cant.',
     apiMode: 'absolute',
-    type: 'adjustment',
+    type: 'recount',
     submitLabel: 'Registrar Ajuste',
     submitVariant: 'default' as const,
     quantityMin: 0,

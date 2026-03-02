@@ -145,6 +145,10 @@ const navMain = computed(() => [
         url: "/panel/inventory/adjustments",
       },
       {
+        title: t('sidebar.transfers'),
+        url: "/panel/inventory/transfers",
+      },
+      {
         title: t('sidebar.warehouses'),
         url: "/panel/inventory/warehouses",
       },

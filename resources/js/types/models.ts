@@ -152,6 +152,38 @@ export interface StockAdjustment {
   }[]
 }
 
+export interface StockTransferItem {
+  id: string
+  stock_transfer_id: string
+  product_id: string
+  quantity_requested: number
+  quantity_sent: number
+  quantity_received: number
+  notes?: string
+  product?: Product
+}
+
+export interface StockTransfer {
+  id: string
+  folio: string
+  from_warehouse_id: string
+  to_warehouse_id: string
+  requested_by: string
+  approved_by?: string
+  received_by?: string
+  status: 'pending' | 'in_transit' | 'completed' | 'cancelled'
+  approved_at?: string
+  shipped_at?: string
+  received_at?: string
+  notes?: string
+  created_at: string
+  updated_at: string
+  source_warehouse?: Warehouse
+  destination_warehouse?: Warehouse
+  requested_by_user?: User
+  items?: StockTransferItem[]
+}
+
 export interface DashboardStats {
   total_sales: number
   total_products: number

@@ -22,7 +22,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class DemoDataSeeder extends Seeder
+class DevelopmentSeeder extends Seeder
 {
     public function run(): void
     {
@@ -46,7 +46,60 @@ class DemoDataSeeder extends Seeder
 
         $this->command->info("✅ Usuario admin creado: {$user->email} / password");
 
-        // 2. Crear Roles y Permisos
+        // 2. Crear Permisos
+        $permissions = [
+            // Dashboard
+            ['key' => 'dashboard.view', 'name' => 'Ver dashboard', 'module' => 'dashboard'],
+            // Productos
+            ['key' => 'products.view', 'name' => 'Ver productos', 'module' => 'products'],
+            ['key' => 'products.create', 'name' => 'Crear productos', 'module' => 'products'],
+            ['key' => 'products.edit', 'name' => 'Editar productos', 'module' => 'products'],
+            ['key' => 'products.delete', 'name' => 'Eliminar productos', 'module' => 'products'],
+            // Inventario
+            ['key' => 'inventory.view', 'name' => 'Ver inventario', 'module' => 'inventory'],
+            ['key' => 'inventory.adjust', 'name' => 'Ajustar inventario', 'module' => 'inventory'],
+            ['key' => 'inventory.transfer', 'name' => 'Transferir inventario', 'module' => 'inventory'],
+            ['key' => 'inventory.receive', 'name' => 'Recibir inventario', 'module' => 'inventory'],
+            // Ventas
+            ['key' => 'sales.view', 'name' => 'Ver ventas', 'module' => 'sales'],
+            ['key' => 'sales.create', 'name' => 'Crear ventas', 'module' => 'sales'],
+            ['key' => 'sales.cancel', 'name' => 'Cancelar ventas', 'module' => 'sales'],
+            ['key' => 'sales.refund', 'name' => 'Reembolsar ventas', 'module' => 'sales'],
+            // Caja
+            ['key' => 'cash.view', 'name' => 'Ver movimientos de caja', 'module' => 'cash'],
+            ['key' => 'cash.open', 'name' => 'Abrir caja', 'module' => 'cash'],
+            ['key' => 'cash.close', 'name' => 'Cerrar caja', 'module' => 'cash'],
+            ['key' => 'cash.withdraw', 'name' => 'Retirar efectivo', 'module' => 'cash'],
+            ['key' => 'cash.deposit', 'name' => 'Depositar efectivo', 'module' => 'cash'],
+            // Clientes
+            ['key' => 'customers.view', 'name' => 'Ver clientes', 'module' => 'customers'],
+            ['key' => 'customers.create', 'name' => 'Crear clientes', 'module' => 'customers'],
+            ['key' => 'customers.edit', 'name' => 'Editar clientes', 'module' => 'customers'],
+            ['key' => 'customers.delete', 'name' => 'Eliminar clientes', 'module' => 'customers'],
+            // Reportes
+            ['key' => 'reports.sales', 'name' => 'Ver reporte de ventas', 'module' => 'reports'],
+            ['key' => 'reports.inventory', 'name' => 'Ver reporte de inventario', 'module' => 'reports'],
+            ['key' => 'reports.cash', 'name' => 'Ver reporte de caja', 'module' => 'reports'],
+            ['key' => 'reports.products', 'name' => 'Ver reporte de productos', 'module' => 'reports'],
+            // Configuración
+            ['key' => 'settings.view', 'name' => 'Ver configuración', 'module' => 'settings'],
+            ['key' => 'settings.edit', 'name' => 'Editar configuración', 'module' => 'settings'],
+            ['key' => 'settings.users', 'name' => 'Gestionar usuarios', 'module' => 'settings'],
+            ['key' => 'settings.roles', 'name' => 'Gestionar roles', 'module' => 'settings'],
+            ['key' => 'settings.stores', 'name' => 'Gestionar tiendas', 'module' => 'settings'],
+            ['key' => 'settings.branches', 'name' => 'Gestionar sucursales', 'module' => 'settings'],
+        ];
+
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(
+                ['key' => $permission['key']],
+                $permission
+            );
+        }
+
+        $this->command->info('✅ Permisos creados');
+
+        // 3. Crear Roles
         $allPermissions = Permission::all();
         
         // Helper function to attach permissions with UUIDs
@@ -103,7 +156,7 @@ class DemoDataSeeder extends Seeder
 
         $this->command->info('✅ Roles creados: Admin, Gerente, Vendedor');
 
-        // 3. Crear Store
+        // 4. Crear Store
         $store = Store::create([
             'name' => 'Abarrotes Don Pepe',
             'slug' => 'abarrotes-don-pepe',
@@ -114,7 +167,7 @@ class DemoDataSeeder extends Seeder
 
         $this->command->info("✅ Tienda creada: {$store->name}");
 
-        // 4. Crear Direcciones y Sucursales
+        // 5. Crear Direcciones y Sucursales
         $address1 = Address::create([
             'street' => 'Av. Miguel Alemán',
             'ext_number' => '123',
@@ -159,7 +212,7 @@ class DemoDataSeeder extends Seeder
 
         $this->command->info('✅ Sucursales creadas: Centro y Norte');
 
-        // 5. Crear Almacenes
+        // 6. Crear Almacenes
         $warehouse1 = Warehouse::create([
             'store_id' => $store->id,
             'branch_id' => $branch1->id,
@@ -189,7 +242,7 @@ class DemoDataSeeder extends Seeder
 
         $this->command->info('✅ Almacenes creados');
 
-        // 6. Crear Categorías (flat structure)
+        // 7. Crear Categorías (flat structure)
         $categoryNames = ['Refrescos', 'Agua', 'Papas', 'Arroz', 'Frijol', 'Galletas', 'Abarrotes', 'Bebidas', 'Botanas', 'Limpieza'];
         
         foreach ($categoryNames as $catName) {
@@ -202,7 +255,7 @@ class DemoDataSeeder extends Seeder
 
         $this->command->info('✅ Categorías creadas');
 
-        // 7. Crear Productos
+        // 8. Crear Productos
         $products = [
             ['name' => 'Coca-Cola 600ml', 'sku' => 'COCA-600', 'barcode' => '7501055308', 'category' => 'Refrescos', 'cost' => 10.00, 'price' => 15.00],
             ['name' => 'Agua Ciel 1L', 'sku' => 'AGUA-1L', 'barcode' => '7501055309', 'category' => 'Agua', 'cost' => 5.00, 'price' => 8.00],

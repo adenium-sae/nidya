@@ -98,7 +98,7 @@ return new class extends Migration
             $table->string('folio')->unique();
             $table->foreignUuid('warehouse_id')->constrained()->cascadeOnDelete();
             $table->enum('type', ['increase', 'decrease', 'recount'])->default('recount');
-            $table->enum('reason', ['damaged', 'lost', 'found', 'expired', 'recount', 'other']);
+            $table->enum('reason', ['damaged', 'lost', 'found', 'expired', 'recount', 'correction', 'other']);
             $table->foreignUuid('user_id')->constrained();
             $table->text('notes')->nullable();
             $table->timestamps();

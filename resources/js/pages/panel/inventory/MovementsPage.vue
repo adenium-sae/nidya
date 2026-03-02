@@ -1,21 +1,33 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue';
+import { onMounted, computed, ref } from 'vue';
 import { stockApi } from '@/api/stock.api';
 import { useApiList } from '@/composables/useApiList';
 import { DataTable, type Column, type Filter, type Pagination } from '@/components/ui/data-table';
 import Button from '@/components/ui/button/Button.vue';
 import { useToast } from '@/components/ui/toast/use-toast';
-import { ArrowUpDown, CheckCircle } from 'lucide-vue-next';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { ArrowUpDown, CheckCircle, XCircle } from 'lucide-vue-next';
 
 const { toast } = useToast();
 
+// Movement types matching the backend enum:
+// ['entry', 'exit', 'transfer', 'adjustment', 'sale', 'return', 'damage', 'production']
 const movementTypeLabels: Record<string, string> = {
-  sale: 'Venta',
-  purchase: 'Compra',
+  entry: 'Entrada',
+  exit: 'Salida',
+  transfer: 'Transferencia',
   adjustment: 'Ajuste',
-  transfer_in: 'Transferencia Entrada',
-  transfer_out: 'Transferencia Salida',
+  sale: 'Venta',
   return: 'Devolución',
+  damage: 'Daño',
+  production: 'Producción',
 };
 
 const statusLabels: Record<string, string> = {
@@ -72,12 +84,14 @@ function getTypeLabel(type: string): string {
 
 function getTypeClass(type: string): string {
   const classes: Record<string, string> = {
-    sale: 'bg-blue-100 text-blue-800',
-    purchase: 'bg-green-100 text-green-800',
+    entry: 'bg-green-100 text-green-800',
+    exit: 'bg-red-100 text-red-800',
+    transfer: 'bg-purple-100 text-purple-800',
     adjustment: 'bg-yellow-100 text-yellow-800',
-    transfer_in: 'bg-purple-100 text-purple-800',
-    transfer_out: 'bg-orange-100 text-orange-800',
-    return: 'bg-gray-100 text-gray-800',
+    sale: 'bg-blue-100 text-blue-800',
+    return: 'bg-cyan-100 text-cyan-800',
+    damage: 'bg-orange-100 text-orange-800',
+    production: 'bg-indigo-100 text-indigo-800',
   };
   return classes[type] || 'bg-gray-100 text-gray-800';
 }
@@ -91,13 +105,67 @@ function getStatusClass(status: string): string {
   return classes[status] || 'bg-gray-100 text-gray-800';
 }
 
-async function confirmMovement(id: string) {
+// --- Confirm / Cancel Dialog ---
+const showDialog = ref(false);
+const dialogMovementId = ref<string | null>(null);
+const dialogAction = ref<'confirm' | 'cancel'>('confirm');
+const dialogMovementInfo = ref<{ product: string; type: string; quantity: number } | null>(null);
+const isProcessing = ref(false);
+
+function openConfirmDialog(row: any) {
+  dialogMovementId.value = row.id;
+  dialogAction.value = 'confirm';
+  dialogMovementInfo.value = {
+    product: row.product?.name || '-',
+    type: getTypeLabel(row.type),
+    quantity: row.quantity,
+  };
+  showDialog.value = true;
+}
+
+function openCancelDialog(row: any) {
+  dialogMovementId.value = row.id;
+  dialogAction.value = 'cancel';
+  dialogMovementInfo.value = {
+    product: row.product?.name || '-',
+    type: getTypeLabel(row.type),
+    quantity: row.quantity,
+  };
+  showDialog.value = true;
+}
+
+const dialogTitle = computed(() => {
+  return dialogAction.value === 'confirm' ? 'Confirmar Movimiento' : 'Cancelar Movimiento';
+});
+
+const dialogDescription = computed(() => {
+  if (dialogAction.value === 'confirm') {
+    return '¿Estás seguro de que deseas confirmar este movimiento? El cambio de stock se marcará como completado.';
+  }
+  return '¿Estás seguro de que deseas cancelar este movimiento? Esta acción no se puede deshacer.';
+});
+
+async function executeDialogAction() {
+  if (!dialogMovementId.value) return;
+
+  isProcessing.value = true;
   try {
-    await stockApi.confirmMovement(id);
-    toast({ title: 'Éxito', description: 'Movimiento confirmado correctamente.' });
+    if (dialogAction.value === 'confirm') {
+      await stockApi.confirmMovement(dialogMovementId.value);
+      toast({ title: 'Éxito', description: 'Movimiento confirmado correctamente.' });
+    } else {
+      await stockApi.cancelMovement(dialogMovementId.value);
+      toast({ title: 'Éxito', description: 'Movimiento cancelado correctamente.' });
+    }
+    showDialog.value = false;
+    dialogMovementId.value = null;
+    dialogMovementInfo.value = null;
     fetchMovements();
-  } catch (error) {
-    toast({ title: 'Error', description: 'No se pudo confirmar el movimiento.', variant: 'destructive' });
+  } catch (error: any) {
+    const message = error?.response?.data?.message || 'No se pudo procesar la acción.';
+    toast({ title: 'Error', description: message, variant: 'destructive' });
+  } finally {
+    isProcessing.value = false;
   }
 }
 
@@ -172,18 +240,75 @@ onMounted(() => fetchMovements());
         </template>
 
         <template #cell-actions="{ row }">
-          <Button
-            v-if="row.status === 'pending'"
-            variant="ghost"
-            size="sm"
-            class="h-8 px-2 text-green-600 hover:text-green-700 hover:bg-green-50"
-            @click="confirmMovement(row.id)"
-          >
-            <CheckCircle class="h-4 w-4 mr-1" />
-            Confirmar
-          </Button>
+          <div class="flex items-center justify-end gap-1">
+            <Button
+              v-if="row.status === 'pending'"
+              variant="ghost"
+              size="sm"
+              class="h-8 px-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+              @click.stop="openConfirmDialog(row)"
+            >
+              <CheckCircle class="h-4 w-4 mr-1" />
+              Confirmar
+            </Button>
+            <Button
+              v-if="row.status === 'pending'"
+              variant="ghost"
+              size="sm"
+              class="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+              @click.stop="openCancelDialog(row)"
+            >
+              <XCircle class="h-4 w-4 mr-1" />
+              Cancelar
+            </Button>
+          </div>
         </template>
       </DataTable>
     </div>
+
+    <!-- Confirm / Cancel Dialog -->
+    <Dialog v-model:open="showDialog">
+      <DialogContent class="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>{{ dialogTitle }}</DialogTitle>
+          <DialogDescription>{{ dialogDescription }}</DialogDescription>
+        </DialogHeader>
+
+        <div v-if="dialogMovementInfo" class="rounded-md border p-4 space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Producto:</span>
+            <span class="font-medium">{{ dialogMovementInfo.product }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Tipo:</span>
+            <span>{{ dialogMovementInfo.type }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Cantidad:</span>
+            <span
+              :class="dialogMovementInfo.quantity >= 0 ? 'text-green-600' : 'text-red-600'"
+              class="font-medium"
+            >
+              {{ dialogMovementInfo.quantity >= 0 ? '+' : '' }}{{ dialogMovementInfo.quantity }}
+            </span>
+          </div>
+        </div>
+
+        <DialogFooter class="gap-2">
+          <Button variant="outline" @click="showDialog = false" :disabled="isProcessing">
+            Volver
+          </Button>
+          <Button
+            :variant="dialogAction === 'cancel' ? 'destructive' : 'default'"
+            :disabled="isProcessing"
+            @click="executeDialogAction"
+          >
+            <CheckCircle v-if="dialogAction === 'confirm'" class="h-4 w-4 mr-1" />
+            <XCircle v-else class="h-4 w-4 mr-1" />
+            {{ isProcessing ? 'Procesando...' : (dialogAction === 'confirm' ? 'Confirmar' : 'Cancelar Movimiento') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>

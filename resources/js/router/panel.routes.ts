@@ -49,6 +49,11 @@ export const panelRoutes: RouteRecordRaw[] = [
         component: () => import('@/pages/panel/inventory/adjustments/AdjustmentsPage.vue'),
       },
       {
+        path: 'inventory/transfers',
+        name: 'transfers',
+        component: () => import('@/pages/panel/inventory/TransfersPage.vue'),
+      },
+      {
         path: 'inventory/adjustments/entry',
         name: 'adjustment-entry',
         component: () => import('@/pages/panel/inventory/adjustments/AdjustmentFormPage.vue'),

@@ -10,6 +10,7 @@ use App\Models\Stock;
 use App\Models\StockAdjustment;
 use App\Models\StockMovement;
 use App\Models\StockTransfer;
+use Illuminate\Support\Facades\DB;
 
 class StockService
 {
@@ -92,6 +93,29 @@ class StockService
         return $query->latest()->paginate($perPage);
     }
 
+    public function listTransfers(array $filters, int $perPage)
+    {
+        $query = StockTransfer::with(['sourceWarehouse', 'destinationWarehouse', 'requestedBy', 'items.product']);
+
+        if (!empty($filters['from_warehouse_id'])) {
+            $query->where('from_warehouse_id', $filters['from_warehouse_id']);
+        }
+        if (!empty($filters['to_warehouse_id'])) {
+            $query->where('to_warehouse_id', $filters['to_warehouse_id']);
+        }
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+
+        return $query->latest()->paginate($perPage);
+    }
+
     // --- Mutations (delegated to Actions) ---
 
     public function adjust(array $data, string $userId): StockAdjustment
@@ -122,5 +146,32 @@ class StockService
     public function confirmTransfer(string $transferId): StockTransfer
     {
         return $this->confirmMovementAction->confirmTransfer($transferId);
+    }
+
+    public function cancelMovement(string $movementId): StockMovement
+    {
+        return $this->confirmMovementAction->cancelMovement($movementId);
+    }
+
+    public function cancelTransfer(string $transferId): StockTransfer
+    {
+        return DB::transaction(function () use ($transferId) {
+            $transfer = StockTransfer::findOrFail($transferId);
+
+            if ($transfer->status !== StockTransfer::STATUS_PENDING) {
+                throw new \Exception('Solo se pueden cancelar transferencias pendientes.');
+            }
+
+            $transfer->status = StockTransfer::STATUS_CANCELLED;
+            $transfer->save();
+
+            // Cancel all related pending movements
+            StockMovement::where('movable_type', StockTransfer::class)
+                ->where('movable_id', $transferId)
+                ->where('status', StockMovement::STATUS_PENDING)
+                ->update(['status' => StockMovement::STATUS_CANCELLED]);
+
+            return $transfer->load(['sourceWarehouse', 'destinationWarehouse', 'items.product']);
+        });
     }
 }

@@ -64,7 +64,8 @@
     "roles": "Roles",
     "permissions": "Permissions",
     "stores": "Stores",
-    "branches": "Branches"
+    "branches": "Branches",
+    "transfers": "Transfers"
   },
   "inventory": {
     "products": "Products",
@@ -86,6 +87,7 @@
     "location": "Location",
     "adjust_stock": "Adjust Stock",
     "transfer": "Transfer",
+    "transfers": "Transfers",
     "entry": "Entry",
     "exit": "Exit"
   }
