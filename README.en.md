@@ -8,7 +8,7 @@
 
 Nidya is a comprehensive management system for grocery stores and similar businesses. It allows you to manage:
 
-- 🏪 **Stores and branches** — Multi-branch structure with warehouses per branch
+- 🏪 **Stores and branches** — "Concept Store" model (multi-tenant) with shared consolidated warehouses per branch
 - 📦 **Product catalog** — With categories, variants, attributes, and images
 - 📊 **Inventory** — Stock per warehouse, adjustments, inter-warehouse transfers, movements
 - 💰 **Sales** — Point of sale with discounts, taxes, multiple payment methods

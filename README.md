@@ -8,7 +8,7 @@
 
 Nidya es un sistema integral de gestión para tiendas de abarrotes y negocios similares. Permite administrar:
 
-- 🏪 **Tiendas y sucursales** — Estructura multi-sucursal con almacenes por sucursal
+- 🏪 **Tiendas y sucursales** — Modelo "Concept Store" (multi-tienda) con base de almacenes compartida por sucursal
 - 📦 **Catálogo de productos** — Con categorías, variantes, atributos e imágenes
 - 📊 **Inventario** — Stock por almacén, ajustes, transferencias entre almacenes, movimientos
 - 💰 **Ventas** — Punto de venta con descuentos, impuestos, múltiples métodos de pago
