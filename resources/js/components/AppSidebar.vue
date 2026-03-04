@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from "vue"
 import { computed } from "vue"
+
+const appDomain = computed(() => {
+  try {
+    return new URL(import.meta.env.VITE_APP_URL || window.location.origin).hostname
+  } catch {
+    return window.location.hostname
+  }
+})
 import { RouterLink, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { useI18n } from 'vue-i18n'
@@ -212,7 +220,7 @@ const navMain = computed(() => [
               </div>
               <div class="flex flex-col gap-0.5 leading-none">
                 <span class="font-medium">Nidya</span>
-                <span class="text-xs text-muted-foreground">{{ t('sidebar.control_panel') }}</span>
+                <span class="text-xs text-muted-foreground">{{ appDomain }}</span>
               </div>
             </RouterLink>
           </SidebarMenuButton>

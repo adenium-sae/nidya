@@ -14,15 +14,17 @@ Nidya is a comprehensive management system for grocery stores and similar busine
 - 💰 **Sales** — Point of sale with discounts, taxes, multiple payment methods
 - 👥 **Users and roles** — Granular permission system by module
 - 🏷️ **Customers** — Customer directory with history
+- 📋 **Activity Log** — Audit trail for all database-mutating operations (creates, updates, deletes, authentication)
 
 ## Stack
 
 | Technology | Version |
-|-----------|---------|
+|-----------|------|
 | PHP | ≥ 8.2 |
 | Laravel | 12.x |
 | PostgreSQL | — |
 | Laravel Sanctum | 4.x |
+| Vue 3 + Vite | — |
 | Pest | 4.x |
 
 ## Quick Setup
@@ -38,6 +40,7 @@ npm install
 cp .env.example .env
 php artisan key:generate
 # Edit .env with your PostgreSQL credentials
+# APP_URL=https://yourdomain.com  (also controls the domain shown in the sidebar)
 
 # Database
 php artisan migrate:fresh --seed
