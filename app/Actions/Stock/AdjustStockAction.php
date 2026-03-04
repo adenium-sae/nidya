@@ -184,19 +184,7 @@ class AdjustStockAction
             'quantity_after' => $quantityAfter,
         ]);
 
-        // Update or create the stock record
-        if ($stock) {
-            $stock->quantity = $quantityAfter;
-            $stock->save();
-        } else {
-            $stock = Stock::create([
-                'product_id' => $itemData['product_id'],
-                'warehouse_id' => $warehouseId,
-                'storage_location_id' => $storageLocationId,
-                'quantity' => $quantityAfter,
-                'reserved' => 0,
-            ]);
-        }
+        // Do NOT update stock yet — stock is only applied when the adjustment is confirmed.
 
         // Determine the correct movement type based on the DB enum
         $movementType = $this->getMovementType($adjustment->type, $mode);

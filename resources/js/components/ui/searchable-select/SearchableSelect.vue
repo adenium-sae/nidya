@@ -2,7 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import client from '@/api/client'
 import { useDebounceFn } from '@vueuse/core'
-import { Check, ChevronsUpDown, Search, Loader2, Plus } from 'lucide-vue-next'
+import { Check, ChevronsUpDown, Search, Loader2, Plus, X } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
@@ -178,7 +178,15 @@ watch(open, (isOpen) => {
         <span :class="cn('truncate flex-1 text-left', !selectedOption && 'text-muted-foreground')">
           {{ displayLabel }}
         </span>
-        <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        <button
+          v-if="selectedOption"
+          type="button"
+          class="ml-1 shrink-0 rounded-sm opacity-50 hover:opacity-100 focus:outline-none"
+          @click.stop="handleClear"
+        >
+          <X class="h-4 w-4" />
+        </button>
+        <ChevronsUpDown v-else class="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </Button>
     </PopoverTrigger>
     <PopoverContent class="w-[--radix-popover-trigger-width] p-0" align="start">

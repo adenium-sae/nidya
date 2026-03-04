@@ -42,13 +42,22 @@ class StockService
             }
         }
 
+        if (!empty($filters['search'])) {
+            $search = strtolower($filters['search']);
+            $query->whereHas('product', function ($q) use ($search) {
+                $q->whereRaw('LOWER(name) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(barcode) LIKE ?', ["%{$search}%"]);
+            });
+        }
+
         if (!empty($filters['low_stock'])) {
             $query->whereHas('product', function($q) {
                 $q->whereRaw('stock.quantity <= products.min_stock');
             });
         }
 
-        return $query->get();
+        return $query->paginate($perPage);
     }
 
     public function listMovements(array $filters, int $perPage)

@@ -60,6 +60,9 @@
     "in_development": "Module in development.",
     "coming_soon": "Coming Soon",
     "check_errors": "Please check the fields for errors."
+    ,
+    "active_m": "Active",
+    "inactive_m": "Inactive"
   },
   "auth": {
     "sign_in": "Sign In",
@@ -98,6 +101,7 @@
     "categories": "Categories",
     "sales_summary": "Sales Summary",
     "top_products": "Top Products (Month)",
+    "store": "Store",
     "low_stock": "Low Stock Items",
     "recent_activity": "Recent Activity",
     "today_sales": "Today's Sales",
@@ -132,7 +136,8 @@
     "suppliers": "Suppliers",
     "customers": "Customers",
     "cash_register": "Cash Register",
-    "cash_movements": "Cash Movements"
+    "cash_movements": "Cash Movements",
+    "activity_logs": "Activity Log"
   },
   "inventory": {
     "products": "Products",
@@ -160,7 +165,8 @@
     "exit": "Exit",
     "quantity": "Quantity",
     "product": "Product",
-    "warehouse": "Warehouse"
+    "warehouse": "Warehouse",
+    "all_warehouses": "All warehouses"
   },
   "categories": {
     "title": "Categories",
@@ -171,6 +177,16 @@
     "deleted": "Category deleted successfully.",
     "delete_confirm": "Delete category?",
     "delete_desc": "The category '{name}' will be deleted. This action cannot be undone."
+    ,
+    "form_dialog_title_new": "New Category",
+    "form_dialog_title_edit": "Edit Category",
+    "form_dialog_description": "Fill the category details here.",
+    "form_name_placeholder": "E.g. Beverages",
+    "form_description_placeholder": "Optional description",
+    "form_label_name": "Name",
+    "form_label_description": "Description",
+    "created_successfully": "Category created successfully.",
+    "updated_successfully": "Category updated successfully."
   },
   "products": {
     "search": "Search products...",
@@ -226,7 +242,30 @@
     "created_single": "Product created in the selected store.",
     "created_multiple": "Product created in the selected stores.",
     "created_all": "Product created in all stores.",
-    "updated": "Product updated successfully."
+    "updated": "Product updated successfully.",
+    "create": "Create",
+    "new_title": "New Product",
+    "new_desc": "Create a new product and configure it for your stores.",
+    "image_hint": "Select a square image. Max 2MB.",
+    "sku": "SKU",
+    "sku_placeholder": "PROD-001",
+    "barcode_placeholder": "7501234567890",
+    "price_placeholder": "0.00",
+    "cost_placeholder": "0.00",
+    "category": "Category",
+    "min_stock": "Min Stock",
+    "type_physical": "Physical Product",
+    "type_service": "Service",
+    "dist_single": "Single store",
+    "dist_multiple": "Specific stores",
+    "dist_all": "All stores",
+    "dist_all_hint": "The product will be available in all current stores.",
+    "name": "Name",
+    "name_placeholder": "E.g. Cola Soda",
+    "generate_sku": "Generate SKU",
+    "desc_placeholder": "Product description...",
+    "status_active_hint": "The product is available for sale",
+    "status_inactive_hint": "The product is hidden from catalog"
   },
   "stock": {
     "search": "Search product or SKU...",
@@ -245,13 +284,19 @@
     "current_stock": "Current Stock",
     "adjustment_type": "Adjustment Type",
     "new_quantity": "New Quantity",
+    "no_location": "No location",
     "reason": "Reason",
     "notes": "Notes",
     "notes_placeholder": "Additional observations...",
     "apply_adjustment": "Apply Adjustment",
     "adjusted_success": "Stock adjusted successfully.",
+    "resulting_quantity": "Resulting Quantity",
     "select_type": "Select type",
-    "select_reason": "Select reason"
+    "select_reason": "Select reason",
+    "no_location": "No location",
+    "low_stock": "Low Stock",
+    "only_low_stock": "Low stock only",
+    "all_locations": "All locations"
   },
   "movements": {
     "search": "Search by product...",
@@ -452,6 +497,19 @@
   },
   "activity": {
     "title": "Recent Activity",
+    "page_title": "Activity Log",
+    "search": "Search by description or event...",
+    "empty": "No activity records found.",
+    "system": "System",
+    "event": "Event",
+    "level": "Level",
+    "view_all": "View all",
+    "levels": {
+      "info": "Info",
+      "warning": "Warning",
+      "error": "Error",
+      "critical": "Critical"
+    },
     "types": {
       "auth": "Authentication",
       "inventory": "Inventory",
@@ -468,5 +526,21 @@
         "seeded": "Data Ingestion"
       }
     }
+  },
+  "locations": {
+    "new": "New Location",
+    "form_desc": "Create a new location within the selected warehouse.",
+    "code": "Code",
+    "type": "Type",
+    "aisle": "Aisle",
+    "section": "Section",
+    "created_successfully": "Location created successfully.",
+    "type_shelf": "Shelf",
+    "type_box": "Box",
+    "type_pallet": "Pallet",
+    "type_display": "Display",
+    "type_floor": "Floor",
+    "type_other": "Other",
+    "new_location": "New Location"
   }
 }

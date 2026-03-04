@@ -29,21 +29,16 @@ class DevelopmentSeeder extends Seeder
     {
         $this->command->info('🚀 Creando datos de demostración...');
 
-        // 1. Crear Usuario Owner
-        $user = User::create([
-            'email' => 'oscar@erus.mx',
-            'password' => bcrypt('12345678'),
-            'email_verified_at' => now(),
-            'is_active' => true,
-        ]);
+        // 1. Crear Usuario Owner (idempotente)
+        $user = User::firstOrCreate(
+            ['email' => 'oscar@erus.mx'],
+            ['password' => bcrypt('12345678'), 'email_verified_at' => now(), 'is_active' => true]
+        );
 
-        Profile::create([
-            'user_id' => $user->id,
-            'first_name' => 'José',
-            'last_name' => 'Pérez',
-            'second_last_name' => 'López',
-            'phone' => '6441234567',
-        ]);
+        Profile::updateOrCreate(
+            ['user_id' => $user->id],
+            ['first_name' => 'José', 'last_name' => 'Pérez', 'second_last_name' => 'López', 'phone' => '6441234567']
+        );
 
         $this->command->info("✅ Usuario admin creado: {$user->email} / password");
 
@@ -103,11 +98,19 @@ class DevelopmentSeeder extends Seeder
         // 3. Crear Roles
         $allPermissions = Permission::all();
         
-        // Helper function to attach permissions with UUIDs
+        // Helper function to attach permissions (idempotent, avoids duplicates)
         $attachPermissions = function ($roleId, $permissionIds) {
             $now = now();
+            // find existing assignments
+            $existing = DB::table('role_permissions')
+                ->where('role_id', $roleId)
+                ->whereIn('permission_id', $permissionIds)
+                ->pluck('permission_id')
+                ->toArray();
+
+            $toInsert = array_values(array_diff($permissionIds, $existing));
             $records = [];
-            foreach ($permissionIds as $permissionId) {
+            foreach ($toInsert as $permissionId) {
                 $records[] = [
                     'id' => Str::uuid(),
                     'role_id' => $roleId,
@@ -116,12 +119,15 @@ class DevelopmentSeeder extends Seeder
                     'updated_at' => $now,
                 ];
             }
-            DB::table('role_permissions')->insert($records);
+            if (!empty($records)) {
+                DB::table('role_permissions')->insert($records);
+            }
         };
         
         // Rol: Administrador (todos los permisos)
-        $adminRole = Role::create([
-            'key' => 'admin',
+        $adminRole = Role::firstOrCreate([
+            'key' => 'admin'
+        ],[
             'name' => 'Administrador',
             'description' => 'Acceso total al sistema',
             'is_system' => true,
@@ -129,8 +135,9 @@ class DevelopmentSeeder extends Seeder
         $attachPermissions($adminRole->id, $allPermissions->pluck('id')->toArray());
 
         // Rol: Gerente de Sucursal
-        $managerRole = Role::create([
-            'key' => 'branch_manager',
+        $managerRole = Role::firstOrCreate([
+            'key' => 'branch_manager'
+        ],[
             'name' => 'Gerente de Sucursal',
             'description' => 'Gestión completa de una sucursal',
             'is_system' => true,
@@ -143,8 +150,9 @@ class DevelopmentSeeder extends Seeder
         $attachPermissions($managerRole->id, $managerPermissions->pluck('id')->toArray());
 
         // Rol: Vendedor
-        $sellerRole = Role::create([
-            'key' => 'seller',
+        $sellerRole = Role::firstOrCreate([
+            'key' => 'seller'
+        ],[
             'name' => 'Vendedor',
             'description' => 'Ventas y caja',
             'is_system' => true,
@@ -157,14 +165,16 @@ class DevelopmentSeeder extends Seeder
 
         $this->command->info('✅ Roles creados: Admin, Gerente, Vendedor');
 
-        // 4. Crear Store
-        $store = Store::create([
-            'name' => 'Abarrotes Don Pepe',
-            'slug' => 'abarrotes-don-pepe',
-            'description' => 'Tu abarrotera de confianza',
-            'primary_color' => '#10B981',
-            'is_active' => true,
-        ]);
+        // 4. Crear Store (idempotente)
+        $store = Store::firstOrCreate(
+            ['slug' => 'abarrotes-don-pepe'],
+            [
+                'name' => 'Abarrotes Don Pepe',
+                'description' => 'Tu abarrotera de confianza',
+                'primary_color' => '#10B981',
+                'is_active' => true,
+            ]
+        );
 
         $this->command->info("✅ Tienda creada: {$store->name}");
 
@@ -247,9 +257,10 @@ class DevelopmentSeeder extends Seeder
         $categoryNames = ['Refrescos', 'Agua', 'Papas', 'Arroz', 'Frijol', 'Galletas', 'Abarrotes', 'Bebidas', 'Botanas', 'Limpieza'];
         
         foreach ($categoryNames as $catName) {
-            Category::create([
+            Category::firstOrCreate([
+                'slug' => Str::slug($catName)
+            ],[
                 'name' => $catName,
-                'slug' => Str::slug($catName),
                 'is_active' => true,
             ]);
         }
@@ -272,36 +283,32 @@ class DevelopmentSeeder extends Seeder
         foreach ($products as $prodData) {
             $category = Category::where('name', $prodData['category'])->first();
 
-            $product = Product::create([
-                'category_id' => $category->id,
-                'name' => $prodData['name'],
-                'sku' => $prodData['sku'],
-                'barcode' => $prodData['barcode'],
-                'type' => 'product',
-                'track_inventory' => true,
-                'min_stock' => 10,
-                'cost' => $prodData['cost'],
-                'is_active' => true,
-            ]);
+            $product = Product::firstOrCreate(
+                ['sku' => $prodData['sku']],
+                [
+                    'category_id' => $category->id,
+                    'name' => $prodData['name'],
+                    'barcode' => $prodData['barcode'],
+                    'type' => 'product',
+                    'track_inventory' => true,
+                    'min_stock' => 10,
+                    'cost' => $prodData['cost'],
+                    'is_active' => true,
+                ]
+            );
 
-            // Asignar producto a la tienda con precio
-            StoreProduct::create([
-                'store_id' => $store->id,
-                'product_id' => $product->id,
-                'price' => $prodData['price'],
-                'currency' => 'MXN',
-                'is_active' => true,
-            ]);
+            // Asignar/actualizar producto a la tienda con precio
+            StoreProduct::updateOrCreate(
+                ['store_id' => $store->id, 'product_id' => $product->id],
+                ['price' => $prodData['price'], 'currency' => 'MXN', 'is_active' => true]
+            );
 
-            // Crear stock inicial en cada almacén
+            // Crear o actualizar stock inicial en cada almacén
             foreach ([$warehouse1, $warehouse2, $warehouseCentral] as $wh) {
-                Stock::create([
-                    'product_id' => $product->id,
-                    'warehouse_id' => $wh->id,
-                    'quantity' => rand(20, 100),
-                    'reserved' => 0,
-                    'avg_cost' => $prodData['cost'],
-                ]);
+                Stock::updateOrCreate(
+                    ['product_id' => $product->id, 'warehouse_id' => $wh->id],
+                    ['quantity' => rand(20, 100), 'reserved' => 0, 'avg_cost' => $prodData['cost']]
+                );
             }
 
             $createdProducts[] = ['product' => $product, 'price' => $prodData['price']];
@@ -331,7 +338,7 @@ class DevelopmentSeeder extends Seeder
         $createdCustomers = [];
         foreach ($customers as $c) {
             $createdCustomers[] = Customer::create(array_merge($c, [
-                'code' => 'CLI-' . rand(100, 999),
+                'code' => 'CLI-' . strtoupper(substr((string) Str::uuid(), 0, 8)),
                 'is_active' => true,
             ]));
         }
@@ -349,7 +356,7 @@ class DevelopmentSeeder extends Seeder
             
             for ($j = 0; $j < $salesCount; $j++) {
                 $customer = $createdCustomers[array_rand($createdCustomers)];
-                $folio = 'VENTA-' . $year . '-' . str_pad($folioCounter++, 5, '0', STR_PAD_LEFT);
+                $folio = 'VENTA-' . $year . '-' . strtoupper(substr((string) Str::uuid(), 0, 8));
 
                 $sale = Sale::create([
                     'folio' => $folio,
@@ -414,6 +421,191 @@ class DevelopmentSeeder extends Seeder
             }
         }
         $this->command->info('✅ Historial de ventas generado');
+        // 11. Crear tiendas adicionales con datos de ejemplo (sucursales, almacenes, productos, clientes, ventas)
+        // Parámetros ajustables (puedes usar variables de entorno para controlarlos)
+        $numAdditionalStores = env('DEV_SEED_STORES', 8);
+        $branchesPerStore = env('DEV_SEED_BRANCHES', 3);
+        $warehousesPerStore = env('DEV_SEED_WAREHOUSES', 4);
+        $productsPerStore = env('DEV_SEED_PRODUCTS', 12);
+        $customersPerStore = env('DEV_SEED_CUSTOMERS', 30);
+        $salesDays = env('DEV_SEED_SALES_DAYS', 30);
+        $sampleProductTemplates = $products; // reutilizar plantillas previamente definidas
+
+        for ($si = 2; $si <= 1 + $numAdditionalStores; $si++) {
+            $storeName = "Demo Store {$si}";
+            $additionalStore = Store::firstOrCreate(
+                ['slug' => Str::slug($storeName)],
+                [
+                    'name' => $storeName,
+                    'description' => "Demo store {$si} for testing",
+                    'primary_color' => sprintf('#%06X', mt_rand(0, 0xFFFFFF)),
+                    'is_active' => true,
+                ]
+            );
+
+            // Crear sucursales
+            $branches = [];
+            for ($b = 1; $b <= $branchesPerStore; $b++) {
+                $addr = Address::create([
+                    'street' => "Street {$si}{$b}",
+                    'ext_number' => (string)rand(1,999),
+                    'neighborhood' => 'Demo Area',
+                    'city' => 'Demo City',
+                    'state' => 'State',
+                    'postal_code' => '00000',
+                    'country' => 'DemoLand',
+                ]);
+
+                $branch = Branch::firstOrCreate([
+                    'code' => "S{$si}{$b}"
+                ],[
+                    'address_id' => $addr->id,
+                    'name' => "{$storeName} - Branch {$b}",
+                    'phone' => '0000000000',
+                    'is_active' => true,
+                    'allow_sales' => true,
+                    'allow_inventory' => true,
+                ]);
+                $branch->stores()->syncWithoutDetaching([$additionalStore->id]);
+                $branches[] = $branch;
+            }
+
+            // Crear almacenes (incluye un central)
+            $warehouses = [];
+            for ($w = 1; $w <= $warehousesPerStore - 1; $w++) {
+                $wh = Warehouse::firstOrCreate([
+                    'code' => "W{$si}{$w}"
+                ],[
+                    'branch_id' => $branches[($w - 1) % count($branches)]->id,
+                    'name' => "{$storeName} Warehouse {$w}",
+                    'type' => 'branch',
+                    'is_active' => true,
+                ]);
+                $wh->stores()->syncWithoutDetaching([$additionalStore->id]);
+                $warehouses[] = $wh;
+            }
+            // Central
+            $wCentral = Warehouse::firstOrCreate([
+                'code' => "W{$si}C"
+            ],[
+                'name' => "{$storeName} Central Warehouse",
+                'type' => 'central',
+                'is_active' => true,
+            ]);
+            $wCentral->stores()->syncWithoutDetaching([$additionalStore->id]);
+            $warehouses[] = $wCentral;
+
+            // Crear productos para la tienda
+            $createdForThisStore = [];
+            for ($p = 0; $p < $productsPerStore; $p++) {
+                $tmpl = $sampleProductTemplates[$p % count($sampleProductTemplates)];
+                $cat = Category::where('name', $tmpl['category'])->first();
+                if (!$cat) $cat = Category::first();
+
+                $sku = $tmpl['sku'] . "-S{$si}-" . ($p + 1);
+                $product = Product::firstOrCreate([
+                    'sku' => $sku
+                ],[
+                    'category_id' => $cat->id,
+                    'name' => "{$tmpl['name']} ({$si})",
+                    'barcode' => $tmpl['barcode'] . rand(100,999),
+                    'type' => 'product',
+                    'track_inventory' => true,
+                    'min_stock' => 5,
+                    'cost' => $tmpl['cost'],
+                    'is_active' => true,
+                ]);
+
+                StoreProduct::updateOrCreate([
+                    'store_id' => $additionalStore->id,
+                    'product_id' => $product->id,
+                ],[
+                    'price' => round($tmpl['price'] * (1 + (rand(0,20) / 100)), 2),
+                    'currency' => 'MXN',
+                    'is_active' => true,
+                ]);
+
+                foreach ($warehouses as $wh) {
+                    Stock::updateOrCreate([
+                        'product_id' => $product->id,
+                        'warehouse_id' => $wh->id,
+                    ],[
+                        'quantity' => rand(10, 200),
+                        'reserved' => 0,
+                        'avg_cost' => $tmpl['cost'],
+                    ]);
+                }
+
+                $createdForThisStore[] = ['product' => $product, 'price' => $tmpl['price'] * 1.1];
+            }
+
+            // Crear clientes para la tienda
+            $localCustomers = [];
+            for ($c = 1; $c <= $customersPerStore; $c++) {
+                $localCustomers[] = Customer::firstOrCreate([
+                    'email' => "client{$si}{$c}@example.com"
+                ],[
+                    'first_name' => "Client{$si}{$c}",
+                    'last_name' => 'Demo',
+                    'phone' => '0000000000',
+                    'code' => 'CLI-' . strtoupper(substr((string) Str::uuid(), 0, 8)),
+                    'is_active' => true,
+                ]);
+            }
+
+            // Generar ventas para los últimos $salesDays días
+            $folio = 1;
+            for ($d = 0; $d < $salesDays; $d++) {
+                $date = Carbon::now()->subDays($d);
+                $count = rand(5, 20);
+                for ($k = 0; $k < $count; $k++) {
+                    $cust = $localCustomers[array_rand($localCustomers)];
+                    $branch = $branches[array_rand($branches)];
+                    $warehouse = $warehouses[array_rand($warehouses)];
+
+                    $sale = Sale::create([
+                        'folio' => "DEMO-{$si}-" . strtoupper(substr((string) Str::uuid(), 0, 8)),
+                        'store_id' => $additionalStore->id,
+                        'branch_id' => $branch->id,
+                        'warehouse_id' => $warehouse->id,
+                        'customer_id' => $cust->id,
+                        'user_id' => $user->id,
+                        'subtotal' => 0,
+                        'tax' => 0,
+                        'discount' => 0,
+                        'total' => 0,
+                        'status' => 'completed',
+                        'payment_method' => 'cash',
+                        'completed_at' => $date->copy()->addHours(rand(8, 20)),
+                        'created_at' => $date->copy()->addHours(rand(8, 20)),
+                    ]);
+
+                    $itemsCount = rand(1, 4);
+                    $saleTotal = 0;
+                    $randKeys = array_rand($createdForThisStore, min($itemsCount, count($createdForThisStore)));
+                    if (!is_array($randKeys)) $randKeys = [$randKeys];
+                    foreach ($randKeys as $rk) {
+                        $it = $createdForThisStore[$rk];
+                        $qty = rand(1, 6);
+                        $itemTotal = $it['price'] * $qty;
+                        SaleItem::create([
+                            'sale_id' => $sale->id,
+                            'product_id' => $it['product']->id,
+                            'quantity' => $qty,
+                            'unit_price' => $it['price'],
+                            'discount' => 0,
+                            'tax' => 0,
+                            'subtotal' => $itemTotal,
+                            'total' => $itemTotal,
+                        ]);
+                        $saleTotal += $itemTotal;
+                    }
+                    $sale->update(['subtotal' => $saleTotal, 'total' => $saleTotal]);
+                }
+            }
+
+            $this->command->info("✅ Demo store created: {$additionalStore->name} (branches: " . count($branches) . ", warehouses: " . count($warehouses) . ", products: " . count($createdForThisStore) . ", customers: " . count($localCustomers) . ")");
+        }
 
         $this->command->info('');
         $this->command->info('🎉 ¡Datos de demostración creados exitosamente!');

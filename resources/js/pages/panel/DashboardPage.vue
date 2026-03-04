@@ -33,7 +33,9 @@ import {
   Users,
   AlertTriangle,
   Activity,
+  ArrowRight,
 } from 'lucide-vue-next';
+import { RouterLink } from 'vue-router';
 import { VisXYContainer, VisLine, VisAxis, VisArea } from '@unovis/vue';
 
 const { t } = useI18n();
@@ -66,11 +68,22 @@ async function fetchStats() {
 }
 
 const chartData = computed(() => {
-  return stats.value.sales_by_day.map((item: any, index: number) => ({
-    x: index,
-    y: parseFloat(item.total) || 0,
-    label: item.date,
-  }));
+  // Build records where each item has label and a value per store name
+  const days = stats.value.sales_by_day || [];
+  const stores = stats.value.sales_by_store || [];
+  const data: any[] = [];
+  for (let i = 0; i < days.length; i++) {
+    const row: any = { label: days[i].date };
+    stores.forEach((s: any) => {
+      row[s.store.name] = parseFloat(s.series[i]) || 0;
+    });
+    data.push(row);
+  }
+  return data;
+});
+
+const categories = computed(() => {
+  return (stats.value.sales_by_store || []).map((s: any) => s.store.name);
 });
 
 // Using Unovis tick formatter for x axis
@@ -172,18 +185,27 @@ watch(period, () => fetchStats());
           <div v-if="isLoading" class="h-[300px] w-full p-4">
             <Skeleton class="h-full w-full" />
           </div>
-          <div v-else-if="chartData.length > 0" class="h-[300px]">
-            <AreaChart
-              :data="chartData"
-              index="label"
-              :categories="['y']"
-              :x-formatter="(tick: number | Date) => chartData[tick as number]?.label"
-              :y-formatter="(val: number | Date) => formatCurrency(val as number)"
-              :show-legend="false"
-              :margin="{ top: 10, bottom: 30, left: 80, right: 20 }"
-              class="h-[280px]"
-            />
-          </div>
+            <div v-else-if="chartData.length > 0" class="h-[340px] overflow-hidden">
+              <AreaChart
+                :data="chartData"
+                index="label"
+                :categories="categories"
+                :x-formatter="(tick: number | Date) => chartData[tick as number]?.label"
+                :y-formatter="(val: number | Date) => formatCurrency(val as number)"
+                :show-legend="false"
+                :margin="{ top: 10, bottom: 30, left: 80, right: 20 }"
+                class="h-full w-full"
+              />
+
+              <!-- Controlled legend / badges (scrollable to avoid overflow) -->
+              <div class="mt-2 overflow-auto max-w-full">
+                <div class="flex flex-wrap gap-2">
+                  <button v-for="(name, idx) in categories" :key="name" class="px-3 py-1 rounded-md text-xs bg-muted/30 truncate">
+                    {{ name }}
+                  </button>
+                </div>
+              </div>
+            </div>
           <div v-else class="h-[300px] flex items-center justify-center text-muted-foreground">
             {{ t('common.no_results') }}
           </div>
@@ -226,6 +248,13 @@ watch(period, () => fetchStats());
             <Activity class="h-5 w-5" />
             {{ t('dashboard.recent_activity') }}
           </CardTitle>
+          <RouterLink
+            to="/panel/activity-logs"
+            class="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {{ t('activity.view_all') }}
+            <ArrowRight class="h-4 w-4" />
+          </RouterLink>
         </div>
       </CardHeader>
       <CardContent>
@@ -237,19 +266,21 @@ watch(period, () => fetchStats());
             <TableRow>
               <TableHead>{{ t('common.date') }}</TableHead>
               <TableHead>{{ t('common.user') }}</TableHead>
+              <TableHead>{{ t('dashboard.store') }}</TableHead>
               <TableHead>{{ t('common.type') }}</TableHead>
               <TableHead>{{ t('common.description') }}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow v-if="stats.recent_activity.length === 0">
-              <TableCell colspan="4" class="text-center text-muted-foreground py-8">
+              <TableCell colspan="5" class="text-center text-muted-foreground py-8">
                 {{ t('common.no_results') }}
               </TableCell>
             </TableRow>
             <TableRow v-for="log in stats.recent_activity" :key="log.id">
               <TableCell class="whitespace-nowrap">{{ formatDateTime(log.created_at) }}</TableCell>
               <TableCell>{{ log.user }}</TableCell>
+              <TableCell>{{ log.store ? log.store.name : '-' }}</TableCell>
               <TableCell>
                 <span class="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium ring-1 ring-inset ring-muted-foreground/20 uppercase">
                   {{ t(`activity.types.${log.type}`) }}

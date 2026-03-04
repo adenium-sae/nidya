@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Api\Management\Catalog;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Services\Catalog\CategoryService;
+use App\Traits\LogsActivity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
+    use LogsActivity;
+
     public function __construct(
         protected CategoryService $categoryService
     ) {}
@@ -29,6 +33,18 @@ class CategoryController extends Controller
         ]);
 
         $category = $this->categoryService->create($validated);
+
+        // Log activity
+        $this->logActivity(
+            type: ActivityLog::TYPE_CATALOG,
+            event: 'category.created',
+            description: "Categoría '{$category->name}' creada",
+            metadata: [
+                'category_id' => $category->id,
+                'name' => $category->name,
+            ],
+            storeId: auth()?->user()?->store_id
+        );
 
         return response()->json([
             'message' => 'Categoría creada exitosamente',
@@ -53,6 +69,19 @@ class CategoryController extends Controller
 
         $category = $this->categoryService->update($id, $validated);
 
+        // Log activity
+        $this->logActivity(
+            type: ActivityLog::TYPE_CATALOG,
+            event: 'category.updated',
+            description: "Categoría '{$category->name}' actualizada",
+            metadata: [
+                'category_id' => $category->id,
+                'name' => $category->name,
+                'changes' => array_keys($validated),
+            ],
+            storeId: auth()?->user()?->store_id
+        );
+
         return response()->json([
             'message' => 'Categoría actualizada exitosamente',
             'data' => $category,
@@ -61,7 +90,24 @@ class CategoryController extends Controller
 
     public function destroy(string $id): JsonResponse
     {
+        $category = $this->categoryService->getById($id);
+        $categoryName = $category->name;
+
         $this->categoryService->delete($id);
+
+        // Log activity
+        $this->logActivity(
+            type: ActivityLog::TYPE_CATALOG,
+            event: 'category.deleted',
+            description: "Categoría '{$categoryName}' eliminada",
+            metadata: [
+                'category_id' => $id,
+                'name' => $categoryName,
+            ],
+            level: ActivityLog::LEVEL_WARNING,
+            storeId: auth()?->user()?->store_id
+        );
+
         return response()->json(['message' => 'Categoría eliminada exitosamente']);
     }
 }

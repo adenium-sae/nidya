@@ -200,4 +200,17 @@ export interface DashboardStats {
   recent_sales: any[]
   top_products: any[]
   sales_by_day: any[]
+  sales_by_store?: {
+    store: Store
+    series: number[]
+  }[]
+  recent_activity?: {
+    id: string
+    type: string
+    event: string
+    description: string
+    user: string
+    created_at: string
+    store?: Store
+  }[]
 }

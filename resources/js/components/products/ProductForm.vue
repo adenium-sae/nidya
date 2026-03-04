@@ -86,6 +86,25 @@ const fieldErrors = reactive<Record<string, string>>({});
 
 const actualSubmitLabel = computed(() => props.submitLabel || t('common.save'));
 
+const typeLabel = computed(() => {
+  if (form.type === 'product') return t('products.type_physical');
+  if (form.type === 'service') return t('products.type_service');
+  return t('common.select');
+});
+
+const storeDistributionLabel = computed(() => {
+  if (form.target_stores === 'single') return t('products.dist_single');
+  if (form.target_stores === 'multiple') return t('products.dist_multiple');
+  if (form.target_stores === 'all') return t('products.dist_all');
+  return t('common.select');
+});
+
+const selectedStoreName = computed(() => {
+  if (!form.store_id) return t('common.select');
+  const store = props.stores.find(s => String(s.id) === form.store_id);
+  return store?.name || t('common.select');
+});
+
 function clearFieldError(field: string) {
   if (fieldErrors[field]) {
     delete fieldErrors[field];
@@ -115,7 +134,7 @@ const form = reactive<ProductFormData>({
   type: props.initialData.type || 'product',
   target_stores: props.initialData.target_stores || 'single',
   store_id: props.initialData.store_id || '',
-  store_ids: props.initialData.store_ids || [],
+  store_ids: props.initialData.store_ids ? props.initialData.store_ids.map((id: any) => String(id)) : [],
   min_stock: props.initialData.min_stock || '0',
   is_active: props.initialData.is_active ?? true,
 });
@@ -140,8 +159,8 @@ watch(() => props.initialData, (newData) => {
       category_id: newData.category_id || '',
       type: newData.type || 'product',
       target_stores: newData.target_stores || 'single',
-      store_id: newData.store_id || '',
-      store_ids: newData.store_ids || [],
+      store_id: newData.store_id ? String(newData.store_id) : '',
+      store_ids: newData.store_ids ? newData.store_ids.map((id: any) => String(id)) : [],
       min_stock: newData.min_stock || '5',
       is_active: newData.is_active ?? true,
     });
@@ -153,7 +172,7 @@ watch(() => props.initialData, (newData) => {
 
 watch(() => props.stores, (stores) => {
   if (stores.length > 0 && !form.store_id && !props.isEditMode) {
-    form.store_id = stores[0].id;
+    form.store_id = String(stores[0].id);
   }
 }, { immediate: true });
 
@@ -175,17 +194,34 @@ function handleImageChange(event: Event) {
   }
 }
 
-function toggleStoreSelection(storeId: string) {
-  const index = form.store_ids.indexOf(storeId);
-  if (index === -1) {
-    form.store_ids.push(storeId);
+function updateStoreSelection(storeId: string, checked: boolean | 'indeterminate') {
+  const id = String(storeId);
+  if (checked === true) {
+    if (!form.store_ids.includes(id)) {
+      form.store_ids.push(id);
+    }
   } else {
-    form.store_ids.splice(index, 1);
+    const index = form.store_ids.findIndex((s: string) => String(s) === id);
+    if (index !== -1) {
+      form.store_ids.splice(index, 1);
+    }
   }
 }
 
 function isStoreSelected(storeId: string) {
-  return form.store_ids.includes(storeId);
+  const id = String(storeId);
+  return form.store_ids.some((s: string) => String(s) === id);
+}
+
+// Route row clicks through reka-ui's own button so its visual state always updates
+function handleStoreRowClick(event: MouseEvent) {
+  const target = event.target as HTMLElement;
+  // If click landed on the checkbox button itself, reka-ui already handles it
+  if (target.closest('[role="checkbox"]')) return;
+  // Otherwise programmatically click the checkbox button in this row
+  const row = event.currentTarget as HTMLElement;
+  const btn = row.querySelector('[role="checkbox"]') as HTMLElement | null;
+  btn?.click();
 }
 
 const currencyInputSchema = z.string().regex(/^\d*\.?\d{0,2}$/, "Formato inválido (máx. 2 decimales)");
@@ -220,7 +256,7 @@ const productFormSchema = computed(() => {
       }
       return true;
     }, {
-      message: t('products.store_required'),
+      message: t('products.must_select_store'),
       path: ["store_id"],
     }).refine((data) => {
       if (data.target_stores === 'multiple' && (!data.store_ids || data.store_ids.length === 0)) {
@@ -228,7 +264,7 @@ const productFormSchema = computed(() => {
       }
       return true;
     }, {
-      message: t('products.store_required'),
+      message: t('products.must_select_stores'),
       path: ["store_ids"],
     });
   }
@@ -288,23 +324,33 @@ function formatPrice(field: 'price' | 'cost') {
 
 async function handleSubmit() {
   clearAllErrors();
-  const result = productFormSchema.value.safeParse(form);
+  // Use a plain JS copy of the form to avoid reactive Proxy issues
+  const plain = {
+    ...JSON.parse(JSON.stringify(form)),
+    store_ids: form.store_ids ? form.store_ids.map((s: any) => String(s)) : [],
+    store_id: form.store_id ? String(form.store_id) : '',
+  };
+  const result = productFormSchema.value.safeParse(plain);
   if (!result.success) {
-    // Map Zod errors to inline field errors
+    const messages: string[] = [];
     result.error.errors.forEach(err => {
-      const field = err.path[0] as string;
+      const field = String(err.path?.[0] || 'form');
+      const message = err.message || t('common.invalid_field');
+      messages.push(message);
       if (field && !fieldErrors[field]) {
-        fieldErrors[field] = err.message;
+        fieldErrors[field] = message;
       }
     });
+    const uniqueMessages = Array.from(new Set(messages));
     toast({
       title: t('common.validation_error'),
-      description: t('common.check_errors'),
+      description: uniqueMessages.join(' — '),
       variant: 'destructive',
     });
+    console.warn('ProductForm validation errors:', result.error, { store_ids: form.store_ids, target_stores: form.target_stores, store_id: form.store_id });
     return;
   }
-  emit('submit', { ...form }, imageFile.value);
+  emit('submit', plain, imageFile.value);
 }
 
 function handleCategoryCreated(newCategory: Category) {
@@ -365,7 +411,7 @@ function handleCategoryCreated(newCategory: Category) {
           <div class="space-y-2">
             <Label for="sku">{{ t('products.sku') }} <span class="text-destructive">*</span></Label>
             <div class="relative">
-              <Input id="sku" v-model="form.sku" placeholder="PROD-001" :class="['pr-12', { 'border-destructive': fieldErrors.sku }]" @input="clearFieldError('sku')" />
+              <Input id="sku" v-model="form.sku" :placeholder="t('products.sku_placeholder')" :class="['pr-12', { 'border-destructive': fieldErrors.sku }]" @input="clearFieldError('sku')" />
               <Button 
                 type="button" 
                 variant="ghost" 
@@ -382,7 +428,7 @@ function handleCategoryCreated(newCategory: Category) {
           </div>
           <div class="space-y-2">
             <Label for="barcode">{{ t('products.barcode') }}</Label>
-            <Input id="barcode" v-model="form.barcode" placeholder="7501234567890" class="" />
+            <Input id="barcode" v-model="form.barcode" :placeholder="t('products.barcode_placeholder')" class="" />
             <p class="text-xs text-muted-foreground">{{ t('products.barcode_hint') }}</p>
           </div>
         </div>
@@ -404,7 +450,7 @@ function handleCategoryCreated(newCategory: Category) {
                 type="text" 
                 inputmode="decimal"
                 v-model="form.price" 
-                placeholder="0.00" 
+                :placeholder="t('products.price_placeholder')" 
                 :class="['pl-7', { 'border-destructive': fieldErrors.price }]" 
                 @blur="formatPrice('price')"
                 @input="validateDecimals('price'); clearFieldError('price')"
@@ -422,7 +468,7 @@ function handleCategoryCreated(newCategory: Category) {
                 type="text" 
                 inputmode="decimal"
                 v-model="form.cost" 
-                placeholder="0.00" 
+                :placeholder="t('products.cost_placeholder')" 
                 :class="['pl-7', { 'border-destructive': fieldErrors.cost }]" 
                 @blur="formatPrice('cost')"
                 @input="validateDecimals('cost'); clearFieldError('cost')"
@@ -460,7 +506,7 @@ function handleCategoryCreated(newCategory: Category) {
             <Label>{{ t('products.product_type') }}</Label>
             <Select v-model="form.type">
               <SelectTrigger class="">
-                <SelectValue />
+                <SelectValue :placeholder="typeLabel" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="product">{{ t('products.type_physical') }}</SelectItem>
@@ -499,7 +545,7 @@ function handleCategoryCreated(newCategory: Category) {
             <Label>{{ t('products.store_distribution') }}</Label>
             <Select v-model="form.target_stores">
               <SelectTrigger class="">
-                <SelectValue />
+                <SelectValue :placeholder="storeDistributionLabel" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="single">{{ t('products.dist_single') }}</SelectItem>
@@ -513,7 +559,7 @@ function handleCategoryCreated(newCategory: Category) {
             <Label>{{ t('products.select_store') }} <span class="text-destructive">*</span></Label>
             <Select v-model="form.store_id" @update:model-value="clearFieldError('store_id')">
               <SelectTrigger :class="{ 'border-destructive': fieldErrors.store_id }">
-                <SelectValue :placeholder="t('common.select')" />
+                <SelectValue :placeholder="selectedStoreName" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="store in stores" :key="store.id" :value="String(store.id)">
@@ -527,17 +573,18 @@ function handleCategoryCreated(newCategory: Category) {
           <div class="space-y-3" v-if="form.target_stores === 'multiple'">
             <Label>{{ t('products.select_stores') }}</Label>
             <div class="border rounded-lg divide-y max-h-48 overflow-y-auto">
-              <label 
+              <div 
                 v-for="store in stores" 
                 :key="store.id" 
                 class="flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer transition-colors"
+                @click="handleStoreRowClick($event)"
               >
                 <Checkbox 
                   :checked="isStoreSelected(store.id)" 
-                  @update:checked="toggleStoreSelection(store.id)" 
+                  @update:checked="(val) => updateStoreSelection(store.id, val)"
                 />
                 <span class="text-sm">{{ store.name }}</span>
-              </label>
+              </div>
             </div>
             <p class="text-xs text-muted-foreground" v-if="form.store_ids.length > 0">
               {{ form.store_ids.length }} {{ t('products.stores_selected') }}

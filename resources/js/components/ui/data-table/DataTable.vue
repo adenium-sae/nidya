@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import {
@@ -189,6 +190,18 @@ const paginationInfo = computed(function() {
 });
 
 const perPageOptions = [10, 15, 25, 50, 100]
+
+const localSearch = ref(props.searchValue || '')
+watch(() => props.searchValue, (v) => {
+  if (v !== localSearch.value) localSearch.value = v || ''
+})
+
+const debouncedSearch = useDebounceFn((v: string) => emit('search', v), 350)
+
+function handleSearchInput(v: string | number | undefined) {
+  localSearch.value = String(v ?? '')
+  debouncedSearch(String(v ?? ''))
+}
 </script>
 
 <template>
@@ -199,11 +212,10 @@ const perPageOptions = [10, 15, 25, 50, 100]
       <div v-if="showSearch" class="relative flex-1 min-w-[200px] max-w-sm">
         <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input 
-          :value="searchValue"
+          :model-value="localSearch"
           :placeholder="searchPlaceholder || t('common.search')"
           class="pl-9"
-          @input="emit('search', ($event.target as HTMLInputElement).value)"
-          @keyup.enter="emit('search', ($event.target as HTMLInputElement).value)"
+          @update:model-value="handleSearchInput"
         />
       </div>
 

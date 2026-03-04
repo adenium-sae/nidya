@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from "vue"
 import { computed } from "vue"
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { useI18n } from 'vue-i18n'
 
@@ -13,6 +13,7 @@ import {
   Users,
   LayoutDashboard,
   Store,
+  ClipboardList,
 } from "lucide-vue-next"
 import {
   Collapsible,
@@ -37,6 +38,7 @@ import {
 import NavUser from "@/components/NavUser.vue"
 
 const { t } = useI18n()
+const route = useRoute()
 
 interface SidebarProps {
   side?: "left" | "right"
@@ -70,7 +72,7 @@ const navMain = computed(() => [
     title: t('sidebar.sales'),
     url: "#",
     icon: ShoppingCart,
-    isOpen: true,
+    isOpen: route.path.startsWith('/panel/sales'),
     items: [
       {
         title: t('sidebar.pos'),
@@ -98,7 +100,7 @@ const navMain = computed(() => [
     title: t('sidebar.purchases'),
     url: "#",
     icon: Package,
-    isOpen: false,
+    isOpen: route.path.startsWith('/panel/purchases'),
     items: [
       {
         title: t('purchases.new_title'),
@@ -122,7 +124,7 @@ const navMain = computed(() => [
     title: t('sidebar.inventory'),
     url: "#",
     icon: Warehouse,
-    isOpen: false,
+    isOpen: route.path.startsWith('/panel/inventory'),
     items: [
       {
         title: t('dashboard.products'),
@@ -158,7 +160,7 @@ const navMain = computed(() => [
     title: t('sidebar.users'),
     url: "#",
     icon: Users,
-    isOpen: false,
+    isOpen: route.path.startsWith('/panel/users'),
     items: [
       {
         title: t('users.users_list_title'),
@@ -178,7 +180,7 @@ const navMain = computed(() => [
     title: t('sidebar.organization'),
     url: "#",
     icon: Store,
-    isOpen: false,
+    isOpen: route.path.startsWith('/panel/organization'),
     items: [
       {
         title: t('sidebar.stores'),
@@ -189,6 +191,11 @@ const navMain = computed(() => [
         url: "/panel/organization/branches",
       },
     ],
+  },
+  {
+    title: t('sidebar.activity_logs'),
+    url: "/panel/activity-logs",
+    icon: ClipboardList,
   },
 ])
 </script>
@@ -226,33 +233,45 @@ const navMain = computed(() => [
             </SidebarMenuButton>
           </SidebarMenuItem>
 
-          <!-- Collapsible sections -->
-          <Collapsible
-            v-for="item in navMain.slice(1)"
-            :key="item.title"
-            as-child
-            :default-open="item.isOpen"
-            class="group/collapsible"
-          >
-            <SidebarMenuItem>
-              <CollapsibleTrigger as-child>
-                <SidebarMenuButton :tooltip="item.title">
+          <!-- Collapsible sections & standalone links -->
+          <template v-for="item in navMain.slice(1)" :key="item.title + route.path">
+            <!-- Standalone link (no subitems) -->
+            <SidebarMenuItem v-if="!item.items?.length">
+              <SidebarMenuButton as-child :tooltip="item.title">
+                <RouterLink :to="item.url">
                   <component :is="item.icon" class="size-4" />
                   <span>{{ item.title }}</span>
-                  <ChevronRight class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                </SidebarMenuButton>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarMenuSub v-if="item.items?.length">
-                  <SidebarMenuSubItem v-for="childItem in item.items" :key="childItem.title">
-                    <SidebarMenuSubButton as-child>
-                      <RouterLink :to="childItem.url">{{ childItem.title }}</RouterLink>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                </SidebarMenuSub>
-              </CollapsibleContent>
+                </RouterLink>
+              </SidebarMenuButton>
             </SidebarMenuItem>
-          </Collapsible>
+
+            <!-- Collapsible section -->
+            <Collapsible
+              v-else
+              as-child
+              :default-open="item.isOpen"
+              class="group/collapsible"
+            >
+              <SidebarMenuItem>
+                <CollapsibleTrigger as-child>
+                  <SidebarMenuButton :tooltip="item.title">
+                    <component :is="item.icon" class="size-4" />
+                    <span>{{ item.title }}</span>
+                    <ChevronRight class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem v-for="childItem in item.items" :key="childItem.title">
+                      <SidebarMenuSubButton as-child>
+                        <RouterLink :to="childItem.url">{{ childItem.title }}</RouterLink>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
+          </template>
         </SidebarMenu>
       </SidebarGroup>
     </SidebarContent>

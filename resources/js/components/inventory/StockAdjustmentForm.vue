@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useToast } from '@/components/ui/toast/use-toast';
 import { stockApi } from '@/api/stock.api';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Save } from 'lucide-vue-next';
 import PageHeader from '@/components/app/PageHeader.vue';
+import StorageLocationFormDialog from '@/components/inventory/StorageLocationFormDialog.vue';
 
 type AdjustmentMode = 'entry' | 'exit' | 'adjustment';
 
@@ -18,62 +20,68 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
+const { t } = useI18n();
 const { toast } = useToast();
 const isSubmitting = ref(false);
+const isCreatingLocation = ref(false);
+
+function handleLocationCreated(location: any) {
+  form.storage_location_id = location.id;
+}
 
 // Mode-specific configuration
 const config = computed(() => ({
   entry: {
-    title: 'Nueva Entrada',
-    description: 'Registra el ingreso de mercancía al almacén.',
-    quantityLabel: 'Cant.',
+    title: t('adjustments.new_entry'),
+    description: t('adjustments.subtitle_entry'),
+    quantityLabel: t('adjustments.qty'),
     apiMode: 'increment',
     type: 'increase',
-    submitLabel: 'Registrar Entrada',
+    submitLabel: t('adjustments.submit_entry'),
     submitVariant: 'default' as const,
     quantityMin: 1,
     reasons: [
-      { value: 'found', label: 'Hallazgo' },
-      { value: 'recount', label: 'Recuento' },
-      { value: 'other', label: 'Otro' },
+      { value: 'found', label: t('adjustments.reason_found') },
+      { value: 'recount', label: t('adjustments.reason_recount') },
+      { value: 'other', label: t('adjustments.reason_other') },
     ],
-    successMessage: 'Entrada de almacén registrada.',
-    errorMessage: 'No se pudo registrar la entrada.',
+    successMessage: t('adjustments.entry_success'),
+    errorMessage: t('adjustments.entry_error'),
   },
   exit: {
-    title: 'Nueva Salida',
-    description: 'Registra la baja de mercancía del almacén.',
-    quantityLabel: 'A retirar',
+    title: t('adjustments.new_exit'),
+    description: t('adjustments.subtitle_exit'),
+    quantityLabel: t('adjustments.qty_to_remove'),
     apiMode: 'decrement',
     type: 'decrease',
-    submitLabel: 'Registrar Salida',
+    submitLabel: t('adjustments.submit_exit'),
     submitVariant: 'destructive' as const,
     quantityMin: 1,
     reasons: [
-      { value: 'damaged', label: 'Dañado' },
-      { value: 'lost', label: 'Extravío / Robo' },
-      { value: 'expired', label: 'Caducado' },
-      { value: 'other', label: 'Otro' },
+      { value: 'damaged', label: t('adjustments.reason_damaged') },
+      { value: 'lost', label: t('adjustments.reason_lost') },
+      { value: 'expired', label: t('adjustments.reason_expired') },
+      { value: 'other', label: t('adjustments.reason_other') },
     ],
-    successMessage: 'Salida de almacén registrada.',
-    errorMessage: 'No se pudo registrar la salida.',
+    successMessage: t('adjustments.exit_success'),
+    errorMessage: t('adjustments.exit_error'),
   },
   adjustment: {
-    title: 'Nuevo Ajuste',
-    description: 'Reemplaza el valor de stock directamente.',
-    quantityLabel: 'Nueva Cant.',
+    title: t('adjustments.new_adjustment'),
+    description: t('adjustments.subtitle_adjustment'),
+    quantityLabel: t('adjustments.qty'),
     apiMode: 'absolute',
     type: 'recount',
-    submitLabel: 'Registrar Ajuste',
+    submitLabel: t('adjustments.submit_adjustment'),
     submitVariant: 'default' as const,
     quantityMin: 0,
     reasons: [
-      { value: 'recount', label: 'Recuento' },
+      { value: 'recount', label: t('adjustments.reason_recount') },
       { value: 'correction', label: 'Corrección' },
-      { value: 'other', label: 'Otro' },
+      { value: 'other', label: t('adjustments.reason_other') },
     ],
-    successMessage: 'Ajuste de inventario registrado.',
-    errorMessage: 'No se pudo registrar el ajuste.',
+    successMessage: t('adjustments.adjustment_success'),
+    errorMessage: t('adjustments.adjustment_error'),
   },
 })[props.mode]);
 
@@ -95,13 +103,13 @@ function createEmptyItem() {
 
 const locationEndpoint = computed(() => {
   return form.warehouse_id
-    ? `/api/admin/inventory/locations?warehouse_id=${form.warehouse_id}`
+    ? `/admin/inventory/locations?warehouse_id=${form.warehouse_id}`
     : undefined;
 });
 
 const productEndpoint = computed(() => {
   if (!form.warehouse_id) return undefined;
-  let url = `/api/admin/products?warehouse_id=${form.warehouse_id}`;
+  let url = `/admin/products?warehouse_id=${form.warehouse_id}`;
   if (form.storage_location_id) {
     url += `&storage_location_id=${form.storage_location_id}`;
   }
@@ -143,8 +151,8 @@ async function handleSubmit() {
   const minQty = config.value.quantityMin;
   if (!form.warehouse_id || form.items.some(i => !i.product_id || i.quantity < minQty)) {
     toast({
-      title: 'Validación',
-      description: `Completa todos los campos. La cantidad debe ser ${minQty > 0 ? 'mayor a 0' : 'válida'}.`,
+      title: t('common.validation_error'),
+      description: t('adjustments.validation_msg'),
       variant: 'destructive',
     });
     return;
@@ -165,11 +173,11 @@ async function handleSubmit() {
     };
 
     await stockApi.adjust(payload);
-    toast({ title: 'Éxito', description: config.value.successMessage });
+    toast({ title: t('common.success'), description: config.value.successMessage });
     router.push('/panel/inventory/adjustments');
   } catch (error) {
     toast({
-      title: 'Error',
+      title: t('common.error'),
       description: config.value.errorMessage,
       variant: 'destructive',
     });
@@ -187,25 +195,28 @@ async function handleSubmit() {
     <div class="bg-card border rounded-lg p-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="space-y-2">
-          <Label>Almacén <span class="text-destructive">*</span></Label>
+          <Label>{{ t('inventory.warehouse') }} <span class="text-destructive">*</span></Label>
           <SearchableSelect
             v-model="form.warehouse_id"
-            endpoint="/api/admin/warehouses"
+            endpoint="/admin/warehouses"
             label-key="name"
             value-key="id"
-            placeholder="Seleccionar almacén..."
+            :placeholder="t('adjustments.select_warehouse')"
             @update:model-value="handleWarehouseChange"
           />
         </div>
         <div class="space-y-2">
-          <Label>Ubicación (Opcional)</Label>
+          <Label>{{ t('common.optional') }}</Label>
           <SearchableSelect
             v-model="form.storage_location_id"
             :endpoint="locationEndpoint"
             label-key="name"
             value-key="id"
-            placeholder="Seleccionar ubicación..."
+            :placeholder="t('adjustments.select_location')"
             :disabled="!form.warehouse_id"
+            :show-add-option="!!form.warehouse_id"
+            :add-option-label="t('locations.new_location')"
+            @add-click="isCreatingLocation = true"
           />
         </div>
       </div>
@@ -214,7 +225,7 @@ async function handleSubmit() {
     <!-- Products -->
     <div class="bg-card border rounded-lg p-6">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-lg font-semibold">Productos</h2>
+        <h2 class="text-lg font-semibold">{{ t('adjustments.products') }}</h2>
         <Button
           type="button"
           variant="outline"
@@ -223,7 +234,7 @@ async function handleSubmit() {
           :disabled="!form.warehouse_id"
         >
           <Plus class="mr-2 h-4 w-4" />
-          Agregar Item
+          {{ t('adjustments.add_item') }}
         </Button>
       </div>
 
@@ -234,13 +245,13 @@ async function handleSubmit() {
           class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start border-b pb-8 last:border-0"
         >
           <div class="md:col-span-5 space-y-2">
-            <Label>Producto</Label>
+            <Label>{{ t('inventory.product') }}</Label>
             <SearchableSelect
               v-model="item.product_id"
               :endpoint="productEndpoint"
               label-key="name"
               value-key="id"
-              placeholder="Buscar producto..."
+              :placeholder="t('adjustments.search_product')"
               :disabled="!form.warehouse_id"
               @update:model-value="val => handleProductSelect(val as string, index)"
             />
@@ -254,11 +265,11 @@ async function handleSubmit() {
               class="h-10"
             />
             <div class="absolute -bottom-5 left-0 text-[10px] text-muted-foreground whitespace-nowrap">
-              En stock: <span class="font-medium text-primary">{{ item.current_quantity }}</span>
+              {{ t('adjustments.in_stock') }}: <span class="font-medium text-primary">{{ item.current_quantity }}</span>
             </div>
           </div>
           <div class="md:col-span-4 space-y-2">
-            <Label>Motivo</Label>
+            <Label>{{ t('adjustments.reason_label') }}</Label>
             <Select v-model="item.reason">
               <SelectTrigger>
                 <SelectValue />
@@ -293,8 +304,13 @@ async function handleSubmit() {
         @click="handleSubmit"
       >
         <Save class="mr-2" />
-        {{ isSubmitting ? 'Guardando...' : config.submitLabel }}
+        {{ isSubmitting ? t('common.saving') : config.submitLabel }}
       </Button>
     </div>
   </div>
+  <StorageLocationFormDialog
+    v-model:open="isCreatingLocation"
+    :warehouse-id="form.warehouse_id"
+    @saved="handleLocationCreated"
+  />
 </template>

@@ -10,11 +10,17 @@ import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, ArrowLeft, Save } from 'lucide-vue-next';
+import StorageLocationFormDialog from '@/components/inventory/StorageLocationFormDialog.vue';
 
 const router = useRouter();
 const { t } = useI18n();
 const { toast } = useToast();
 const isSubmitting = ref(false);
+const isCreatingLocation = ref(false);
+
+function handleLocationCreated(location: any) {
+  form.storage_location_id = location.id;
+}
 
 const form = reactive({
   warehouse_id: '',
@@ -32,12 +38,12 @@ const reasons = computed(() => [
 ]);
 
 const locationEndpoint = computed(() => {
-  return form.warehouse_id ? `/api/admin/inventory/locations?warehouse_id=${form.warehouse_id}` : undefined;
+  return form.warehouse_id ? `/admin/inventory/locations?warehouse_id=${form.warehouse_id}` : undefined;
 });
 
 const productEndpoint = computed(() => {
   if (!form.warehouse_id) return undefined;
-  let url = `/api/admin/products?warehouse_id=${form.warehouse_id}`;
+  let url = `/admin/products?warehouse_id=${form.warehouse_id}`;
   if (form.storage_location_id) {
     url += `&storage_location_id=${form.storage_location_id}`;
   }
@@ -138,7 +144,7 @@ async function handleSubmit() {
           <Label>{{ t('inventory.warehouse') }} <span class="text-destructive">*</span></Label>
           <SearchableSelect
             v-model="form.warehouse_id"
-            endpoint="/api/admin/warehouses"
+            endpoint="/admin/warehouses"
             label-key="name"
             value-key="id"
             :placeholder="t('adjustments.select_warehouse')"
@@ -154,6 +160,9 @@ async function handleSubmit() {
             value-key="id"
             :placeholder="t('adjustments.select_location')"
             :disabled="!form.warehouse_id"
+            :show-add-option="!!form.warehouse_id"
+            :add-option-label="t('locations.new_location')"
+            @add-click="isCreatingLocation = true"
             @update:model-value="handleWarehouseChange"
           />
         </div>
@@ -240,4 +249,9 @@ async function handleSubmit() {
         </Button>
     </div>
   </div>
+  <StorageLocationFormDialog
+    v-model:open="isCreatingLocation"
+    :warehouse-id="form.warehouse_id"
+    @saved="handleLocationCreated"
+  />
 </template>

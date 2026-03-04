@@ -59,7 +59,9 @@
     "cancel_action": "Cancelar",
     "in_development": "Módulo en desarrollo.",
     "coming_soon": "Próximamente",
-    "check_errors": "Revisa los campos para asegurar que son validos."
+    "check_errors": "Revisa los campos para asegurar que son validos.",
+    "active_m": "Activo",
+    "inactive_m": "Inactivo"
   },
   "auth": {
     "sign_in": "Iniciar Sesión",
@@ -98,6 +100,7 @@
     "categories": "Categorías",
     "sales_summary": "Resumen de Ventas",
     "top_products": "Top Productos (Mes)",
+    "store": "Tienda",
     "low_stock": "Artículos con Stock Bajo",
     "recent_activity": "Actividad Reciente",
     "today_sales": "Ventas de Hoy",
@@ -132,7 +135,8 @@
     "suppliers": "Proveedores",
     "customers": "Clientes",
     "cash_register": "Caja",
-    "cash_movements": "Movimientos de Caja"
+    "cash_movements": "Movimientos de Caja",
+    "activity_logs": "Bitácora"
   },
   "inventory": {
     "products": "Productos",
@@ -160,7 +164,8 @@
     "exit": "Salida",
     "quantity": "Cantidad",
     "product": "Producto",
-    "warehouse": "Almacén"
+    "warehouse": "Almacén",
+    "all_warehouses": "Todos los almacenes"
   },
   "categories": {
     "title": "Categorías",
@@ -170,7 +175,16 @@
     "empty": "No hay categorías registradas.",
     "deleted": "Categoría eliminada correctamente.",
     "delete_confirm": "¿Eliminar categoría?",
-    "delete_desc": "Se eliminará la categoría '{name}'. Esta acción no se puede deshacer."
+    "delete_desc": "Se eliminará la categoría '{name}'. Esta acción no se puede deshacer.",
+    "form_dialog_title_new": "Nueva Categoría",
+    "form_dialog_title_edit": "Editar Categoría",
+    "form_dialog_description": "Completa los detalles de la categoría aquí.",
+    "form_name_placeholder": "Ej. Bebidas",
+    "form_description_placeholder": "Descripción opcional",
+    "form_label_name": "Nombre",
+    "form_label_description": "Descripción",
+    "created_successfully": "Categoría creada correctamente.",
+    "updated_successfully": "Categoría actualizada correctamente."
   },
   "products": {
     "search": "Buscar productos...",
@@ -226,7 +240,30 @@
     "created_single": "Producto creado en la tienda seleccionada.",
     "created_multiple": "Producto creado en las tiendas seleccionadas.",
     "created_all": "Producto creado en todas las tiendas.",
-    "updated": "Producto actualizado correctamente."
+    "updated": "Producto actualizado correctamente.",
+    "create": "Crear",
+    "new_title": "Nuevo Producto",
+    "new_desc": "Crea un nuevo producto y configúralo para tus tiendas.",
+    "image_hint": "Selecciona una imagen cuadrada. Máx. 2MB.",
+    "sku": "SKU",
+    "category": "Categoría",
+    "min_stock": "Stock Mínimo",
+    "type_physical": "Producto Físico",
+    "type_service": "Servicio",
+    "dist_single": "Una tienda",
+    "dist_multiple": "Tiendas específicas",
+    "dist_all": "Todas las tiendas",
+    "dist_all_hint": "El producto estará disponible en todas las tiendas actuales.",
+    "sku_placeholder": "PROD-001",
+    "barcode_placeholder": "7501234567890",
+    "price_placeholder": "0.00",
+    "cost_placeholder": "0.00",
+    "name": "Nombre",
+    "name_placeholder": "Ej. Refresco de Cola",
+    "generate_sku": "Generar SKU",
+    "desc_placeholder": "Descripción del producto...",
+    "status_active_hint": "El producto está disponible para la venta",
+    "status_inactive_hint": "El producto está oculto del catálogo"
   },
   "stock": {
     "search": "Buscar producto o SKU...",
@@ -251,7 +288,12 @@
     "apply_adjustment": "Aplicar Ajuste",
     "adjusted_success": "Stock ajustado correctamente.",
     "select_type": "Seleccionar tipo",
-    "select_reason": "Seleccionar motivo"
+    "select_reason": "Seleccionar motivo",
+    "no_location": "Sin ubicar",
+    "resulting_quantity": "Cantidad Resultante",
+    "low_stock": "Stock Bajo",
+    "only_low_stock": "Solo stock bajo",
+    "all_locations": "Todas las ubicaciones"
   },
   "movements": {
     "search": "Buscar por producto...",
@@ -452,6 +494,19 @@
   },
   "activity": {
     "title": "Actividad Reciente",
+    "page_title": "Bitácora de Actividad",
+    "search": "Buscar por descripción o evento...",
+    "empty": "No hay registros de actividad.",
+    "system": "Sistema",
+    "event": "Evento",
+    "level": "Nivel",
+    "view_all": "Ver todos",
+    "levels": {
+      "info": "Info",
+      "warning": "Advertencia",
+      "error": "Error",
+      "critical": "Crítico"
+    },
     "types": {
       "auth": "Autenticación",
       "inventory": "Inventario",
@@ -468,5 +523,21 @@
         "seeded": "Carga de Datos"
       }
     }
+  },
+  "locations": {
+    "new": "Nueva Ubicación",
+    "form_desc": "Crea una nueva ubicación dentro del almacén seleccionado.",
+    "code": "Código",
+    "type": "Tipo",
+    "aisle": "Pasillo",
+    "section": "Sección",
+    "created_successfully": "Ubicación creada correctamente.",
+    "type_shelf": "Estante",
+    "type_box": "Caja",
+    "type_pallet": "Pallet",
+    "type_display": "Exhibidor",
+    "type_floor": "Piso",
+    "type_other": "Otro",
+    "new_location": "Nueva Ubicación"
   }
 }

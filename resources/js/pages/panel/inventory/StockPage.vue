@@ -3,7 +3,7 @@ import { ref, onMounted, reactive, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { stockApi } from '@/api/stock.api';
 import { useApiList } from '@/composables/useApiList';
-import { DataTable, type Column } from '@/components/ui/data-table';
+import { DataTable, type Column, type Filter } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -44,8 +44,11 @@ const {
   items: stockItems,
   isLoading,
   searchQuery,
+  filterValues,
+  pagination,
   fetch: fetchStock,
   search,
+  filter,
 } = useApiList<StockItem>(stockApi.list);
 
 const isDialogOpen = ref(false);
@@ -83,6 +86,40 @@ const columns = computed<Column[]>(() => [
   { key: 'reserved', label: t('inventory.reserved'), type: 'custom', align: 'right' },
   { key: 'actions', label: '', type: 'custom', align: 'right' },
 ]);
+
+const filters = computed<Filter[]>(() => [
+  {
+    key: 'warehouse_id',
+    label: t('inventory.warehouse'),
+    type: 'searchable-select',
+    endpoint: '/admin/warehouses',
+    labelKey: 'name',
+    valueKey: 'id',
+    placeholder: t('inventory.all_warehouses'),
+  },
+  {
+    key: 'storage_location_id',
+    label: t('inventory.location'),
+    type: 'searchable-select',
+    endpoint: '/admin/inventory/locations',
+    labelKey: 'name',
+    valueKey: 'id',
+    placeholder: t('stock.all_locations'),
+  },
+  {
+    key: 'low_stock',
+    label: t('stock.low_stock'),
+    type: 'select',
+    placeholder: t('stock.low_stock'),
+    options: [
+      { value: '1', label: t('stock.only_low_stock') },
+    ],
+  },
+]);
+
+function handleFilter(key: string, value: string) {
+  filter(key, value);
+}
 
 function handleSearch() {
   fetchStock();
@@ -163,8 +200,14 @@ onMounted(() => fetchStock());
         :search-placeholder="t('stock.search')"
         :empty-message="t('stock.empty')"
         :empty-icon="ArrowRightLeft"
+        :pagination="pagination"
+        :filters="filters"
+        :filter-values="filterValues"
         class="flex-1 min-h-0"
         @search="search"
+        @filter="handleFilter"
+        @page-change="fetchStock"
+        @per-page-change="(n) => { pagination.perPage = n; fetchStock(1) }"
       >
         <template #cell-product="{ row }">
           <div>
@@ -185,7 +228,7 @@ onMounted(() => fetchStock());
             <span v-if="row.storage_location" class="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
               {{ row.storage_location.code }}
             </span>
-            <span v-else class="text-muted-foreground italic text-xs">Sin ubicar</span>
+            <span v-else class="text-muted-foreground italic text-xs">{{ t('stock.no_location') }}</span>
           </div>
         </template>
 
@@ -252,7 +295,7 @@ onMounted(() => fetchStock());
             <Input id="quantity" type="number" v-model="form.quantity" />
           </div>
           <div class="p-3 bg-muted rounded-md text-sm text-center">
-            <span class="text-muted-foreground">Cantidad Resultante:</span>
+            <span class="text-muted-foreground">{{ t('stock.resulting_quantity') }}:</span>
             <span class="font-bold text-lg ml-2">{{ calculatedTotal }}</span>
           </div>
           <div class="grid gap-2">

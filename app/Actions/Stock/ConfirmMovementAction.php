@@ -2,6 +2,7 @@
 
 namespace App\Actions\Stock;
 
+use App\Models\Stock;
 use App\Models\StockMovement;
 use App\Models\StockAdjustment;
 use App\Models\StockTransfer;
@@ -20,6 +21,46 @@ class ConfirmMovementAction
 
             if ($movement->status === StockMovement::STATUS_CANCELLED) {
                 throw new \Exception('No se puede confirmar un movimiento cancelado.');
+            }
+
+            // If this movement belongs to an adjustment, apply the stock change
+            if ($movement->movable_type === StockAdjustment::class && $movement->movable_id) {
+                $stockQuery = Stock::where('product_id', $movement->product_id)
+                    ->where('warehouse_id', $movement->warehouse_id);
+
+                if ($movement->storage_location_id) {
+                    $stockQuery->where('storage_location_id', $movement->storage_location_id);
+                } else {
+                    $stockQuery->whereNull('storage_location_id');
+                }
+
+                $stock = $stockQuery->lockForUpdate()->first();
+
+                if ($stock) {
+                    $stock->quantity = $movement->quantity_after;
+                    $stock->save();
+                } else {
+                    Stock::create([
+                        'product_id'          => $movement->product_id,
+                        'warehouse_id'        => $movement->warehouse_id,
+                        'storage_location_id' => $movement->storage_location_id,
+                        'quantity'            => $movement->quantity_after,
+                        'reserved'            => 0,
+                    ]);
+                }
+
+                // If all movements for this adjustment are now completed, mark the adjustment too
+                $pendingCount = StockMovement::where('movable_type', StockAdjustment::class)
+                    ->where('movable_id', $movement->movable_id)
+                    ->where('status', StockMovement::STATUS_PENDING)
+                    ->where('id', '!=', $movementId)
+                    ->count();
+
+                if ($pendingCount === 0) {
+                    StockAdjustment::where('id', $movement->movable_id)
+                        ->where('status', '!=', 'completed')
+                        ->update(['status' => 'completed']);
+                }
             }
 
             $movement->status = StockMovement::STATUS_COMPLETED;
@@ -42,14 +83,44 @@ class ConfirmMovementAction
                 throw new \Exception('No se puede confirmar un ajuste cancelado.');
             }
 
-            $adjustment->status = 'completed';
-            $adjustment->save();
-
-            // Also confirm related movements via morph relationship
-            StockMovement::where('movable_type', StockAdjustment::class)
+            // Apply stock changes from each pending movement linked to this adjustment
+            $movements = StockMovement::where('movable_type', StockAdjustment::class)
                 ->where('movable_id', $adjustmentId)
                 ->where('status', StockMovement::STATUS_PENDING)
-                ->update(['status' => StockMovement::STATUS_COMPLETED]);
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($movements as $movement) {
+                $stockQuery = Stock::where('product_id', $movement->product_id)
+                    ->where('warehouse_id', $movement->warehouse_id);
+
+                if ($movement->storage_location_id) {
+                    $stockQuery->where('storage_location_id', $movement->storage_location_id);
+                } else {
+                    $stockQuery->whereNull('storage_location_id');
+                }
+
+                $stock = $stockQuery->lockForUpdate()->first();
+
+                if ($stock) {
+                    $stock->quantity = $movement->quantity_after;
+                    $stock->save();
+                } else {
+                    Stock::create([
+                        'product_id' => $movement->product_id,
+                        'warehouse_id' => $movement->warehouse_id,
+                        'storage_location_id' => $movement->storage_location_id,
+                        'quantity' => $movement->quantity_after,
+                        'reserved' => 0,
+                    ]);
+                }
+
+                $movement->status = StockMovement::STATUS_COMPLETED;
+                $movement->save();
+            }
+
+            $adjustment->status = 'completed';
+            $adjustment->save();
 
             return $adjustment->load(['items.product', 'warehouse']);
         });

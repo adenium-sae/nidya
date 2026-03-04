@@ -44,19 +44,19 @@ function createEmptyItem(): TransferItem {
 
 const sourceLocationEndpoint = computed(() => {
   return form.source_warehouse_id
-    ? `/api/admin/inventory/locations?warehouse_id=${form.source_warehouse_id}`
+    ? `/admin/inventory/locations?warehouse_id=${form.source_warehouse_id}`
     : null;
 });
 
 const destLocationEndpoint = computed(() => {
   return form.destination_warehouse_id
-    ? `/api/admin/inventory/locations?warehouse_id=${form.destination_warehouse_id}`
+    ? `/admin/inventory/locations?warehouse_id=${form.destination_warehouse_id}`
     : null;
 });
 
 const productEndpoint = computed(() => {
   if (!form.source_warehouse_id) return null;
-  return `/api/admin/products?warehouse_id=${form.source_warehouse_id}`;
+  return `/admin/products?warehouse_id=${form.source_warehouse_id}`;
 });
 
 function addItem() {
@@ -177,7 +177,7 @@ async function handleSubmit() {
           <Label>{{ t('adjustments.origin_warehouse') }} <span class="text-destructive">*</span></Label>
           <SearchableSelect
             v-model="form.source_warehouse_id"
-            endpoint="/api/admin/warehouses"
+            endpoint="/admin/warehouses"
             label-key="name"
             value-key="id"
             :placeholder="t('adjustments.select_origin')"
@@ -195,7 +195,7 @@ async function handleSubmit() {
           <Label>{{ t('adjustments.destination_warehouse') }} <span class="text-destructive">*</span></Label>
           <SearchableSelect
             v-model="form.destination_warehouse_id"
-            endpoint="/api/admin/warehouses"
+            endpoint="/admin/warehouses"
             label-key="name"
             value-key="id"
             :placeholder="t('adjustments.select_destination')"

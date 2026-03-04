@@ -29,10 +29,10 @@ class BranchService
             $query->where('is_active', $filters['is_active']);
         }
         if (!empty($filters['search'])) {
-            $search = $filters['search'];
+            $search = strtolower($filters['search']);
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%");
+                $q->whereRaw('LOWER(name) LIKE ?', ["%{$search}%"])
+                    ->orWhereRaw('LOWER(code) LIKE ?', ["%{$search}%"]);
             });
         }
         return $query->get();

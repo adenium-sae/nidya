@@ -23,8 +23,8 @@ class CategoryService
         $query = Category::query();
 
         if (!empty($filters['search'])) {
-            $search = $filters['search'];
-            $query->where('name', 'like', "%{$search}%");
+            $search = strtolower($filters['search']);
+            $query->whereRaw('LOWER(name) LIKE ?', ["%{$search}%"]);
         }
 
         if (isset($filters['is_active'])) {

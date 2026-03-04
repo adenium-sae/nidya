@@ -144,6 +144,12 @@ export const panelRoutes: RouteRecordRaw[] = [
         name: 'users-permissions',
         component: () => import('@/pages/panel/users/PermissionsPage.vue'),
       },
+      // Activity Log
+      {
+        path: 'activity-logs',
+        name: 'activity-logs',
+        component: () => import('@/pages/panel/ActivityLogPage.vue'),
+      },
       // Organization
       {
         path: 'organization/stores',
