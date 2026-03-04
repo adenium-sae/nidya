@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useToast } from '@/components/ui/toast/use-toast';
 import { stockApi } from '@/api/stock.api';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import { Plus, Trash2, MoveHorizontal, AlertTriangle } from 'lucide-vue-next';
 import PageHeader from '@/components/app/PageHeader.vue';
 
 const router = useRouter();
+const { t } = useI18n();
 const { toast } = useToast();
 const isSubmitting = ref(false);
 
@@ -92,7 +94,7 @@ const validationErrors = computed(() => {
   form.items.forEach((item, index) => {
     if (item.product_id && item.quantity > 0 && item.quantity > item.current_source_stock) {
       errors.push(
-        `Producto #${index + 1}: la cantidad solicitada (${item.quantity}) excede el stock disponible (${item.current_source_stock}).`
+        t('adjustments.transfer_stock_error', { index: index + 1, qty: item.quantity, available: item.current_source_stock })
       );
     }
   });
@@ -108,8 +110,8 @@ async function handleSubmit() {
     form.items.some(i => !i.product_id || i.quantity <= 0)
   ) {
     toast({
-      title: 'Validación',
-      description: 'Completa todos los campos obligatorios.',
+      title: t('common.validation_error'),
+      description: t('common.check_errors'),
       variant: 'destructive',
     });
     return;
@@ -117,8 +119,8 @@ async function handleSubmit() {
 
   if (form.source_warehouse_id === form.destination_warehouse_id) {
     toast({
-      title: 'Validación',
-      description: 'El almacén de origen y destino deben ser diferentes.',
+      title: t('common.validation_error'),
+      description: t('adjustments.transfer_same_warehouse'),
       variant: 'destructive',
     });
     return;
@@ -126,7 +128,7 @@ async function handleSubmit() {
 
   if (hasStockErrors.value) {
     toast({
-      title: 'Stock insuficiente',
+      title: t('adjustments.insufficientStockTitle'),
       description: validationErrors.value[0],
       variant: 'destructive',
     });
@@ -138,16 +140,16 @@ async function handleSubmit() {
     const result = await stockApi.transfer(form);
     const folio = result?.data?.data?.folio;
     toast({
-      title: 'Éxito',
+      title: t('common.success'),
       description: folio
-        ? `Transferencia ${folio} registrada correctamente.`
-        : 'Transferencia registrada correctamente.',
+        ? t('adjustments.transfer_success_folio', { folio })
+        : t('adjustments.transfer_success'),
     });
     router.push('/panel/inventory/transfers');
   } catch (error: any) {
-    const message = error?.response?.data?.message || 'No se pudo realizar la transferencia.';
+    const message = error?.response?.data?.message || t('adjustments.transfer_error');
     toast({
-      title: 'Error',
+      title: t('common.error'),
       description: message,
       variant: 'destructive',
     });
@@ -160,8 +162,8 @@ async function handleSubmit() {
 <template>
   <div class="flex flex-col gap-6">
     <PageHeader
-      title="Nueva Transferencia"
-      description="Mueve mercancía entre diferentes almacenes."
+      :title="t('adjustments.transfer')"
+      :description="t('adjustments.transfer_desc')"
       show-back
     />
 
@@ -169,16 +171,16 @@ async function handleSubmit() {
       <div class="bg-card border rounded-lg p-6 space-y-4">
         <h2 class="text-lg font-semibold flex items-center gap-2">
           <span class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">1</span>
-          Origen
+          {{ t('adjustments.origin') }}
         </h2>
         <div class="space-y-2">
-          <Label>Almacén de Origen <span class="text-destructive">*</span></Label>
+          <Label>{{ t('adjustments.origin_warehouse') }} <span class="text-destructive">*</span></Label>
           <SearchableSelect
             v-model="form.source_warehouse_id"
             endpoint="/api/admin/warehouses"
             label-key="name"
             value-key="id"
-            placeholder="Seleccionar origen..."
+            :placeholder="t('adjustments.select_origin')"
             @update:model-value="handleSourceWarehouseChange"
           />
         </div>
@@ -187,16 +189,16 @@ async function handleSubmit() {
       <div class="bg-card border rounded-lg p-6 space-y-4">
         <h2 class="text-lg font-semibold flex items-center gap-2">
           <span class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">2</span>
-          Destino
+          {{ t('adjustments.destination') }}
         </h2>
         <div class="space-y-2">
-          <Label>Almacén de Destino <span class="text-destructive">*</span></Label>
+          <Label>{{ t('adjustments.destination_warehouse') }} <span class="text-destructive">*</span></Label>
           <SearchableSelect
             v-model="form.destination_warehouse_id"
             endpoint="/api/admin/warehouses"
             label-key="name"
             value-key="id"
-            placeholder="Seleccionar destino..."
+            :placeholder="t('adjustments.select_destination')"
           />
         </div>
       </div>
@@ -204,7 +206,7 @@ async function handleSubmit() {
 
     <div class="bg-card border rounded-lg p-6">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-lg font-semibold">Productos a Transferir</h2>
+        <h2 class="text-lg font-semibold">{{ t('adjustments.products_to_transfer') }}</h2>
         <Button
           type="button"
           variant="outline"
@@ -213,7 +215,7 @@ async function handleSubmit() {
           :disabled="!form.source_warehouse_id"
         >
           <Plus class="mr-2 h-4 w-4" />
-          Agregar Item
+          {{ t('adjustments.add_item') }}
         </Button>
       </div>
 
@@ -224,42 +226,42 @@ async function handleSubmit() {
           class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start border-b pb-8 last:border-0"
         >
           <div class="lg:col-span-3 space-y-2">
-            <Label>Producto</Label>
+            <Label>{{ t('inventory.product') }}</Label>
             <SearchableSelect
               v-model="item.product_id"
               :endpoint="productEndpoint"
               label-key="name"
               value-key="id"
-              placeholder="Buscar producto..."
+              :placeholder="t('adjustments.search_product')"
               :disabled="!form.source_warehouse_id"
               @update:model-value="(val: any) => handleProductSelect(val, index)"
             />
           </div>
           <div class="lg:col-span-3 space-y-2">
-            <Label>Ubicación Origen</Label>
+            <Label>{{ t('adjustments.origin_location') }}</Label>
             <SearchableSelect
               v-model="item.source_location_id"
               :endpoint="sourceLocationEndpoint"
               label-key="name"
               value-key="id"
-              placeholder="Toda el área"
+              :placeholder="t('adjustments.all_area')"
               :disabled="!form.source_warehouse_id"
               @update:model-value="() => handleProductSelect(item.product_id, index)"
             />
           </div>
           <div class="lg:col-span-3 space-y-2">
-            <Label>Ubicación Destino</Label>
+            <Label>{{ t('adjustments.destination_location') }}</Label>
             <SearchableSelect
               v-model="item.destination_location_id"
               :endpoint="destLocationEndpoint"
               label-key="name"
               value-key="id"
-              placeholder="Toda el área"
+              :placeholder="t('adjustments.all_area')"
               :disabled="!form.destination_warehouse_id"
             />
           </div>
           <div class="lg:col-span-2 space-y-2 relative">
-            <Label>Cant.</Label>
+            <Label>{{ t('adjustments.qty') }}</Label>
             <Input
               type="number"
               v-model.number="item.quantity"
@@ -271,7 +273,7 @@ async function handleSubmit() {
             <div class="absolute -bottom-5 left-0 text-[10px] whitespace-nowrap"
               :class="item.product_id && item.quantity > item.current_source_stock ? 'text-destructive font-medium' : 'text-muted-foreground'"
             >
-              Disponible: <span class="font-medium" :class="item.product_id && item.quantity > item.current_source_stock ? 'text-destructive' : 'text-primary'">{{ item.current_source_stock }}</span>
+              {{ t('adjustments.available') }}: <span class="font-medium" :class="item.product_id && item.quantity > item.current_source_stock ? 'text-destructive' : 'text-primary'">{{ item.current_source_stock }}</span>
             </div>
           </div>
           <div class="lg:col-span-1 pt-8 flex justify-end">
@@ -291,8 +293,8 @@ async function handleSubmit() {
 
     <div class="flex flex-col lg:flex-row gap-6">
       <div class="flex-1 bg-card border rounded-lg p-6 space-y-2">
-        <Label>Notas de Transferencia</Label>
-        <Textarea v-model="form.notes" placeholder="Ej: Reposición de tienda, envío consolidado..." />
+        <Label>{{ t('adjustments.transfer_notes') }}</Label>
+        <Textarea v-model="form.notes" :placeholder="t('adjustments.transfer_notes_pl')" />
       </div>
     </div>
 
@@ -301,7 +303,7 @@ async function handleSubmit() {
       <div class="flex items-start gap-3">
         <AlertTriangle class="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
         <div class="space-y-1">
-          <p class="text-sm font-medium text-destructive">Stock insuficiente</p>
+          <p class="text-sm font-medium text-destructive">{{ t('adjustments.insufficientStockTitle') }}</p>
           <ul class="text-xs text-destructive/80 space-y-0.5">
             <li v-for="(error, i) in validationErrors" :key="i">{{ error }}</li>
           </ul>
@@ -312,7 +314,7 @@ async function handleSubmit() {
     <div class="w-full lg:w-[300px] flex items-end">
       <Button class="w-full" :disabled="isSubmitting || hasStockErrors" @click="handleSubmit">
         <MoveHorizontal class="mr-2 h-5 w-5" />
-        {{ isSubmitting ? 'Procesando...' : 'Confirmar Transferencia' }}
+        {{ isSubmitting ? t('common.processing') : t('adjustments.confirm_transfer') }}
       </Button>
     </div>
   </div>

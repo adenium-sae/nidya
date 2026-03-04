@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { categoriesApi } from '@/api/categories.api';
 import { productsApi } from '@/api/products.api';
 import client from '@/api/client';
@@ -11,6 +12,7 @@ import type { Category } from '@/types/models';
 
 const router = useRouter();
 const route = useRoute();
+const { t } = useI18n();
 const { toast } = useToast();
 
 const productId = route.params.id as string;
@@ -44,8 +46,8 @@ onMounted(async () => {
   } catch (error) {
     console.error('Error loading data:', error);
     toast({
-      title: 'Error',
-      description: 'No se pudo cargar la información del producto.',
+      title: t('common.error'),
+      description: t('products.load_error'),
       variant: 'destructive',
     });
   } finally {
@@ -75,11 +77,11 @@ async function handleSubmit(formData: any, imageFile: File | null) {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
 
-    toast({ title: 'Éxito', description: 'Producto actualizado correctamente.' });
+    toast({ title: t('common.success'), description: t('products.updated_success') });
     router.push('/panel/inventory/products');
   } catch (error: any) {
     console.error('Error updating product:', error);
-    let msg = 'Hubo un error al actualizar el producto.';
+    let msg = t('products.update_error');
     if (error.response?.data?.errors) {
       serverErrors.value = error.response.data.errors;
       msg = Object.values(error.response.data.errors).flat().join(', ');
@@ -87,7 +89,7 @@ async function handleSubmit(formData: any, imageFile: File | null) {
       msg = error.response.data.message;
     }
     toast({
-      title: 'Error de validación',
+      title: t('common.validation_error'),
       description: msg,
       variant: 'destructive',
       duration: 5000,
@@ -109,8 +111,8 @@ function handleCategoryCreated(category: Category) {
 <template>
   <div class="flex flex-col gap-8 w-full max-w-[1100px] mx-auto pb-12">
     <PageHeader
-      title="Editar Producto"
-      description="Modifica la información del producto."
+      :title="t('products.edit_title')"
+      :description="t('products.edit_desc')"
       show-back
     />
 
@@ -121,7 +123,7 @@ function handleCategoryCreated(category: Category) {
       :is-loading="isLoading"
       :is-edit-mode="true"
       :server-errors="serverErrors"
-      submit-label="Guardar Cambios"
+      :submit-label="t('common.save_changes')"
       @submit="handleSubmit"
       @cancel="handleCancel"
       @category-created="handleCategoryCreated"

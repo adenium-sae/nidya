@@ -4,6 +4,7 @@ import client from '@/api/client'
 import { useDebounceFn } from '@vueuse/core'
 import { Check, ChevronsUpDown, Search, Loader2, Plus } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
+import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import {
   Command,
@@ -43,9 +44,9 @@ export interface SearchableSelectProps {
 }
 
 const props = withDefaults(defineProps<SearchableSelectProps>(), {
-  placeholder: 'Seleccionar...',
-  searchPlaceholder: 'Buscar...',
-  emptyMessage: 'No se encontraron resultados.',
+  placeholder: '',
+  searchPlaceholder: '',
+  emptyMessage: '',
   options: () => [],
   labelKey: 'name',
   valueKey: 'id',
@@ -54,9 +55,11 @@ const props = withDefaults(defineProps<SearchableSelectProps>(), {
   minSearchLength: 0,
   debounceMs: 300,
   showAddOption: false,
-  addOptionLabel: 'Agregar nuevo',
+  addOptionLabel: '',
   endpoint: null
 })
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string | null): void
@@ -99,7 +102,7 @@ const selectedOption = computed(() => {
 })
 
 const displayLabel = computed(() => {
-  return selectedOption.value?.label || props.placeholder
+  return selectedOption.value?.label || props.placeholder || t('common.select')
 })
 
 async function fetchOptions(query: string) {
@@ -184,7 +187,7 @@ watch(open, (isOpen) => {
           <Search class="mr-2 h-4 w-4 shrink-0 opacity-50" />
           <input
             v-model="searchQuery"
-            :placeholder="searchPlaceholder"
+            :placeholder="searchPlaceholder || t('common.search')"
             class="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
             @input="handleSearch(($event.target as HTMLInputElement).value)"
           />
@@ -193,12 +196,12 @@ watch(open, (isOpen) => {
         <CommandList class="flex flex-col h-full">
           <div v-if="isLoading" class="py-6 text-center">
             <Loader2 class="h-6 w-6 animate-spin mx-auto text-muted-foreground opacity-50" />
-            <p class="text-xs text-muted-foreground mt-2">Cargando...</p>
+            <p class="text-xs text-muted-foreground mt-2">{{ t('common.loading') }}</p>
           </div>
 
           <template v-else>
             <div v-if="displayOptions.length === 0" class="py-6 text-center">
-              <p class="text-sm text-muted-foreground">{{ emptyMessage }}</p>
+              <p class="text-sm text-muted-foreground">{{ emptyMessage || t('common.no_results') }}</p>
             </div>
 
             <CommandGroup v-if="displayOptions.length > 0" class="flex-1 overflow-auto">
@@ -228,7 +231,7 @@ watch(open, (isOpen) => {
                 @click="emit('add-click')"
               >
                 <Plus class="mr-2 h-4 w-4" />
-                {{ addOptionLabel }}
+                {{ addOptionLabel || t('common.add_new') }}
               </Button>
             </div>
           </template>

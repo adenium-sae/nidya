@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue';
+import { ref, onMounted, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { categoriesApi } from '@/api/categories.api';
 import { useApiList } from '@/composables/useApiList';
 import { useConfirmDelete } from '@/composables/useConfirmDelete';
@@ -9,12 +10,11 @@ import { Package, Plus } from 'lucide-vue-next';
 import { useToast } from '@/components/ui/toast/use-toast';
 import CategoryFormDialog from '@/components/inventory/CategoryFormDialog.vue';
 import ConfirmDialog from '@/components/app/ConfirmDialog.vue';
-import { ref } from 'vue';
 import type { Category } from '@/types/models';
 
+const { t } = useI18n();
 const { toast } = useToast();
 
-// List composable
 const {
   items: categories,
   isLoading,
@@ -25,9 +25,8 @@ const {
   changePage,
   changePerPage,
   removeItem,
-} = useApiList(categoriesApi.list);
+} = useApiList<Category>(categoriesApi.list);
 
-// Delete composable
 const {
   isOpen: deleteDialogOpen,
   isDeleting,
@@ -36,24 +35,23 @@ const {
   closeDialog: closeDeleteDialog,
   confirmDelete,
 } = useConfirmDelete(categoriesApi.destroy, {
-  successMessage: 'Categoría eliminada correctamente.',
+  successMessage: () => t('categories.deleted'),
   onSuccess: (item: any) => removeItem(item.id),
 });
 
-// Form dialog state
 const formDialogOpen = ref(false);
 const editingCategory = ref<Category | null>(null);
 
-const columns: Column[] = [
-  { key: 'name', label: 'Nombre', type: 'text', sortable: true },
-  { key: 'description', label: 'Descripción', type: 'text' },
-  { key: 'is_active', label: 'Estado', type: 'boolean' },
-];
+const columns = computed<Column[]>(() => [
+  { key: 'name', label: t('common.name'), type: 'text', sortable: true },
+  { key: 'description', label: t('common.description'), type: 'text' },
+  { key: 'is_active', label: t('common.status'), type: 'boolean' },
+]);
 
-const actions: Action[] = [
-  { key: 'edit', label: 'Editar' },
-  { key: 'delete', label: 'Eliminar', variant: 'destructive' },
-];
+const actions = computed<Action[]>(() => [
+  { key: 'edit', label: t('common.edit') },
+  { key: 'delete', label: t('common.delete'), variant: 'destructive' },
+]);
 
 function handleAction(action: string, row: any) {
   if (action === 'edit') {
@@ -85,8 +83,8 @@ onMounted(() => fetchCategories());
       :is-loading="isLoading"
       :search-value="searchQuery"
       :pagination="pagination"
-      search-placeholder="Buscar categorías..."
-      empty-message="No hay categorías registradas."
+      :search-placeholder="t('categories.search')"
+      :empty-message="t('categories.empty')"
       :empty-icon="Package"
       class="flex-1 min-h-0"
       @search="search"
@@ -97,7 +95,7 @@ onMounted(() => fetchCategories());
       <template #toolbar-end>
         <Button @click="openCreateDialog">
           <Plus class="mr-2 h-4 w-4" />
-          Nueva Categoría
+          {{ t('categories.new') }}
         </Button>
       </template>
     </DataTable>
@@ -110,8 +108,8 @@ onMounted(() => fetchCategories());
 
     <ConfirmDialog
       v-model:open="deleteDialogOpen"
-      title="¿Eliminar categoría?"
-      :description="`Se eliminará la categoría '${itemToDelete?.name}'. Esta acción no se puede deshacer.`"
+      :title="t('categories.delete_confirm')"
+      :description="t('categories.delete_desc', { name: itemToDelete?.name })"
       :loading="isDeleting"
       @confirm="confirmDelete"
     />

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { storesApi } from '@/api/stores.api';
 import { useApiList } from '@/composables/useApiList';
 import { useConfirmDelete } from '@/composables/useConfirmDelete';
@@ -21,6 +22,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import ConfirmDialog from '@/components/app/ConfirmDialog.vue';
 import type { Store as StoreModel } from '@/types/models';
 
+const { t } = useI18n();
 const { toast } = useToast();
 
 const {
@@ -39,7 +41,7 @@ const {
   openDialog: _openDeleteDialog,
   confirmDelete,
 } = useConfirmDelete(storesApi.destroy, {
-  successMessage: 'Tienda eliminada correctamente.',
+  successMessage: () => t('stores.deleted'),
   onSuccess: (item: any) => removeItem(item.id),
 });
 
@@ -56,16 +58,16 @@ const form = reactive({
 });
 
 const columns = computed<Column[]>(() => [
-  { key: 'name', label: 'Nombre', sortable: true, type: 'text' },
-  { key: 'description', label: 'Descripción', type: 'text' },
-  { key: 'primary_color', label: 'Color', type: 'custom' },
-  { key: 'is_active', label: 'Estado', type: 'custom' },
+  { key: 'name', label: t('common.name'), sortable: true, type: 'text' },
+  { key: 'description', label: t('common.description'), type: 'text' },
+  { key: 'primary_color', label: t('stores.brand_color'), type: 'custom' },
+  { key: 'is_active', label: t('common.status'), type: 'custom' },
 ]);
 
-const actions: Action[] = [
-  { key: 'edit', label: 'Editar' },
-  { key: 'delete', label: 'Eliminar', variant: 'destructive' },
-];
+const actions = computed<Action[]>(() => [
+  { key: 'edit', label: t('common.edit') },
+  { key: 'delete', label: t('common.delete'), variant: 'destructive' },
+]);
 
 function handleAction(actionKey: string, row: any) {
   if (actionKey === 'edit') {
@@ -103,10 +105,10 @@ async function handleSubmit() {
   try {
     if (isEditing.value && currentId.value) {
       await storesApi.update(currentId.value, form);
-      toast({ title: 'Éxito', description: 'Tienda actualizada correctamente.' });
+      toast({ title: t('common.success'), description: t('stores.updated') });
     } else {
       await storesApi.create(form);
-      toast({ title: 'Éxito', description: 'Tienda creada correctamente.' });
+      toast({ title: t('common.success'), description: t('stores.created') });
     }
     fetchStores();
     isDialogOpen.value = false;
@@ -128,16 +130,17 @@ onMounted(() => {
       :actions="actions"
       :is-loading="isLoading"
       :search-value="searchQuery"
-      empty-message="No hay tiendas registradas."
+      :empty-message="t('stores.empty')"
       :empty-icon="Store"
       class="flex-1 min-h-0"
+      :search-placeholder="t('stores.search')"
       @search="search"
       @action="handleAction"
     >
       <template #toolbar-end>
         <Button @click="openCreateDialog">
           <Plus class="mr-2 h-4 w-4" />
-          Nueva Tienda
+          {{ t('stores.new') }}
         </Button>
       </template>
 
@@ -156,7 +159,7 @@ onMounted(() => {
           class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
           :class="row.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'"
         >
-          {{ row.is_active ? 'Activa' : 'Inactiva' }}
+          {{ row.is_active ? t('common.active_f') : t('common.inactive_f') }}
         </span>
       </template>
     </DataTable>
@@ -164,29 +167,29 @@ onMounted(() => {
     <Dialog :open="isDialogOpen" @update:open="isDialogOpen = $event">
       <DialogContent class="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{{ isEditing ? 'Editar Tienda' : 'Nueva Tienda' }}</DialogTitle>
+          <DialogTitle>{{ isEditing ? t('stores.edit') : t('stores.new') }}</DialogTitle>
           <DialogDescription>
-            Completa los detalles de la tienda para comenzar a asociarla a tu inventario.
+            {{ t('stores.form_desc') }}
           </DialogDescription>
         </DialogHeader>
         <div class="grid gap-4 py-4">
           <div class="grid gap-2">
-            <Label htmlFor="name">Nombre <span class="text-destructive">*</span></Label>
+            <Label htmlFor="name">{{ t('common.name') }} <span class="text-destructive">*</span></Label>
             <Input id="name" v-model="form.name" placeholder="Ej. Nidya Cancún" />
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div class="grid gap-2">
-              <Label htmlFor="slug">Slug (Opcional)</Label>
+              <Label htmlFor="slug">{{ t('stores.slug') }}</Label>
               <Input id="slug" v-model="form.slug" placeholder="nidya-cancun" />
             </div>
             <div class="grid gap-2">
-              <Label htmlFor="color">Color de Marca</Label>
+              <Label htmlFor="color">{{ t('stores.brand_color') }}</Label>
               <Input id="color" type="color" v-model="form.primary_color" class="h-10 p-1 cursor-pointer" />
             </div>
           </div>
           <div class="grid gap-2">
-            <Label htmlFor="description">Descripción (Opcional)</Label>
-            <Textarea id="description" v-model="form.description" placeholder="Información sobre la tienda..." />
+            <Label htmlFor="description">{{ t('common.description') }} ({{ t('common.optional') }})</Label>
+            <Textarea id="description" v-model="form.description" :placeholder="t('stores.description_placeholder')" />
           </div>
           <div class="flex items-center space-x-2 mt-2">
             <Checkbox
@@ -195,14 +198,14 @@ onMounted(() => {
               @update:checked="(val: boolean) => (form.is_active = val)"
             />
             <Label htmlFor="is_active" class="text-sm font-normal">
-              Tienda activa en el sistema
+              {{ t('stores.active_in_system') }}
             </Label>
           </div>
         </div>
         <div class="flex justify-end gap-2">
-          <Button variant="outline" @click="isDialogOpen = false">Cancelar</Button>
+          <Button variant="outline" @click="isDialogOpen = false">{{ t('common.cancel') }}</Button>
           <Button @click="handleSubmit">
-            {{ isEditing ? 'Guardar Cambios' : 'Crear Tienda' }}
+            {{ isEditing ? t('common.save_changes') : t('stores.create') }}
           </Button>
         </div>
       </DialogContent>
@@ -210,8 +213,8 @@ onMounted(() => {
 
     <ConfirmDialog
       :open="deleteDialogOpen"
-      title="¿Eliminar tienda?"
-      description="¿Estás seguro de que deseas eliminar esta tienda? Esta acción no se puede deshacer."
+      :title="t('stores.delete_confirm')"
+      :description="t('stores.delete_desc')"
       :loading="isDeleting"
       @confirm="confirmDelete"
       @update:open="deleteDialogOpen = $event"

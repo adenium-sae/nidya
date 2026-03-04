@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,7 +67,7 @@ const props = withDefaults(defineProps<{
   initialData: () => ({}),
   isLoading: false,
   isEditMode: false,
-  submitLabel: 'Guardar',
+  submitLabel: '',
   serverErrors: () => ({})
 });
 
@@ -76,11 +77,14 @@ const emit = defineEmits<{
   (e: 'category-created', category: Category): void;
 }>();
 
+const { t } = useI18n();
 const { toast } = useToast();
 const previewImage = ref<string | null>(props.initialData.image_url || null);
 const imageFile = ref<File | null>(null);
 const isCreatingCategory = ref(false);
 const fieldErrors = reactive<Record<string, string>>({});
+
+const actualSubmitLabel = computed(() => props.submitLabel || t('common.save'));
 
 function clearFieldError(field: string) {
   if (fieldErrors[field]) {
@@ -192,20 +196,20 @@ const currencyFormatSchema = z.coerce.number().transform((val) => {
 
 const productFormSchema = computed(() => {
   let schema: z.ZodType<any> = z.object({
-    name: z.string().min(1, "El nombre es obligatorio"),
+    name: z.string().min(1, t('products.name_required')),
     description: z.string().optional(),
-    sku: z.string().min(1, "El SKU es obligatorio"),
+    sku: z.string().min(1, t('products.sku_required')),
     barcode: z.string().optional(),
     price: props.isEditMode 
       ? z.string().optional() 
-      : z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, "Precio inválido"),
-    cost: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, "Costo inválido"),
-    category_id: z.string().min(1, "La categoría es obligatoria"),
+      : z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, t('products.invalid_price')),
+    cost: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, t('products.invalid_cost')),
+    category_id: z.string().min(1, t('products.category_required')),
     type: z.string(),
     target_stores: z.string(),
     store_id: z.string().optional(),
     store_ids: z.array(z.string()).optional(),
-    min_stock: z.coerce.string().refine((val) => !isNaN(parseInt(val)) && parseInt(val) >= 0, "Stock mínimo inválido"),
+    min_stock: z.coerce.string().refine((val) => !isNaN(parseInt(val)) && parseInt(val) >= 0, t('products.invalid_min_stock')),
     is_active: z.boolean(),
     image_url: z.string().optional(),
   });
@@ -216,7 +220,7 @@ const productFormSchema = computed(() => {
       }
       return true;
     }, {
-      message: "Debe seleccionar una tienda",
+      message: t('products.store_required'),
       path: ["store_id"],
     }).refine((data) => {
       if (data.target_stores === 'multiple' && (!data.store_ids || data.store_ids.length === 0)) {
@@ -224,7 +228,7 @@ const productFormSchema = computed(() => {
       }
       return true;
     }, {
-      message: "Debe seleccionar al menos una tienda",
+      message: t('products.store_required'),
       path: ["store_ids"],
     });
   }
@@ -294,8 +298,8 @@ async function handleSubmit() {
       }
     });
     toast({
-      title: 'Error de validación',
-      description: 'Por favor corrige los campos marcados en rojo.',
+      title: t('common.validation_error'),
+      description: t('common.check_errors'),
       variant: 'destructive',
     });
     return;
@@ -315,12 +319,12 @@ function handleCategoryCreated(newCategory: Category) {
       <div class="bg-card rounded-xl border p-6 shadow-sm">
         <h2 class="text-lg font-semibold mb-6 flex items-center gap-2">
           <Package class="h-5 w-5 text-primary" />
-          Información General
+          {{ t('products.general_info') }}
         </h2>
         
         <div class="grid md:grid-cols-3 gap-6">
           <div>
-            <Label class="block mb-3 text-sm font-medium">Imagen</Label>
+            <Label class="block mb-3 text-sm font-medium">{{ t('products.image') }}</Label>
             <div class="border-2 border-dashed rounded-xl flex flex-col items-center justify-center aspect-square cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-colors relative overflow-hidden bg-muted/20">
               <input type="file" class="absolute inset-0 opacity-0 cursor-pointer z-10" accept="image/*" @change="handleImageChange" />
               
@@ -330,22 +334,22 @@ function handleCategoryCreated(newCategory: Category) {
                 <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                   <Upload class="h-6 w-6 text-primary" />
                 </div>
-                <span class="text-sm font-medium">Subir imagen</span>
-                <span class="text-xs mt-1">PNG, JPG hasta 2MB</span>
+                <span class="text-sm font-medium">{{ t('products.upload_image') }}</span>
+                <span class="text-xs mt-1">{{ t('products.image_hint') }}</span>
               </div>
             </div>
           </div>
 
           <div class="md:col-span-2 space-y-5">
             <div class="space-y-2">
-              <Label for="name">Nombre del Producto <span class="text-destructive">*</span></Label>
-              <Input id="name" v-model="form.name" placeholder="Ej. Coca Cola 600ml" :class="{ 'border-destructive': fieldErrors.name }" @input="clearFieldError('name')" />
+              <Label for="name">{{ t('products.name') }} <span class="text-destructive">*</span></Label>
+              <Input id="name" v-model="form.name" :placeholder="t('products.name_placeholder')" :class="{ 'border-destructive': fieldErrors.name }" @input="clearFieldError('name')" />
               <p v-if="fieldErrors.name" class="text-xs text-destructive">{{ fieldErrors.name }}</p>
             </div>
             
             <div class="space-y-2">
-              <Label for="description">Descripción</Label>
-              <Textarea id="description" v-model="form.description" placeholder="Detalles del producto..." class="min-h-[100px] resize-none" />
+              <Label for="description">{{ t('common.description') }}</Label>
+              <Textarea id="description" v-model="form.description" :placeholder="t('products.desc_placeholder')" class="min-h-[100px] resize-none" />
             </div>
           </div>
         </div>
@@ -354,12 +358,12 @@ function handleCategoryCreated(newCategory: Category) {
       <div class="bg-card rounded-xl border p-6 shadow-sm">
         <h2 class="text-lg font-semibold mb-6 flex items-center gap-2">
           <Tag class="h-5 w-5 text-primary" />
-          Identificación
+          {{ t('products.identification') }}
         </h2>
         
         <div class="grid md:grid-cols-2 gap-6">
           <div class="space-y-2">
-            <Label for="sku">SKU (Código único) <span class="text-destructive">*</span></Label>
+            <Label for="sku">{{ t('products.sku') }} <span class="text-destructive">*</span></Label>
             <div class="relative">
               <Input id="sku" v-model="form.sku" placeholder="PROD-001" :class="['pr-12', { 'border-destructive': fieldErrors.sku }]" @input="clearFieldError('sku')" />
               <Button 
@@ -368,18 +372,18 @@ function handleCategoryCreated(newCategory: Category) {
                 size="icon" 
                 class="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9 hover:bg-primary/10"
                 @click="generateSku"
-                title="Generar SKU automático"
+                :title="t('products.generate_sku')"
               >
                 <Sparkles class="h-4 w-4 text-primary" />
               </Button>
             </div>
             <p v-if="fieldErrors.sku" class="text-xs text-destructive">{{ fieldErrors.sku }}</p>
-            <p v-else class="text-xs text-muted-foreground">Identificador único para tu inventario</p>
+            <p v-else class="text-xs text-muted-foreground">{{ t('products.sku_hint') }}</p>
           </div>
           <div class="space-y-2">
-            <Label for="barcode">Código de Barras</Label>
+            <Label for="barcode">{{ t('products.barcode') }}</Label>
             <Input id="barcode" v-model="form.barcode" placeholder="7501234567890" class="" />
-            <p class="text-xs text-muted-foreground">Código UPC o EAN del producto</p>
+            <p class="text-xs text-muted-foreground">{{ t('products.barcode_hint') }}</p>
           </div>
         </div>
       </div>
@@ -387,12 +391,12 @@ function handleCategoryCreated(newCategory: Category) {
       <div class="bg-card rounded-xl border p-6 shadow-sm">
         <h2 class="text-lg font-semibold mb-6 flex items-center gap-2">
           <DollarSign class="h-5 w-5 text-primary" />
-          Precios
+          {{ t('products.prices') }}
         </h2>
         
         <div class="grid md:grid-cols-2 gap-6">
           <div class="space-y-2" v-if="!isEditMode">
-            <Label for="price">Precio de Venta <span class="text-destructive">*</span></Label>
+            <Label for="price">{{ t('products.sale_price') }} <span class="text-destructive">*</span></Label>
             <div class="relative">
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
               <Input 
@@ -410,7 +414,7 @@ function handleCategoryCreated(newCategory: Category) {
             <p v-if="fieldErrors.price" class="text-xs text-destructive">{{ fieldErrors.price }}</p>
           </div>
           <div class="space-y-2">
-            <Label for="cost">Costo de Compra <span class="text-destructive">*</span></Label>
+            <Label for="cost">{{ t('products.purchase_cost') }} <span class="text-destructive">*</span></Label>
             <div class="relative">
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
               <Input 
@@ -426,7 +430,7 @@ function handleCategoryCreated(newCategory: Category) {
               />
             </div>
             <p v-if="fieldErrors.cost" class="text-xs text-destructive">{{ fieldErrors.cost }}</p>
-            <p v-else-if="isEditMode" class="text-xs text-muted-foreground">El precio de venta se configura por tienda</p>
+            <p v-else-if="isEditMode" class="text-xs text-muted-foreground">{{ t('products.price_per_store_hint') }}</p>
           </div>
         </div>
       </div>
@@ -434,18 +438,18 @@ function handleCategoryCreated(newCategory: Category) {
 
     <div class="space-y-8 w-full lg:w-[340px]">
       <div class="bg-card rounded-xl border p-6 shadow-sm">
-        <h2 class="text-lg font-semibold mb-6">Clasificación</h2>
+        <h2 class="text-lg font-semibold mb-6">{{ t('products.classification') }}</h2>
         
         <div class="space-y-5">
           <div class="space-y-2">
-            <Label>Categoría <span class="text-destructive">*</span></Label>
+            <Label>{{ t('products.category') }} <span class="text-destructive">*</span></Label>
             <SearchableSelect
               v-model="form.category_id"
               :options="categoryOptions"
-              placeholder="Seleccionar categoría..."
-              search-placeholder="Buscar..."
+              :placeholder="t('products.select_category')"
+              :search-placeholder="t('common.search')"
               show-add-option
-              add-option-label="Nueva Categoría"
+              :add-option-label="t('products.new_category')"
               @add-click="isCreatingCategory = true"
               @update:model-value="clearFieldError('category_id')"
             />
@@ -453,28 +457,28 @@ function handleCategoryCreated(newCategory: Category) {
           </div>
           
           <div class="space-y-2">
-            <Label>Tipo de Producto</Label>
+            <Label>{{ t('products.product_type') }}</Label>
             <Select v-model="form.type">
               <SelectTrigger class="">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="product">Producto Físico</SelectItem>
-                <SelectItem value="service">Servicio</SelectItem>
+                <SelectItem value="product">{{ t('products.type_physical') }}</SelectItem>
+                <SelectItem value="service">{{ t('products.type_service') }}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div class="space-y-2">
             <div class="flex items-center gap-2">
-              <Label for="min_stock">Stock Mínimo</Label>
+              <Label for="min_stock">{{ t('products.min_stock') }}</Label>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger as-child>
                     <Info class="h-4 w-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Alerta cuando el stock baje de este nivel</p>
+                    <p>{{ t('products.min_stock_hint') }}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -487,29 +491,29 @@ function handleCategoryCreated(newCategory: Category) {
       <div v-if="!isEditMode" class="bg-card rounded-xl border p-6 shadow-sm">
         <h2 class="text-lg font-semibold mb-6 flex items-center gap-2">
           <StoreIcon class="h-5 w-5 text-primary" />
-          Disponibilidad
+          {{ t('products.availability') }}
         </h2>
         
         <div class="space-y-5">
           <div class="space-y-2">
-            <Label>Distribución en Tiendas</Label>
+            <Label>{{ t('products.store_distribution') }}</Label>
             <Select v-model="form.target_stores">
               <SelectTrigger class="">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="single">Una tienda</SelectItem>
-                <SelectItem value="multiple">Tiendas específicas</SelectItem>
-                <SelectItem value="all">Todas las tiendas</SelectItem>
+                <SelectItem value="single">{{ t('products.dist_single') }}</SelectItem>
+                <SelectItem value="multiple">{{ t('products.dist_multiple') }}</SelectItem>
+                <SelectItem value="all">{{ t('products.dist_all') }}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
           <div class="space-y-2" v-if="form.target_stores === 'single'">
-            <Label>Seleccionar Tienda <span class="text-destructive">*</span></Label>
+            <Label>{{ t('products.select_store') }} <span class="text-destructive">*</span></Label>
             <Select v-model="form.store_id" @update:model-value="clearFieldError('store_id')">
               <SelectTrigger :class="{ 'border-destructive': fieldErrors.store_id }">
-                <SelectValue placeholder="Seleccionar..." />
+                <SelectValue :placeholder="t('common.select')" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="store in stores" :key="store.id" :value="String(store.id)">
@@ -521,7 +525,7 @@ function handleCategoryCreated(newCategory: Category) {
           </div>
 
           <div class="space-y-3" v-if="form.target_stores === 'multiple'">
-            <Label>Seleccionar Tiendas</Label>
+            <Label>{{ t('products.select_stores') }}</Label>
             <div class="border rounded-lg divide-y max-h-48 overflow-y-auto">
               <label 
                 v-for="store in stores" 
@@ -536,28 +540,28 @@ function handleCategoryCreated(newCategory: Category) {
               </label>
             </div>
             <p class="text-xs text-muted-foreground" v-if="form.store_ids.length > 0">
-              {{ form.store_ids.length }} tienda(s) seleccionada(s)
+              {{ form.store_ids.length }} {{ t('products.stores_selected') }}
             </p>
           </div>
 
           <div v-if="form.target_stores === 'all'" class="bg-primary/5 border border-primary/20 rounded-lg p-4">
             <p class="text-sm text-primary">
-              El producto estará disponible en todas las tiendas actuales.
+              {{ t('products.dist_all_hint') }}
             </p>
           </div>
         </div>
       </div>
 
       <div v-if="isEditMode" class="bg-card rounded-xl border p-6 shadow-sm">
-        <h2 class="text-lg font-semibold mb-6">Estado</h2>
+        <h2 class="text-lg font-semibold mb-6">{{ t('common.status') }}</h2>
         
         <div class="flex items-center justify-between p-4 rounded-lg border" :class="form.is_active ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800' : 'bg-muted'">
           <div>
             <p class="font-medium" :class="form.is_active ? 'text-green-700 dark:text-green-400' : ''">
-              {{ form.is_active ? 'Activo' : 'Inactivo' }}
+              {{ form.is_active ? t('common.active_m') : t('common.inactive_m') }}
             </p>
             <p class="text-xs text-muted-foreground">
-              {{ form.is_active ? 'Visible para venta' : 'Oculto del catálogo' }}
+              {{ form.is_active ? t('products.status_active_hint') : t('products.status_inactive_hint') }}
             </p>
           </div>
           <Button 
@@ -565,7 +569,7 @@ function handleCategoryCreated(newCategory: Category) {
             size="sm"
             @click="form.is_active = !form.is_active"
           >
-            {{ form.is_active ? 'Desactivar' : 'Activar' }}
+            {{ form.is_active ? t('common.deactivate') : t('common.activate') }}
           </Button>
         </div>
       </div>
@@ -573,9 +577,9 @@ function handleCategoryCreated(newCategory: Category) {
   </div>
 
   <div class="flex justify-end gap-4 pt-4 border-t mt-8">
-    <Button variant="outline" @click="$emit('cancel')">Cancelar</Button>
+    <Button variant="outline" @click="$emit('cancel')">{{ t('common.cancel') }}</Button>
     <Button @click="handleSubmit" :disabled="isLoading">
-      {{ isLoading ? 'Guardando...' : submitLabel }}
+      {{ isLoading ? t('common.saving') : actualSubmitLabel }}
     </Button>
   </div>
 
@@ -583,4 +587,4 @@ function handleCategoryCreated(newCategory: Category) {
     v-model:open="isCreatingCategory"
     @saved="handleCategoryCreated"
   />
-</template
+</template>

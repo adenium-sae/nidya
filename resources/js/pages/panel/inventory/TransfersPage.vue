@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { stockApi } from '@/api/stock.api';
 import { useApiList } from '@/composables/useApiList';
 import { DataTable, type Column, type Filter } from '@/components/ui/data-table';
@@ -26,14 +27,15 @@ import {
 import type { StockTransfer } from '@/types/models';
 
 const router = useRouter();
+const { t } = useI18n();
 const { toast } = useToast();
 
-const statusLabels: Record<string, string> = {
-  pending: 'Pendiente',
-  in_transit: 'En Tránsito',
-  completed: 'Completada',
-  cancelled: 'Cancelada',
-};
+const statusLabels = computed<Record<string, string>>(() => ({
+  pending: t('transfers.status_pending'),
+  in_transit: t('transfers.status_in_transit'),
+  completed: t('transfers.status_completed'),
+  cancelled: t('transfers.status_cancelled'),
+}));
 
 const {
   items: transfers,
@@ -47,41 +49,41 @@ const {
   changePage,
 } = useApiList<StockTransfer>(stockApi.transfers, { perPage: 50 });
 
-const columns: Column[] = [
-  { key: 'folio', label: 'Folio', type: 'custom', sortable: true },
-  { key: 'created_at', label: 'Fecha', type: 'date', sortable: true },
-  { key: 'source_warehouse', label: 'Origen', type: 'custom' },
-  { key: 'destination_warehouse', label: 'Destino', type: 'custom' },
-  { key: 'items_summary', label: 'Productos', type: 'custom' },
-  { key: 'status', label: 'Estado', type: 'custom' },
-  { key: 'requested_by', label: 'Solicitado por', type: 'custom' },
+const columns = computed<Column[]>(() => [
+  { key: 'folio', label: t('transfers.folio'), type: 'custom', sortable: true },
+  { key: 'created_at', label: t('common.date'), type: 'date', sortable: true },
+  { key: 'source_warehouse', label: t('transfers.source'), type: 'custom' },
+  { key: 'destination_warehouse', label: t('transfers.destination'), type: 'custom' },
+  { key: 'items_summary', label: t('transfers.products_col'), type: 'custom' },
+  { key: 'status', label: t('common.status'), type: 'custom' },
+  { key: 'requested_by', label: t('transfers.requested_by'), type: 'custom' },
   { key: 'actions', label: '', type: 'custom', align: 'right' },
-];
+]);
 
 const filters = computed<Filter[]>(() => [
   {
     key: 'from_warehouse_id',
-    label: 'Origen',
+    label: t('transfers.source'),
     type: 'searchable-select',
     endpoint: '/api/admin/warehouses',
     labelKey: 'name',
     valueKey: 'id',
-    placeholder: 'Almacén origen...',
+    placeholder: t('transfers.source_warehouse'),
   },
   {
     key: 'to_warehouse_id',
-    label: 'Destino',
+    label: t('transfers.destination'),
     type: 'searchable-select',
     endpoint: '/api/admin/warehouses',
     labelKey: 'name',
     valueKey: 'id',
-    placeholder: 'Almacén destino...',
+    placeholder: t('transfers.destination_warehouse'),
   },
   {
     key: 'status',
-    label: 'Estado',
+    label: t('common.status'),
     type: 'select',
-    options: Object.entries(statusLabels).map(([value, label]) => ({ value, label })),
+    options: Object.entries(statusLabels.value).map(([value, label]) => ({ value, label })),
   },
 ]);
 
@@ -101,7 +103,7 @@ function getTotalItems(transfer: StockTransfer): number {
 
 function getItemNames(transfer: StockTransfer): string {
   if (!transfer.items || transfer.items.length === 0) return '-';
-  return transfer.items.map(i => i.product?.name || 'Producto').join(', ');
+  return transfer.items.map(i => i.product?.name || t('inventory.product')).join(', ');
 }
 
 // --- Confirm dialog ---
@@ -123,16 +125,16 @@ function openCancelDialog(transfer: StockTransfer) {
 }
 
 const confirmDialogTitle = computed(() => {
-  if (confirmDialogAction.value === 'confirm') return 'Confirmar Transferencia';
-  return 'Cancelar Transferencia';
+  if (confirmDialogAction.value === 'confirm') return t('transfers.confirm_title');
+  return t('transfers.cancel_title');
 });
 
 const confirmDialogDescription = computed(() => {
   const folio = confirmDialogTransfer.value?.folio || '';
   if (confirmDialogAction.value === 'confirm') {
-    return `¿Estás seguro de que deseas confirmar la transferencia ${folio}? Los movimientos de stock asociados se marcarán como completados.`;
+    return t('transfers.confirm_desc', { folio });
   }
-  return `¿Estás seguro de que deseas cancelar la transferencia ${folio}? Esta acción no se puede deshacer y los movimientos pendientes serán cancelados.`;
+  return t('transfers.cancel_desc', { folio });
 });
 
 async function executeDialogAction() {
@@ -142,17 +144,17 @@ async function executeDialogAction() {
   try {
     if (confirmDialogAction.value === 'confirm') {
       await stockApi.confirmTransfer(confirmDialogTransfer.value.id);
-      toast({ title: 'Éxito', description: 'Transferencia confirmada correctamente.' });
+      toast({ title: t('common.success'), description: t('transfers.confirmed') });
     } else {
       await stockApi.cancelTransfer(confirmDialogTransfer.value.id);
-      toast({ title: 'Éxito', description: 'Transferencia cancelada correctamente.' });
+      toast({ title: t('common.success'), description: t('transfers.cancelled') });
     }
     showConfirmDialog.value = false;
     confirmDialogTransfer.value = null;
     fetchTransfers();
   } catch (error: any) {
-    const message = error?.response?.data?.message || 'No se pudo procesar la acción.';
-    toast({ title: 'Error', description: message, variant: 'destructive' });
+    const message = error?.response?.data?.message || t('common.cannot_process');
+    toast({ title: t('common.error'), description: message, variant: 'destructive' });
   } finally {
     isProcessing.value = false;
   }
@@ -167,12 +169,12 @@ onMounted(() => fetchTransfers());
       <!-- Header with new transfer button -->
       <div class="flex items-center justify-between flex-shrink-0">
         <div>
-          <h1 class="text-3xl font-bold tracking-tight">Transferencias</h1>
-          <p class="text-muted-foreground">Gestiona las transferencias de mercancía entre almacenes.</p>
+          <h1 class="text-3xl font-bold tracking-tight">{{ t('transfers.title') }}</h1>
+          <p class="text-muted-foreground">{{ t('transfers.subtitle') }}</p>
         </div>
         <Button @click="router.push('/panel/inventory/adjustments/transfer')">
           <Plus class="mr-2 h-4 w-4" />
-          Nueva Transferencia
+          {{ t('transfers.new') }}
         </Button>
       </div>
 
@@ -185,8 +187,8 @@ onMounted(() => fetchTransfers());
         :filters="filters"
         :filter-values="filterValues"
         :pagination="pagination"
-        search-placeholder="Buscar por folio..."
-        empty-message="No hay transferencias registradas."
+        :search-placeholder="t('transfers.search')"
+        :empty-message="t('transfers.empty')"
         :empty-icon="ArrowRightLeft"
         class="flex-1 min-h-0"
         @search="search"
@@ -215,7 +217,7 @@ onMounted(() => fetchTransfers());
           <div class="max-w-[250px]">
             <div class="text-sm truncate">{{ getItemNames(row) }}</div>
             <div class="text-xs text-muted-foreground">
-              {{ row.items?.length || 0 }} producto(s) · {{ getTotalItems(row) }} unidades
+              {{ t('transfers.product_count', { count: row.items?.length || 0 }) }} · {{ t('transfers.unit_count', { count: getTotalItems(row) }) }}
             </div>
           </div>
         </template>
@@ -243,7 +245,7 @@ onMounted(() => fetchTransfers());
               @click.stop="openConfirmDialog(row)"
             >
               <CheckCircle class="h-4 w-4 mr-1" />
-              Confirmar
+              {{ t('common.confirm_action') }}
             </Button>
             <Button
               v-if="row.status === 'pending'"
@@ -253,7 +255,7 @@ onMounted(() => fetchTransfers());
               @click.stop="openCancelDialog(row)"
             >
               <XCircle class="h-4 w-4 mr-1" />
-              Cancelar
+              {{ t('common.cancel_action') }}
             </Button>
           </div>
         </template>
@@ -271,30 +273,30 @@ onMounted(() => fetchTransfers());
         <!-- Transfer summary -->
         <div v-if="confirmDialogTransfer" class="rounded-md border p-4 space-y-2 text-sm">
           <div class="flex justify-between">
-            <span class="text-muted-foreground">Folio:</span>
+            <span class="text-muted-foreground">{{ t('transfers.folio_label') }}</span>
             <span class="font-mono font-medium">{{ confirmDialogTransfer.folio }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-muted-foreground">Origen:</span>
+            <span class="text-muted-foreground">{{ t('transfers.source_label') }}</span>
             <span>{{ confirmDialogTransfer.source_warehouse?.name || '-' }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-muted-foreground">Destino:</span>
+            <span class="text-muted-foreground">{{ t('transfers.destination_label') }}</span>
             <span>{{ confirmDialogTransfer.destination_warehouse?.name || '-' }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-muted-foreground">Productos:</span>
-            <span>{{ confirmDialogTransfer.items?.length || 0 }} producto(s)</span>
+            <span class="text-muted-foreground">{{ t('transfers.products_label') }}</span>
+            <span>{{ t('transfers.product_count', { count: confirmDialogTransfer.items?.length || 0 }) }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-muted-foreground">Unidades totales:</span>
+            <span class="text-muted-foreground">{{ t('transfers.total_units_label') }}</span>
             <span class="font-medium">{{ getTotalItems(confirmDialogTransfer) }}</span>
           </div>
         </div>
 
         <DialogFooter class="gap-2">
           <Button variant="outline" @click="showConfirmDialog = false" :disabled="isProcessing">
-            Volver
+            {{ t('common.back') }}
           </Button>
           <Button
             :variant="confirmDialogAction === 'cancel' ? 'destructive' : 'default'"
@@ -303,7 +305,7 @@ onMounted(() => fetchTransfers());
           >
             <CheckCircle v-if="confirmDialogAction === 'confirm'" class="h-4 w-4 mr-1" />
             <XCircle v-else class="h-4 w-4 mr-1" />
-            {{ isProcessing ? 'Procesando...' : (confirmDialogAction === 'confirm' ? 'Confirmar' : 'Cancelar Transferencia') }}
+            {{ isProcessing ? t('common.processing') : (confirmDialogAction === 'confirm' ? t('common.confirm') : t('transfers.cancel_transfer')) }}
           </Button>
         </DialogFooter>
       </DialogContent>

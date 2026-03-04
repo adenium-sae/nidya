@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { warehousesApi } from '@/api/warehouses.api';
 import { useApiList } from '@/composables/useApiList';
 import { useConfirmDelete } from '@/composables/useConfirmDelete';
@@ -29,9 +30,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import ConfirmDialog from '@/components/app/ConfirmDialog.vue';
 import type { Warehouse as WarehouseModel } from '@/types/models';
 
+const { t } = useI18n();
 const { toast } = useToast();
 
-// List composable
 const {
   items: warehouses,
   isLoading,
@@ -41,7 +42,6 @@ const {
   removeItem,
 } = useApiList<WarehouseModel>(warehousesApi.list);
 
-// Delete composable
 const {
   isOpen: deleteDialogOpen,
   isDeleting,
@@ -49,11 +49,10 @@ const {
   openDialog: _openDeleteDialog,
   confirmDelete,
 } = useConfirmDelete(warehousesApi.destroy, {
-  successMessage: 'Almacén eliminado correctamente.',
+  successMessage: () => t('warehouses.deleted'),
   onSuccess: (item: any) => removeItem(item.id),
 });
 
-// Form dialog
 const isDialogOpen = ref(false);
 const isEditing = ref(false);
 const currentId = ref<string | null>(null);
@@ -75,26 +74,26 @@ const columns = computed<Column[]>(() => {
     branch: 'bg-purple-100 text-purple-800',
     distribution: 'bg-orange-100 text-orange-800',
   };
-  types.value.forEach(t => {
-    badgeVariants[t.id] = {
-      label: t.name,
-      class: classes[t.id] || 'bg-gray-100 text-gray-800',
+  types.value.forEach(tType => {
+    badgeVariants[tType.id] = {
+      label: tType.name,
+      class: classes[tType.id] || 'bg-gray-100 text-gray-800',
     };
   });
   return [
-    { key: 'name', label: 'Nombre', sortable: true, type: 'text' },
-    { key: 'code', label: 'Código', type: 'text' },
-    { key: 'type', label: 'Tipo', type: 'badge', badgeVariants },
-    { key: 'store', label: 'Tienda', type: 'custom' },
-    { key: 'branch', label: 'Sucursal', type: 'custom' },
-    { key: 'is_active', label: 'Estado', type: 'custom' },
+    { key: 'name', label: t('common.name'), sortable: true, type: 'text' },
+    { key: 'code', label: t('common.code'), type: 'text' },
+    { key: 'type', label: t('common.type'), type: 'badge', badgeVariants },
+    { key: 'store', label: t('organization.stores'), type: 'custom' },
+    { key: 'branch', label: t('organization.branches'), type: 'custom' },
+    { key: 'is_active', label: t('common.status'), type: 'custom' },
   ];
 });
 
-const actions: Action[] = [
-  { key: 'edit', label: 'Editar' },
-  { key: 'delete', label: 'Eliminar', variant: 'destructive' },
-];
+const actions = computed<Action[]>(() => [
+  { key: 'edit', label: t('common.edit') },
+  { key: 'delete', label: t('common.delete'), variant: 'destructive' },
+]);
 
 function handleAction(actionKey: string, row: any) {
   if (actionKey === 'edit') {
@@ -134,10 +133,10 @@ async function handleSubmit() {
     const payload = { ...form, store_ids: form.store_ids.map(s => s.id) };
     if (isEditing.value && currentId.value) {
       await warehousesApi.update(currentId.value, payload);
-      toast({ title: 'Éxito', description: 'Almacén actualizado correctamente.' });
+      toast({ title: t('common.success'), description: t('warehouses.updated') });
     } else {
       await warehousesApi.create(payload);
-      toast({ title: 'Éxito', description: 'Almacén creado correctamente.' });
+      toast({ title: t('common.success'), description: t('warehouses.created') });
     }
     fetchWarehouses();
     isDialogOpen.value = false;
@@ -169,16 +168,17 @@ onMounted(() => {
       :actions="actions"
       :is-loading="isLoading"
       :search-value="searchQuery"
-      empty-message="No hay almacenes registrados."
+      :empty-message="t('warehouses.empty')"
       :empty-icon="Warehouse"
       class="flex-1 min-h-0"
+      :search-placeholder="t('warehouses.search')"
       @search="search"
       @action="handleAction"
     >
       <template #toolbar-end>
         <Button @click="openCreateDialog">
           <Plus class="mr-2 h-4 w-4" />
-          Nuevo Almacén
+          {{ t('warehouses.new') }}
         </Button>
       </template>
 
@@ -204,7 +204,7 @@ onMounted(() => {
           class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
           :class="row.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'"
         >
-          {{ row.is_active ? 'Activo' : 'Inactivo' }}
+          {{ row.is_active ? t('common.active_f') : t('common.inactive_f') }}
         </span>
       </template>
     </DataTable>
@@ -212,40 +212,40 @@ onMounted(() => {
     <Dialog :open="isDialogOpen" @update:open="isDialogOpen = $event">
       <DialogContent class="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{{ isEditing ? 'Editar Almacén' : 'Nuevo Almacén' }}</DialogTitle>
+          <DialogTitle>{{ isEditing ? t('warehouses.edit') : t('warehouses.new') }}</DialogTitle>
           <DialogDescription>
-            Completa los detalles del almacén para comenzar a gestionar el stock.
+            {{ t('warehouses.form_desc') }}
           </DialogDescription>
         </DialogHeader>
         <div class="grid gap-4 py-4">
           <div class="grid gap-2">
-            <Label htmlFor="name">Nombre <span class="text-destructive">*</span></Label>
+            <Label htmlFor="name">{{ t('common.name') }} <span class="text-destructive">*</span></Label>
             <Input id="name" v-model="form.name" placeholder="Ej. Almacén Central" />
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div class="grid gap-2">
-              <Label htmlFor="code">Código</Label>
+              <Label htmlFor="code">{{ t('common.code') }}</Label>
               <Input id="code" v-model="form.code" placeholder="AL-001" />
             </div>
             <div class="grid gap-2">
-              <Label htmlFor="type">Tipo <span class="text-destructive">*</span></Label>
+              <Label htmlFor="type">{{ t('common.type') }} <span class="text-destructive">*</span></Label>
               <Select
                 :model-value="form.type"
                 @update:model-value="(val: any) => (form.type = val)"
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar tipo" />
+                  <SelectValue :placeholder="t('warehouses.select_type')" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem v-for="t in types" :key="t.id" :value="t.id">
-                    {{ t.name }}
+                  <SelectItem v-for="tType in types" :key="tType.id" :value="tType.id">
+                    {{ tType.name }}
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div class="grid gap-2 mt-2">
-            <Label>Tiendas <span class="text-destructive">*</span></Label>
+            <Label>{{ t('warehouses.stores_label') }} <span class="text-destructive">*</span></Label>
             <SearchableSelect
               :model-value="null"
               @select="(option: any) => {
@@ -256,7 +256,7 @@ onMounted(() => {
               endpoint="/admin/stores"
               label-key="name"
               value-key="id"
-              placeholder="Añadir tienda..."
+              :placeholder="t('warehouses.add_store')"
             />
             <div class="flex flex-wrap gap-2 mt-2" v-if="form.store_ids.length > 0">
                <div 
@@ -268,35 +268,35 @@ onMounted(() => {
                  <button type="button" class="ml-1 hover:text-blue-900 font-bold" @click="form.store_ids.splice(index, 1)">×</button>
                </div>
             </div>
-            <p class="text-xs text-muted-foreground mt-1">Selecciona una o más tiendas para este almacén.</p>
+            <p class="text-xs text-muted-foreground mt-1">{{ t('warehouses.stores_hint') }}</p>
           </div>
           <div class="grid gap-2 mt-2">
-            <Label>Sucursal (Opcional)</Label>
+            <Label>{{ t('warehouses.branch_label') }}</Label>
             <SearchableSelect
               v-model="form.branch_id"
               endpoint="/admin/branches"
               label-key="name"
               value-key="id"
-              placeholder="Seleccionar sucursal..."
+              :placeholder="t('warehouses.select_branch')"
               :disabled="form.store_ids.length === 0"
             />
           </div>
           <div class="flex items-center space-x-2 mt-2">
             <Checkbox id="is_active" :checked="form.is_active" @update:checked="form.is_active = $event" />
-            <Label htmlFor="is_active">Activo</Label>
+            <Label htmlFor="is_active">{{ t('common.active') }}</Label>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" @click="isDialogOpen = false">Cancelar</Button>
-          <Button @click="handleSubmit">Guardar</Button>
+          <Button variant="outline" @click="isDialogOpen = false">{{ t('common.cancel') }}</Button>
+          <Button @click="handleSubmit">{{ t('common.save') }}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
 
     <ConfirmDialog
       v-model:open="deleteDialogOpen"
-      title="¿Eliminar almacén?"
-      description="Esta acción eliminará el almacén de forma permanente. ¿Estás seguro?"
+      :title="t('warehouses.delete_confirm')"
+      :description="t('warehouses.delete_desc')"
       :loading="isDeleting"
       @confirm="confirmDelete"
     />

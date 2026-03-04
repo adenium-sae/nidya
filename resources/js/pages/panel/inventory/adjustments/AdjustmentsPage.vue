@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { stockApi } from '@/api/stock.api';
 import { useApiList } from '@/composables/useApiList';
 import { DataTable, type Column } from '@/components/ui/data-table';
@@ -22,16 +23,17 @@ import {
 import { useToast } from '@/components/ui/toast/use-toast';
 import Button from '@/components/ui/button/Button.vue';
 
-import { StockAdjustment } from '@/types/models';
+import type { StockAdjustment } from '@/types/models';
 
 const router = useRouter();
+const { t } = useI18n();
 const { toast } = useToast();
 
-const statusLabels: Record<string, string> = {
-  pending: 'Pendiente',
-  completed: 'Completado',
-  cancelled: 'Cancelado',
-};
+const statusLabels = computed<Record<string, string>>(() => ({
+  pending: t('common.pending'),
+  completed: t('common.completed'),
+  cancelled: t('common.cancelled'),
+}));
 
 const {
   items: adjustments,
@@ -41,10 +43,10 @@ const {
 
 function getAdjustmentLabel(type: string): string {
   const labels: Record<string, string> = {
-    increase: 'Entrada',
-    decrease: 'Salida',
-    adjustment: 'Ajuste Directo',
-    recount: 'Recuento',
+    increase: t('adjustments.type_increase'),
+    decrease: t('adjustments.type_decrease'),
+    adjustment: t('adjustments.type_direct'),
+    recount: t('adjustments.type_recount'),
   };
   return labels[type] || type;
 }
@@ -71,11 +73,11 @@ function getStatusClass(status: string): string {
 async function confirmAdjustment(adj: any) {
   try {
     await stockApi.confirmAdjustment(adj.id);
-    toast({ title: 'Éxito', description: `Ajuste ${adj.folio} confirmado correctamente.` });
+    toast({ title: t('common.success'), description: t('adjustments.confirm_success', { folio: adj.folio }) });
     fetchAdjustments();
   } catch (error: any) {
-    const message = error?.response?.data?.message || 'No se pudo confirmar el ajuste.';
-    toast({ title: 'Error', description: message, variant: 'destructive' });
+    const message = error?.response?.data?.message || t('common.cannot_process');
+    toast({ title: t('common.error'), description: message, variant: 'destructive' });
   }
 }
 
@@ -85,16 +87,16 @@ function viewAdjustment(adj: any) {
 
 onMounted(() => fetchAdjustments());
 
-const columns: Column[] = [
-  { key: 'folio', label: 'Folio', type: 'custom' },
-  { key: 'created_at', label: 'Fecha', type: 'date', sortable: true },
-  { key: 'type', label: 'Tipo', type: 'custom' },
-  { key: 'warehouse', label: 'Almacén', type: 'custom' },
-  { key: 'products', label: 'Productos', type: 'custom' },
-  { key: 'status', label: 'Estado', type: 'custom' },
-  { key: 'user', label: 'Usuario', type: 'custom' },
+const columns = computed<Column[]>(() => [
+  { key: 'folio', label: t('adjustments.folio'), type: 'custom' },
+  { key: 'created_at', label: t('common.date'), type: 'date', sortable: true },
+  { key: 'type', label: t('common.type'), type: 'custom' },
+  { key: 'warehouse', label: t('inventory.warehouse'), type: 'custom' },
+  { key: 'products', label: t('adjustments.products'), type: 'custom' },
+  { key: 'status', label: t('common.status'), type: 'custom' },
+  { key: 'user', label: t('common.user'), type: 'custom' },
   { key: 'actions', label: '', type: 'custom', align: 'right' },
-];
+]);
 </script>
 
 <template>
@@ -104,53 +106,53 @@ const columns: Column[] = [
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card class="hover:border-primary transition-colors cursor-pointer" @click="router.push('/panel/inventory/adjustments/entry')">
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle class="text-sm font-medium">Nueva Entrada</CardTitle>
+            <CardTitle class="text-sm font-medium">{{ t('adjustments.new_entry') }}</CardTitle>
             <TrendingUp class="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <p class="text-xs text-muted-foreground">Registra el ingreso de mercancía.</p>
+            <p class="text-xs text-muted-foreground">{{ t('adjustments.new_entry_desc') }}</p>
           </CardContent>
         </Card>
 
         <Card class="hover:border-primary transition-colors cursor-pointer" @click="router.push('/panel/inventory/adjustments/exit')">
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle class="text-sm font-medium">Nueva Salida</CardTitle>
+            <CardTitle class="text-sm font-medium">{{ t('adjustments.new_exit') }}</CardTitle>
             <TrendingDown class="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <p class="text-xs text-muted-foreground">Registra la baja de mercancía.</p>
+            <p class="text-xs text-muted-foreground">{{ t('adjustments.new_exit_desc') }}</p>
           </CardContent>
         </Card>
 
         <Card class="hover:border-primary transition-colors cursor-pointer" @click="router.push('/panel/inventory/adjustments/new-adjustment')">
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle class="text-sm font-medium">Nuevo Ajuste</CardTitle>
+            <CardTitle class="text-sm font-medium">{{ t('adjustments.new_adjustment') }}</CardTitle>
             <Settings2 class="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <p class="text-xs text-muted-foreground">Corrige el stock directamente.</p>
+            <p class="text-xs text-muted-foreground">{{ t('adjustments.new_adj_desc') }}</p>
           </CardContent>
         </Card>
 
         <Card class="hover:border-primary transition-colors cursor-pointer" @click="router.push('/panel/inventory/adjustments/transfer')">
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle class="text-sm font-medium">Transferencia</CardTitle>
+            <CardTitle class="text-sm font-medium">{{ t('adjustments.transfer') }}</CardTitle>
             <ArrowRightLeft class="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <p class="text-xs text-muted-foreground">Mueve stock entre almacenes.</p>
+            <p class="text-xs text-muted-foreground">{{ t('adjustments.transfer_desc') }}</p>
           </CardContent>
         </Card>
       </div>
 
       <!-- History Table (DataTable) -->
-      <div class="rounded-md border bg-card flex-1 overflow-auto min-h-0">
+      <div class="bg-card flex-1 overflow-auto min-h-0">
         <DataTable
           :columns="columns"
           :data="adjustments"
           :is-loading="isLoading"
-          search-placeholder="Buscar ajustes..."
-          empty-message="No hay ajustes registrados."
+          :search-placeholder="t('adjustments.search')"
+          :empty-message="t('adjustments.empty')"
           :empty-icon="ArrowUpDown"
           class="flex-1 min-h-0"
         >
@@ -204,7 +206,7 @@ const columns: Column[] = [
                 @click="confirmAdjustment(row)"
               >
                 <CheckCircle class="h-4 w-4 mr-1" />
-                Confirmar
+                {{ t('common.confirm_action') }}
               </Button>
 
               <Button

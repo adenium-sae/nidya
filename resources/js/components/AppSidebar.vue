@@ -85,7 +85,7 @@ const navMain = computed(() => [
         url: "/panel/sales/customers",
       },
       {
-        title: "Caja Registradora",
+        title: t('sales.cash_register_title'),
         url: "/panel/sales/cash-register",
       },
       {
@@ -95,13 +95,13 @@ const navMain = computed(() => [
     ],
   },
   {
-    title: "Compras",
+    title: t('sidebar.purchases'),
     url: "#",
     icon: Package,
     isOpen: false,
     items: [
       {
-        title: "Nueva Compra",
+        title: t('purchases.new_title'),
         url: "/panel/purchases/new",
       },
       {
@@ -109,11 +109,11 @@ const navMain = computed(() => [
         url: "/panel/purchases/history",
       },
       {
-        title: "Proveedores",
+        title: t('purchases.suppliers_title'),
         url: "/panel/purchases/suppliers",
       },
       {
-        title: "Órdenes de Compra",
+        title: t('purchases.orders_title'),
         url: "/panel/purchases/orders",
       },
     ],
@@ -161,7 +161,7 @@ const navMain = computed(() => [
     isOpen: false,
     items: [
       {
-        title: "Lista de Usuarios",
+        title: t('users.users_list_title'),
         url: "/panel/users/list",
       },
       {
@@ -205,7 +205,7 @@ const navMain = computed(() => [
               </div>
               <div class="flex flex-col gap-0.5 leading-none">
                 <span class="font-medium">Nidya</span>
-                <span class="text-xs text-muted-foreground">Panel de Control</span>
+                <span class="text-xs text-muted-foreground">{{ t('sidebar.control_panel') }}</span>
               </div>
             </RouterLink>
           </SidebarMenuButton>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +19,7 @@ import AuthLayout from '@/layouts/AuthLayout.vue';
 import axios from 'axios';
 
 const router = useRouter();
+const { t } = useI18n();
 const currentStep = ref(1);
 const loading = ref(false);
 const error = ref('');
@@ -44,26 +46,26 @@ const form = reactive({
 const steps = [
     {
         step: 1,
-        title: 'Cuenta',
-        description: 'Detalles personales',
+        title: () => t('auth.step_account'),
+        description: () => t('auth.step_account_desc'),
         icon: User
     },
     {
         step: 2,
-        title: 'Tienda',
-        description: 'Info del negocio',
+        title: () => t('auth.step_store'),
+        description: () => t('auth.step_store_desc'),
         icon: Store
     },
     {
         step: 3,
-        title: 'Sucursal',
-        description: 'Sucursal principal',
+        title: () => t('auth.step_branch'),
+        description: () => t('auth.step_branch_desc'),
         icon: MapPin
     },
     {
         step: 4,
-        title: 'Almacén',
-        description: 'Almacén principal',
+        title: () => t('auth.step_warehouse'),
+        description: () => t('auth.step_warehouse_desc'),
         icon: Package
     }
 ];
@@ -98,7 +100,7 @@ async function handleSignUp() {
         router.push('/panel');
     } catch (e: any) {
         console.error(e);
-        error.value = e.response?.data?.message || 'Error al registrar. Intente nuevamente.';
+        error.value = e.response?.data?.message || t('auth.register_error');
     } finally {
         loading.value = false;
     }
@@ -106,7 +108,7 @@ async function handleSignUp() {
 
 function updateStore() {
     if (!form.store.name && form.first_name) {
-        form.store.name = `Tienda de ${form.first_name}`;
+        form.store.name = `${t('auth.step_store')} de ${form.first_name}`;
     }
 }
 
@@ -155,10 +157,10 @@ function updateWarehouse() {
 
                     <div class="mt-2 flex flex-col items-center text-center">
                         <StepperTitle>
-                            {{ item.title }}
+                            {{ item.title() }}
                         </StepperTitle>
                         <StepperDescription>
-                            {{ item.description }}
+                            {{ item.description() }}
                         </StepperDescription>
                     </div>
                 </StepperItem>
@@ -168,10 +170,10 @@ function updateWarehouse() {
         <div class="w-full max-w-md space-y-8">
             <div class="space-y-2 text-center sm:text-left">
                 <h1 class="text-3xl font-bold tracking-tight">
-                    {{ steps[currentStep - 1].title }}
+                    {{ steps[currentStep - 1].title() }}
                 </h1>
                 <p class="text-muted-foreground">
-                     {{ steps[currentStep - 1].description }}
+                     {{ steps[currentStep - 1].description() }}
                 </p>
             </div>
             
@@ -184,24 +186,24 @@ function updateWarehouse() {
                 <div v-if="currentStep === 1" class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-2">
-                            <Label for="first-name">First name</Label>
+                            <Label for="first-name">{{ t('auth.first_name') }}</Label>
                             <Input id="first-name" placeholder="John" v-model="form.first_name" />
                         </div>
                         <div class="space-y-2">
-                            <Label for="last-name">Last name</Label>
+                            <Label for="last-name">{{ t('auth.last_name') }}</Label>
                             <Input id="last-name" placeholder="Doe" v-model="form.last_name" />
                         </div>
                     </div>
                     <div class="space-y-2">
-                        <Label for="email">Email</Label>
+                        <Label for="email">{{ t('auth.email') }}</Label>
                         <Input id="email" type="email" placeholder="m@example.com" v-model="form.email" />
                     </div>
                     <div class="space-y-2">
-                        <Label for="password">Password</Label>
+                        <Label for="password">{{ t('auth.password') }}</Label>
                         <Input id="password" type="password" v-model="form.password" />
                     </div>
                     <div class="space-y-2">
-                        <Label for="password_confirmation">Confirm Password</Label>
+                        <Label for="password_confirmation">{{ t('auth.confirm_password') }}</Label>
                         <Input id="password_confirmation" type="password" v-model="form.password_confirmation" />
                     </div>
                 </div>
@@ -209,20 +211,20 @@ function updateWarehouse() {
                 <!-- Step 2: Store -->
                 <div v-if="currentStep === 2" class="space-y-4">
                      <div class="space-y-2">
-                        <Label>Store Name</Label>
+                        <Label>{{ t('auth.store_name') }}</Label>
                         <Input v-model="form.store.name" placeholder="My Awesome Store" />
-                        <p class="text-xs text-muted-foreground">This is the public name of your business.</p>
+                        <p class="text-xs text-muted-foreground">{{ t('auth.store_name_hint') }}</p>
                     </div>
                 </div>
 
                 <!-- Step 3: Branch -->
                  <div v-if="currentStep === 3" class="space-y-4">
                     <div class="space-y-2">
-                        <Label>Branch Name</Label>
+                        <Label>{{ t('auth.branch_name') }}</Label>
                         <Input v-model="form.branch.name" placeholder="Main Branch" />
                     </div>
                      <div class="space-y-2">
-                        <Label>Code</Label>
+                        <Label>{{ t('common.code') }}</Label>
                         <Input v-model="form.branch.code" placeholder="BR-001" />
                     </div>
                 </div>
@@ -230,11 +232,11 @@ function updateWarehouse() {
                  <!-- Step 4: Warehouse -->
                  <div v-if="currentStep === 4" class="space-y-4">
                     <div class="space-y-2">
-                        <Label>Warehouse Name</Label>
+                        <Label>{{ t('auth.warehouse_name') }}</Label>
                         <Input v-model="form.warehouse.name" placeholder="Main Warehouse" />
                     </div>
                      <div class="space-y-2">
-                        <Label>Code</Label>
+                        <Label>{{ t('common.code') }}</Label>
                         <Input v-model="form.warehouse.code" placeholder="WH-001" />
                     </div>
                 </div>
@@ -243,13 +245,13 @@ function updateWarehouse() {
             
             <div class="flex flex-col gap-4">
                 <Button class="w-full" :disabled="loading" @click="handleNext">
-                    <span v-if="loading">Processing...</span>
-                    <span v-else>{{ currentStep === 4 ? 'Finish Setup' : 'Next' }}</span>
+                    <span v-if="loading">{{ t('common.processing') }}</span>
+                    <span v-else>{{ currentStep === 4 ? t('auth.finish_setup') : t('common.next') }}</span>
                 </Button>
                 
                 <div v-if="currentStep === 1" class="text-center text-sm text-muted-foreground">
-                    Already have an account? 
-                    <router-link to="/sign-in" class="underline text-primary">Sign in</router-link>
+                    {{ t('auth.already_have_account') }} 
+                    <router-link to="/sign-in" class="underline text-primary">{{ t('auth.sign_in') }}</router-link>
                 </div>
             </div>
         </div>

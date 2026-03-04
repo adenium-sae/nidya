@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Spinner } from "@/components/ui/spinner"
 import { SearchableSelect } from '@/components/ui/searchable-select'
+import { useI18n } from 'vue-i18n'
 
 // Types
 export interface Column {
@@ -95,13 +96,15 @@ const props = withDefaults(defineProps<{
   actions: () => [],
   filters: () => [],
   showSearch: true,
-  searchPlaceholder: 'Buscar...',
+  searchPlaceholder: '',
   searchValue: '',
   isLoading: false,
-  emptyMessage: 'No hay registros para mostrar.',
+  emptyMessage: '',
   rowKey: 'id',
   filterValues: () => ({})
 })
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   (e: 'search', value: string): void
@@ -141,7 +144,7 @@ function getCellValue(row: any, column: Column) {
     case 'date':
       return formatDate(value, column.dateFormat);
     case 'boolean':
-      return value ? 'Sí' : 'No';
+      return value ? t('common.yes') : t('common.no');
     default:
       return value ?? '-';
   }
@@ -182,7 +185,7 @@ const paginationInfo = computed(function() {
   const { currentPage, perPage, total } = props.pagination;
   const from = (currentPage - 1) * perPage + 1;
   const to = Math.min(currentPage * perPage, total);
-  return `${from}-${to} de ${total}`;
+  return `${from}-${to} ${t('common.of')} ${total}`;
 });
 
 const perPageOptions = [10, 15, 25, 50, 100]
@@ -197,7 +200,7 @@ const perPageOptions = [10, 15, 25, 50, 100]
         <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input 
           :value="searchValue"
-          :placeholder="searchPlaceholder"
+          :placeholder="searchPlaceholder || t('common.search')"
           class="pl-9"
           @input="emit('search', ($event.target as HTMLInputElement).value)"
           @keyup.enter="emit('search', ($event.target as HTMLInputElement).value)"
@@ -215,7 +218,7 @@ const perPageOptions = [10, 15, 25, 50, 100]
             <SelectValue :placeholder="filter.placeholder || filter.label" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="_ALL_">{{ filter.label }}: Todos</SelectItem>
+            <SelectItem value="_ALL_">{{ filter.label }}: {{ t('common.all') }}</SelectItem>
             <SelectItem 
               v-for="option in filter.options" 
               :key="option.value" 
@@ -265,7 +268,7 @@ const perPageOptions = [10, 15, 25, 50, 100]
                 </div>
               </TableHead>
               <TableHead v-if="actions.length > 0" class="text-right w-[100px]">
-                Acciones
+                {{ t('common.actions') }}
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -276,7 +279,7 @@ const perPageOptions = [10, 15, 25, 50, 100]
               <TableCell :colspan="columns.length + (actions.length > 0 ? 1 : 0)" class="h-24 text-center">
                 <div class="flex items-center justify-center">
                   <Spinner />
-                  <span class="ml-3 text-muted-foreground">Cargando...</span>
+                  <span class="ml-3 text-muted-foreground">{{ t('common.loading') }}</span>
                 </div>
               </TableCell>
             </TableRow>
@@ -286,8 +289,8 @@ const perPageOptions = [10, 15, 25, 50, 100]
               <TableCell :colspan="columns.length + (actions.length > 0 ? 1 : 0)" class="h-full p-0 text-center">
                 <div class="flex flex-col items-center justify-center text-center h-full min-h-[300px]">
                   <component v-if="emptyIcon" :is="emptyIcon" class="h-16 w-16 text-muted-foreground/20 mb-4" />
-                  <p class="text-muted-foreground text-xl font-medium">{{ emptyMessage }}</p>
-                  <p class="text-muted-foreground/60 text-sm mt-1">Crea uno nuevo para empezar a gestionar tu inventario.</p>
+                  <p class="text-muted-foreground text-xl font-medium">{{ emptyMessage || t('common.no_results') }}</p>
+                  <p class="text-muted-foreground/60 text-sm mt-1">{{ t('common.empty_desc') }}</p>
                 </div>
               </TableCell>
             </TableRow>
@@ -342,7 +345,7 @@ const perPageOptions = [10, 15, 25, 50, 100]
                       row[column.key] ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
                     ]"
                   >
-                    {{ row[column.key] ? 'Sí' : 'No' }}
+                    {{ row[column.key] ? t('common.yes') : t('common.no') }}
                   </span>
                 </template>
 
@@ -411,7 +414,7 @@ const perPageOptions = [10, 15, 25, 50, 100]
       <!-- Pagination (Fixed at bottom) -->
       <div v-if="pagination && pagination.total > 0" class="flex items-center justify-between px-4 py-3 border-t bg-muted/30 flex-shrink-0">
         <div class="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>Mostrar</span>
+          <span>{{ t('common.show') }}</span>
           <Select 
             :model-value="pagination.perPage.toString()"
             @update:model-value="(val) => emit('per-page-change', parseInt(String(val)))"
@@ -425,7 +428,7 @@ const perPageOptions = [10, 15, 25, 50, 100]
               </SelectItem>
             </SelectContent>
           </Select>
-          <span>por página</span>
+          <span>{{ t('common.per_page') }}</span>
         </div>
 
         <div class="flex items-center gap-4">

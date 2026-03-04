@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { stockApi } from '@/api/stock.api';
 import { useApiList } from '@/composables/useApiList';
 import { DataTable, type Column } from '@/components/ui/data-table';
@@ -14,7 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { ArrowRightLeft, Search } from 'lucide-vue-next';
+import { ArrowRightLeft } from 'lucide-vue-next';
 import { useToast } from '@/components/ui/toast/use-toast';
 import {
   Select,
@@ -24,7 +25,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import PageHeader from '@/components/app/PageHeader.vue';
 import { useRouter } from 'vue-router';
 
 interface StockItem {
@@ -37,6 +37,7 @@ interface StockItem {
 }
 
 const router = useRouter();
+const { t } = useI18n();
 const { toast } = useToast();
 
 const {
@@ -45,7 +46,7 @@ const {
   searchQuery,
   fetch: fetchStock,
   search,
-} = useApiList(stockApi.list);
+} = useApiList<StockItem>(stockApi.list);
 
 const isDialogOpen = ref(false);
 const processing = ref(false);
@@ -58,20 +59,30 @@ const form = reactive({
   notes: '',
 });
 
-const adjustmentTypes = [
-  { value: 'increase', label: 'Entrada (Aumentar)' },
-  { value: 'decrease', label: 'Salida (Disminuir)' },
-  { value: 'recount', label: 'Recuento (Fijar Total)' },
-];
+const adjustmentTypes = computed(() => [
+  { value: 'increase', label: t('stock.type_increase') },
+  { value: 'decrease', label: t('stock.type_decrease') },
+  { value: 'recount', label: t('stock.type_recount') },
+]);
 
-const reasons = [
-  { value: 'recount', label: 'Recuento Cíclico' },
-  { value: 'damaged', label: 'Producto Dañado' },
-  { value: 'lost', label: 'Pérdida/Robo' },
-  { value: 'found', label: 'Hallazgo' },
-  { value: 'expired', label: 'Caducado' },
-  { value: 'other', label: 'Otro' },
-];
+const reasons = computed(() => [
+  { value: 'recount', label: t('stock.reason_recount') },
+  { value: 'damaged', label: t('stock.reason_damaged') },
+  { value: 'lost', label: t('stock.reason_lost') },
+  { value: 'found', label: t('stock.reason_found') },
+  { value: 'expired', label: t('stock.reason_expired') },
+  { value: 'other', label: t('stock.reason_other') },
+]);
+
+const columns = computed<Column[]>(() => [
+  { key: 'product', label: t('inventory.product'), type: 'custom' },
+  { key: 'sku', label: t('inventory.sku'), type: 'custom' },
+  { key: 'warehouse', label: t('inventory.warehouse'), type: 'custom' },
+  { key: 'location', label: t('inventory.location'), type: 'custom' },
+  { key: 'quantity', label: t('inventory.available'), type: 'custom', align: 'right' },
+  { key: 'reserved', label: t('inventory.reserved'), type: 'custom', align: 'right' },
+  { key: 'actions', label: '', type: 'custom', align: 'right' },
+]);
 
 function handleSearch() {
   fetchStock();
@@ -123,14 +134,14 @@ async function handleSubmit() {
     };
 
     await stockApi.adjust(payload);
-    toast({ title: 'Éxito', description: 'Inventario ajustado correctamente.' });
+    toast({ title: t('common.success'), description: t('stock.adjusted_success') });
     isDialogOpen.value = false;
     fetchStock();
   } catch (error) {
     console.error('Error adjusting stock:', error);
     toast({
-      title: 'Error',
-      description: 'Hubo un error al ajustar el inventario.',
+      title: t('common.error'),
+      description: t('common.unexpected_error'),
       variant: 'destructive',
     });
   } finally {
@@ -139,40 +150,18 @@ async function handleSubmit() {
 }
 
 onMounted(() => fetchStock());
-
-const columns: Column[] = [
-  { key: 'product', label: 'Producto', type: 'custom' },
-  { key: 'sku', label: 'SKU', type: 'custom' },
-  { key: 'warehouse', label: 'Almacén', type: 'custom' },
-  { key: 'location', label: 'Ubicación', type: 'custom' },
-  { key: 'quantity', label: 'Disponible', type: 'custom', align: 'right' },
-  { key: 'reserved', label: 'Reservado', type: 'custom', align: 'right' },
-  { key: 'actions', label: '', type: 'custom', align: 'right' },
-];
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
-    <div class="flex items-center gap-2">
-      <div class="relative flex-1 max-w-sm">
-        <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          v-model="searchQuery"
-          placeholder="Buscar producto o SKU..."
-          class="pl-8"
-          @keyup.enter="handleSearch"
-        />
-      </div>
-    </div>
-
-    <div class="h-[calc(100vh-160px)] flex flex-col rounded-md border">
+    <div class="h-[calc(100vh-160px)] flex flex-col">
       <DataTable
         :columns="columns"
         :data="stockItems"
         :is-loading="isLoading"
         :search-value="searchQuery"
-        search-placeholder="Buscar producto o SKU..."
-        empty-message="No hay existencias registradas."
+        :search-placeholder="t('stock.search')"
+        :empty-message="t('stock.empty')"
         :empty-icon="ArrowRightLeft"
         class="flex-1 min-h-0"
         @search="search"
@@ -212,7 +201,7 @@ const columns: Column[] = [
           <div class="flex items-center justify-end">
             <Button variant="outline" size="sm" @click="openAdjustDialog(row)">
               <ArrowRightLeft class="mr-2 h-3 w-3" />
-              Ajustar
+              {{ t('stock.adjust') }}
             </Button>
           </div>
         </template>
@@ -223,7 +212,7 @@ const columns: Column[] = [
     <Dialog v-model:open="isDialogOpen">
       <DialogContent class="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Ajustar Inventario</DialogTitle>
+          <DialogTitle>{{ t('stock.adjust_title') }}</DialogTitle>
           <DialogDescription v-if="form.stockItem">
             {{ form.stockItem.product.name }} en {{ form.stockItem.warehouse.name }}
           </DialogDescription>
@@ -231,9 +220,9 @@ const columns: Column[] = [
         <div class="grid gap-4 py-4" v-if="form.stockItem">
           <div class="grid grid-cols-2 gap-4">
             <div class="grid gap-2">
-              <Label htmlFor="type">Tipo de Ajuste</Label>
+              <Label htmlFor="type">{{ t('stock.adjustment_type') }}</Label>
               <Select v-model="form.type">
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue :placeholder="t('stock.select_type')" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem v-for="t in adjustmentTypes" :key="t.value" :value="t.value">
                     {{ t.label }}
@@ -242,9 +231,9 @@ const columns: Column[] = [
               </Select>
             </div>
             <div class="grid gap-2">
-              <Label htmlFor="reason">Razón</Label>
+              <Label htmlFor="reason">{{ t('stock.reason') }}</Label>
               <Select v-model="form.reason">
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue :placeholder="t('stock.select_reason')" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem v-for="r in reasons" :key="r.value" :value="r.value">
                     {{ r.label }}
@@ -254,11 +243,11 @@ const columns: Column[] = [
             </div>
           </div>
           <div class="grid gap-2">
-            <Label>Cantidad Actual: {{ form.stockItem.quantity }}</Label>
+            <Label>{{ t('stock.current_stock') }}: {{ form.stockItem.quantity }}</Label>
           </div>
           <div class="grid gap-2">
             <Label htmlFor="quantity">
-              {{ form.type === 'recount' ? 'Nueva Cantidad Total' : 'Cantidad a Ajustar' }}
+              {{ form.type === 'recount' ? t('stock.new_quantity') : t('inventory.adjust_stock') }}
             </Label>
             <Input id="quantity" type="number" v-model="form.quantity" />
           </div>
@@ -267,14 +256,14 @@ const columns: Column[] = [
             <span class="font-bold text-lg ml-2">{{ calculatedTotal }}</span>
           </div>
           <div class="grid gap-2">
-            <Label htmlFor="notes">Notas (Opcional)</Label>
-            <Textarea id="notes" v-model="form.notes" />
+            <Label htmlFor="notes">{{ t('stock.notes') }} ({{ t('common.optional') }})</Label>
+            <Textarea id="notes" v-model="form.notes" :placeholder="t('stock.notes_placeholder')" />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" @click="isDialogOpen = false">Cancelar</Button>
+          <Button variant="outline" @click="isDialogOpen = false">{{ t('common.cancel') }}</Button>
           <Button type="submit" :disabled="processing" @click="handleSubmit">
-            {{ processing ? 'Procesando...' : 'Confirmar Ajuste' }}
+            {{ processing ? t('common.processing') : t('stock.apply_adjustment') }}
           </Button>
         </DialogFooter>
       </DialogContent>

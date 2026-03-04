@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { categoriesApi } from '@/api/categories.api';
 import { storesApi } from '@/api/stores.api';
 import { productsApi } from '@/api/products.api';
@@ -10,6 +11,7 @@ import PageHeader from '@/components/app/PageHeader.vue';
 import type { Category, Store } from '@/types/models';
 
 const router = useRouter();
+const { t } = useI18n();
 const { toast } = useToast();
 
 const categories = ref<Category[]>([]);
@@ -67,11 +69,11 @@ async function handleSubmit(formData: any, imageFile: File | null) {
       await productsApi.createSingle(data);
     }
 
-    toast({ title: 'Éxito', description: 'Producto creado correctamente.' });
+    toast({ title: t('common.success'), description: t('products.created_success') });
     router.push('/panel/inventory/products');
   } catch (error: any) {
     console.error('Error creating product:', error);
-    let msg = 'Hubo un error al guardar el producto.';
+    let msg = t('products.create_error');
     if (error.response?.data?.errors) {
       serverErrors.value = error.response.data.errors;
       msg = Object.values(error.response.data.errors).flat().join(', ');
@@ -79,7 +81,7 @@ async function handleSubmit(formData: any, imageFile: File | null) {
       msg = error.response.data.message;
     }
     toast({
-      title: 'Error de validación',
+      title: t('common.validation_error'),
       description: msg,
       variant: 'destructive',
       duration: 5000,
@@ -101,8 +103,8 @@ function handleCategoryCreated(category: Category) {
 <template>
   <div class="flex flex-col gap-8 w-full max-w-[1100px] mx-auto pb-12">
     <PageHeader
-      title="Nuevo Producto"
-      description="Completa la información para crear un nuevo producto."
+      :title="t('products.new_title')"
+      :description="t('products.new_desc')"
       show-back
     />
 
@@ -112,7 +114,7 @@ function handleCategoryCreated(category: Category) {
       :is-loading="isLoading"
       :is-edit-mode="false"
       :server-errors="serverErrors"
-      submit-label="Crear Producto"
+      :submit-label="t('products.create')"
       @submit="handleSubmit"
       @cancel="handleCancel"
       @category-created="handleCategoryCreated"

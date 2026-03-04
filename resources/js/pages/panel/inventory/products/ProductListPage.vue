@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { productsApi } from '@/api/products.api';
 import { categoriesApi } from '@/api/categories.api';
 import { useApiList } from '@/composables/useApiList';
@@ -13,6 +14,7 @@ import ConfirmDialog from '@/components/app/ConfirmDialog.vue';
 import type { Category, Product } from '@/types/models';
 
 const router = useRouter();
+const { t } = useI18n();
 const { formatCurrency } = useFormatters();
 
 const categories = ref<Category[]>([]);
@@ -40,7 +42,7 @@ const {
   openDialog: _openDeleteDialog,
   confirmDelete,
 } = useConfirmDelete(productsApi.destroy, {
-  successMessage: 'Producto eliminado correctamente.',
+  successMessage: () => t('products.deleted'),
   onSuccess: (item: any) => removeItem(item.id),
 });
 
@@ -52,39 +54,41 @@ function getImageUrl(path: string | null) {
   if (!path) return '';
   if (path.startsWith('http')) return path;
   const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
-  return `${backendUrl}/storage/${path}`;
+  const baseUrl = backendUrl.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
+  const fullPath = path.startsWith('/storage') ? path : `/storage/${path.replace(/^\//, '')}`;
+  return `${baseUrl}${fullPath}`;
 }
 
-const columns: Column[] = [
+const columns = computed<Column[]>(() => [
   { key: 'image_url', label: '', type: 'custom', width: 'w-[60px]' },
-  { key: 'name', label: 'Producto', type: 'custom', sortable: true },
-  { key: 'sku', label: 'SKU', type: 'text' },
-  { key: 'category', label: 'Categoría', type: 'custom' },
-  { key: 'cost', label: 'Costo', type: 'custom', align: 'right' },
+  { key: 'name', label: t('inventory.product'), type: 'custom', sortable: true },
+  { key: 'sku', label: t('inventory.sku'), type: 'text' },
+  { key: 'category', label: t('inventory.category'), type: 'custom' },
+  { key: 'cost', label: t('inventory.cost'), type: 'custom', align: 'right' },
   {
     key: 'is_active',
-    label: 'Estado',
+    label: t('common.status'),
     type: 'badge',
     badgeVariants: {
-      true: { label: 'Activo', class: 'bg-green-100 text-green-800' },
-      false: { label: 'Inactivo', class: 'bg-gray-100 text-gray-600' },
+      true: { label: t('common.active'), class: 'bg-green-100 text-green-800' },
+      false: { label: t('common.inactive'), class: 'bg-gray-100 text-gray-600' },
     },
   },
-];
+]);
 
 const filters = computed<Filter[]>(() => [
   {
     key: 'category_id',
-    label: 'Categoría',
+    label: t('inventory.category'),
     type: 'select',
     options: categories.value.map(c => ({ value: String(c.id), label: c.name })),
   },
 ]);
 
-const actions: Action[] = [
-  { key: 'edit', label: 'Editar' },
-  { key: 'delete', label: 'Eliminar', variant: 'destructive' },
-];
+const actions = computed<Action[]>(() => [
+  { key: 'edit', label: t('common.edit') },
+  { key: 'delete', label: t('common.delete'), variant: 'destructive' },
+]);
 
 function handleAction(actionKey: string, row: any) {
   if (actionKey === 'edit') {
@@ -120,8 +124,8 @@ onMounted(() => {
       :filters="filters"
       :filter-values="filterValues"
       :pagination="pagination"
-      search-placeholder="Buscar productos..."
-      empty-message="No hay productos registrados."
+      :search-placeholder="t('products.search')"
+      :empty-message="t('products.empty')"
       :empty-icon="Package"
       class="flex-1 min-h-0"
       @search="search"
@@ -133,7 +137,7 @@ onMounted(() => {
       <template #toolbar-end>
         <Button @click="router.push('/panel/inventory/products/create')">
           <Plus class="mr-2 h-4 w-4" />
-          Nuevo Producto
+          {{ t('inventory.new_product') }}
         </Button>
       </template>
 
@@ -169,8 +173,8 @@ onMounted(() => {
 
     <ConfirmDialog
       v-model:open="deleteDialogOpen"
-      title="¿Eliminar producto?"
-      description="Esta acción eliminará el producto de forma permanente. ¿Estás seguro?"
+      :title="t('products.delete_confirm')"
+      :description="t('products.delete_desc')"
       :loading="isDeleting"
       @confirm="confirmDelete"
     />

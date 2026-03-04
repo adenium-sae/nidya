@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { stockApi } from '@/api/stock.api';
 import { useApiList } from '@/composables/useApiList';
 import { DataTable, type Column, type Filter, type Pagination } from '@/components/ui/data-table';
@@ -15,26 +16,25 @@ import {
 } from '@/components/ui/dialog';
 import { ArrowUpDown, CheckCircle, XCircle } from 'lucide-vue-next';
 
+const { t } = useI18n();
 const { toast } = useToast();
 
-// Movement types matching the backend enum:
-// ['entry', 'exit', 'transfer', 'adjustment', 'sale', 'return', 'damage', 'production']
-const movementTypeLabels: Record<string, string> = {
-  entry: 'Entrada',
-  exit: 'Salida',
-  transfer: 'Transferencia',
-  adjustment: 'Ajuste',
-  sale: 'Venta',
-  return: 'Devolución',
-  damage: 'Daño',
-  production: 'Producción',
-};
+const movementTypeLabels = computed<Record<string, string>>(() => ({
+  entry: t('movements.type_entry'),
+  exit: t('movements.type_exit'),
+  transfer: t('movements.type_transfer'),
+  adjustment: t('movements.type_adjustment'),
+  sale: t('movements.type_sale'),
+  return: t('movements.type_return'),
+  damage: t('movements.type_damage'),
+  production: t('movements.type_production'),
+}));
 
-const statusLabels: Record<string, string> = {
-  pending: 'Pendiente',
-  completed: 'Completado',
-  cancelled: 'Cancelado',
-};
+const statusLabels = computed<Record<string, string>>(() => ({
+  pending: t('common.pending'),
+  completed: t('common.completed'),
+  cancelled: t('common.cancelled'),
+}));
 
 const {
   items: movements,
@@ -48,38 +48,38 @@ const {
   changePage,
 } = useApiList(stockApi.movements, { perPage: 50 });
 
-const columns: Column[] = [
-  { key: 'created_at', label: 'Fecha', type: 'date', sortable: true },
-  { key: 'product', label: 'Producto', type: 'custom' },
-  { key: 'warehouse', label: 'Almacén', type: 'custom' },
-  { key: 'type', label: 'Tipo', type: 'custom' },
-  { key: 'quantity', label: 'Cantidad', type: 'custom', align: 'right' },
-  { key: 'stock_change', label: 'Stock', type: 'custom', align: 'right' },
-  { key: 'status', label: 'Estado', type: 'custom' },
-  { key: 'user', label: 'Usuario', type: 'custom' },
+const columns = computed<Column[]>(() => [
+  { key: 'created_at', label: t('common.date'), type: 'date', sortable: true },
+  { key: 'product', label: t('inventory.product'), type: 'custom' },
+  { key: 'warehouse', label: t('inventory.warehouse'), type: 'custom' },
+  { key: 'type', label: t('common.type'), type: 'custom' },
+  { key: 'quantity', label: t('inventory.quantity'), type: 'custom', align: 'right' },
+  { key: 'stock_change', label: t('inventory.stock'), type: 'custom', align: 'right' },
+  { key: 'status', label: t('common.status'), type: 'custom' },
+  { key: 'user', label: t('common.user'), type: 'custom' },
   { key: 'actions', label: '', type: 'custom', align: 'right' },
-];
+]);
 
 const filters = computed<Filter[]>(() => [
   {
     key: 'warehouse_id',
-    label: 'Almacén',
+    label: t('inventory.warehouse'),
     type: 'searchable-select',
     endpoint: '/api/admin/warehouses',
     labelKey: 'name',
     valueKey: 'id',
-    placeholder: 'Buscar almacén...',
+    placeholder: t('movements.search_warehouse'),
   },
   {
     key: 'type',
-    label: 'Tipo',
+    label: t('common.type'),
     type: 'select',
-    options: Object.entries(movementTypeLabels).map(([value, label]) => ({ value, label })),
+    options: Object.entries(movementTypeLabels.value).map(([value, label]) => ({ value, label })),
   },
 ]);
 
 function getTypeLabel(type: string): string {
-  return movementTypeLabels[type] || type;
+  return movementTypeLabels.value[type] || type;
 }
 
 function getTypeClass(type: string): string {
@@ -135,14 +135,14 @@ function openCancelDialog(row: any) {
 }
 
 const dialogTitle = computed(() => {
-  return dialogAction.value === 'confirm' ? 'Confirmar Movimiento' : 'Cancelar Movimiento';
+  return dialogAction.value === 'confirm' ? t('movements.confirm_title') : t('movements.cancel_title');
 });
 
 const dialogDescription = computed(() => {
   if (dialogAction.value === 'confirm') {
-    return '¿Estás seguro de que deseas confirmar este movimiento? El cambio de stock se marcará como completado.';
+    return t('movements.confirm_desc');
   }
-  return '¿Estás seguro de que deseas cancelar este movimiento? Esta acción no se puede deshacer.';
+  return t('movements.cancel_desc');
 });
 
 async function executeDialogAction() {
@@ -152,18 +152,18 @@ async function executeDialogAction() {
   try {
     if (dialogAction.value === 'confirm') {
       await stockApi.confirmMovement(dialogMovementId.value);
-      toast({ title: 'Éxito', description: 'Movimiento confirmado correctamente.' });
+      toast({ title: t('common.success'), description: t('movements.confirmed') });
     } else {
       await stockApi.cancelMovement(dialogMovementId.value);
-      toast({ title: 'Éxito', description: 'Movimiento cancelado correctamente.' });
+      toast({ title: t('common.success'), description: t('movements.cancelled') });
     }
     showDialog.value = false;
     dialogMovementId.value = null;
     dialogMovementInfo.value = null;
     fetchMovements();
   } catch (error: any) {
-    const message = error?.response?.data?.message || 'No se pudo procesar la acción.';
-    toast({ title: 'Error', description: message, variant: 'destructive' });
+    const message = error?.response?.data?.message || t('common.cannot_process');
+    toast({ title: t('common.error'), description: message, variant: 'destructive' });
   } finally {
     isProcessing.value = false;
   }
@@ -183,8 +183,8 @@ onMounted(() => fetchMovements());
         :filters="filters"
         :filter-values="filterValues"
         :pagination="pagination"
-        search-placeholder="Buscar por producto..."
-        empty-message="No hay movimientos registrados."
+        :search-placeholder="t('movements.search')"
+        :empty-message="t('movements.empty')"
         :empty-icon="ArrowUpDown"
         class="flex-1 min-h-0"
         @search="search"
@@ -249,7 +249,7 @@ onMounted(() => fetchMovements());
               @click.stop="openConfirmDialog(row)"
             >
               <CheckCircle class="h-4 w-4 mr-1" />
-              Confirmar
+              {{ t('common.confirm_action') }}
             </Button>
             <Button
               v-if="row.status === 'pending'"
@@ -259,7 +259,7 @@ onMounted(() => fetchMovements());
               @click.stop="openCancelDialog(row)"
             >
               <XCircle class="h-4 w-4 mr-1" />
-              Cancelar
+              {{ t('common.cancel_action') }}
             </Button>
           </div>
         </template>
@@ -276,15 +276,15 @@ onMounted(() => fetchMovements());
 
         <div v-if="dialogMovementInfo" class="rounded-md border p-4 space-y-2 text-sm">
           <div class="flex justify-between">
-            <span class="text-muted-foreground">Producto:</span>
+            <span class="text-muted-foreground">{{ t('movements.product_label') }}</span>
             <span class="font-medium">{{ dialogMovementInfo.product }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-muted-foreground">Tipo:</span>
+            <span class="text-muted-foreground">{{ t('movements.type_label') }}</span>
             <span>{{ dialogMovementInfo.type }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-muted-foreground">Cantidad:</span>
+            <span class="text-muted-foreground">{{ t('movements.quantity_label') }}</span>
             <span
               :class="dialogMovementInfo.quantity >= 0 ? 'text-green-600' : 'text-red-600'"
               class="font-medium"
@@ -296,7 +296,7 @@ onMounted(() => fetchMovements());
 
         <DialogFooter class="gap-2">
           <Button variant="outline" @click="showDialog = false" :disabled="isProcessing">
-            Volver
+            {{ t('common.back') }}
           </Button>
           <Button
             :variant="dialogAction === 'cancel' ? 'destructive' : 'default'"
@@ -305,7 +305,7 @@ onMounted(() => fetchMovements());
           >
             <CheckCircle v-if="dialogAction === 'confirm'" class="h-4 w-4 mr-1" />
             <XCircle v-else class="h-4 w-4 mr-1" />
-            {{ isProcessing ? 'Procesando...' : (dialogAction === 'confirm' ? 'Confirmar' : 'Cancelar Movimiento') }}
+            {{ isProcessing ? t('common.processing') : (dialogAction === 'confirm' ? t('common.confirm') : t('movements.cancel_movement')) }}
           </Button>
         </DialogFooter>
       </DialogContent>

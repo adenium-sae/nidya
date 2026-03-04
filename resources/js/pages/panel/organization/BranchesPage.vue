@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { branchesApi } from '@/api/branches.api';
 import { useApiList } from '@/composables/useApiList';
 import { useConfirmDelete } from '@/composables/useConfirmDelete';
@@ -21,6 +22,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import ConfirmDialog from '@/components/app/ConfirmDialog.vue';
 import type { Branch as BranchModel } from '@/types/models';
 
+const { t } = useI18n();
 const { toast } = useToast();
 
 const {
@@ -39,7 +41,7 @@ const {
   openDialog: _openDeleteDialog,
   confirmDelete,
 } = useConfirmDelete(branchesApi.destroy, {
-  successMessage: 'Sucursal eliminada correctamente.',
+  successMessage: () => t('branches.deleted'),
   onSuccess: (item: any) => removeItem(item.id),
 });
 
@@ -61,19 +63,19 @@ const form = reactive({
 const errors = ref<Record<string, string[]>>({});
 
 const columns = computed<Column[]>(() => [
-  { key: 'name', label: 'Nombre', sortable: true, type: 'text' },
-  { key: 'code', label: 'Código', type: 'text' },
-  { key: 'store_name', label: 'Tienda', type: 'custom' },
-  { key: 'email', label: 'Correo', type: 'text' },
-  { key: 'phone', label: 'Teléfono', type: 'text' },
-  { key: 'permissions', label: 'Permisos', type: 'custom' },
-  { key: 'is_active', label: 'Estado', type: 'custom' },
+  { key: 'name', label: t('common.name'), sortable: true, type: 'text' },
+  { key: 'code', label: t('common.code'), type: 'text' },
+  { key: 'store_name', label: t('organization.stores'), type: 'custom' },
+  { key: 'email', label: t('common.email'), type: 'text' },
+  { key: 'phone', label: t('common.phone'), type: 'text' },
+  { key: 'permissions', label: t('sidebar.permissions'), type: 'custom' },
+  { key: 'is_active', label: t('common.status'), type: 'custom' },
 ]);
 
-const actions: Action[] = [
-  { key: 'edit', label: 'Editar' },
-  { key: 'delete', label: 'Eliminar', variant: 'destructive' },
-];
+const actions = computed<Action[]>(() => [
+  { key: 'edit', label: t('common.edit') },
+  { key: 'delete', label: t('common.delete'), variant: 'destructive' },
+]);
 
 function generateCode() {
   const prefix = 'SUC-';
@@ -124,20 +126,20 @@ async function handleSubmit() {
     const payload = { ...form, store_ids: form.store_ids.map(s => s.id) };
     if (isEditing.value && currentId.value) {
       await branchesApi.update(currentId.value, payload);
-      toast({ title: 'Éxito', description: 'Sucursal actualizada correctamente.' });
+      toast({ title: t('common.success'), description: t('branches.updated') });
     } else {
       await branchesApi.create(payload);
-      toast({ title: 'Éxito', description: 'Sucursal creada correctamente.' });
+      toast({ title: t('common.success'), description: t('branches.created') });
     }
     fetchBranches();
     isDialogOpen.value = false;
   } catch (error: any) {
     if (error.response?.status === 422 && error.response.data.errors) {
       errors.value = error.response.data.errors;
-      toast({ variant: 'destructive', title: 'Error de validación', description: 'Revisa los campos marcados en el formulario.' });
+      toast({ variant: 'destructive', title: t('common.validation_error'), description: t('common.validation_error_desc') });
     } else {
       console.error('Error saving branch:', error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Ocurrió un problema inesperado.' });
+      toast({ variant: 'destructive', title: t('common.error'), description: t('common.unexpected_error') });
     }
   }
 }
@@ -155,16 +157,17 @@ onMounted(() => {
       :actions="actions"
       :is-loading="isLoading"
       :search-value="searchQuery"
-      empty-message="No hay sucursales registradas."
+      :empty-message="t('branches.empty')"
       :empty-icon="Building2"
       class="flex-1 min-h-0"
+      :search-placeholder="t('branches.search')"
       @search="search"
       @action="handleAction"
     >
       <template #toolbar-end>
         <Button @click="openCreateDialog">
           <Plus class="mr-2 h-4 w-4" />
-          Nueva Sucursal
+          {{ t('branches.new') }}
         </Button>
       </template>
 
@@ -184,8 +187,8 @@ onMounted(() => {
 
       <template #cell-permissions="{ row }">
         <div class="flex gap-1">
-          <span v-if="row.allow_sales" class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700" title="Ventas">Ventas</span>
-          <span v-if="row.allow_inventory" class="inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700" title="Inventario">Inventario</span>
+          <span v-if="row.allow_sales" class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700" :title="t('sidebar.sales')">{{ t('sidebar.sales') }}</span>
+          <span v-if="row.allow_inventory" class="inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700" :title="t('sidebar.inventory')">{{ t('sidebar.inventory') }}</span>
         </div>
       </template>
 
@@ -194,7 +197,7 @@ onMounted(() => {
           class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
           :class="row.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'"
         >
-          {{ row.is_active ? 'Activa' : 'Inactiva' }}
+          {{ row.is_active ? t('common.active_f') : t('common.inactive_f') }}
         </span>
       </template>
     </DataTable>
@@ -202,22 +205,22 @@ onMounted(() => {
     <Dialog :open="isDialogOpen" @update:open="isDialogOpen = $event">
       <DialogContent class="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{{ isEditing ? 'Editar Sucursal' : 'Nueva Sucursal' }}</DialogTitle>
+          <DialogTitle>{{ isEditing ? t('branches.edit') : t('branches.new') }}</DialogTitle>
           <DialogDescription>
-            Completa los detalles de la sucursal y asígnala a una tienda.
+            {{ t('branches.form_desc') }}
           </DialogDescription>
         </DialogHeader>
         <div class="grid gap-4 py-4">
           <div class="grid gap-2">
-            <Label htmlFor="name" :class="{'text-destructive': errors?.name}">Nombre <span class="text-destructive">*</span></Label>
+            <Label htmlFor="name" :class="{'text-destructive': errors?.name}">{{ t('common.name') }} <span class="text-destructive">*</span></Label>
             <Input id="name" v-model="form.name" placeholder="Ej. Sucursal Centro" :class="{'border-destructive': errors?.name}" />
             <span v-if="errors?.name" class="text-xs text-destructive">{{ errors.name[0] }}</span>
           </div>
 
           <div class="grid gap-2 rounded-lg border bg-muted/30 p-4" :class="{'border-destructive/50 bg-destructive/5': errors?.store_ids}">
-            <Label class="text-base font-semibold" :class="{'text-destructive': errors?.store_ids}">Tiendas Asignadas <span class="text-destructive">*</span></Label>
+            <Label class="text-base font-semibold" :class="{'text-destructive': errors?.store_ids}">{{ t('branches.assigned_stores') }} <span class="text-destructive">*</span></Label>
             <p class="text-xs text-muted-foreground mb-1" :class="{'text-destructive/80': errors?.store_ids}">
-              Selecciona las tiendas que operarán en esta sucursal. Se creará automáticamente un almacén consolidado.
+              {{ t('branches.assigned_stores_hint') }}
             </p>
             <SearchableSelect
               :model-value="null"
@@ -229,7 +232,7 @@ onMounted(() => {
               endpoint="/admin/stores"
               label-key="name"
               value-key="id"
-              placeholder="Buscar y añadir tienda..."
+              :placeholder="t('branches.search_store')"
             />
             <div class="flex flex-wrap gap-2 mt-2" v-if="form.store_ids.length > 0">
                <div 
@@ -239,7 +242,7 @@ onMounted(() => {
                >
                  <span>{{ store.name }}</span>
                  <button type="button" class="ml-1 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full text-blue-600 hover:bg-blue-200 hover:text-blue-900 focus:bg-blue-500 focus:text-white transition-colors" @click="form.store_ids.splice(index, 1)">
-                   <span class="sr-only">Eliminar tienda</span>
+                   <span class="sr-only">{{ t('branches.remove_store') }}</span>
                    <svg class="h-2 w-2" stroke="currentColor" fill="none" viewBox="0 0 8 8"><path stroke-linecap="round" stroke-width="1.5" d="M1 1l6 6m0-6L1 7" /></svg>
                  </button>
                </div>
@@ -249,40 +252,40 @@ onMounted(() => {
 
           <div class="grid grid-cols-2 gap-4">
             <div class="grid gap-2">
-              <Label htmlFor="code" :class="{'text-destructive': errors?.code}">Código</Label>
+              <Label htmlFor="code" :class="{'text-destructive': errors?.code}">{{ t('common.code') }}</Label>
               <div class="flex gap-2">
                 <Input id="code" v-model="form.code" placeholder="SUC-01" class="flex-1" :class="{'border-destructive': errors?.code}" />
-                <Button type="button" variant="outline" size="icon" @click="generateCode" title="Generar código">
+                <Button type="button" variant="outline" size="icon" @click="generateCode" :title="t('branches.generate_code')">
                   <Wand2 class="h-4 w-4" />
                 </Button>
               </div>
               <span v-if="errors?.code" class="text-xs text-destructive">{{ errors.code[0] }}</span>
             </div>
             <div class="grid gap-2">
-              <Label htmlFor="phone" :class="{'text-destructive': errors?.phone}">Teléfono (Opcional)</Label>
+              <Label htmlFor="phone" :class="{'text-destructive': errors?.phone}">{{ t('common.phone') }} ({{ t('common.optional') }})</Label>
               <Input id="phone" v-model="form.phone" placeholder="555..." :class="{'border-destructive': errors?.phone}" />
               <span v-if="errors?.phone" class="text-xs text-destructive">{{ errors.phone[0] }}</span>
             </div>
           </div>
           
           <div class="grid gap-2">
-            <Label htmlFor="email" :class="{'text-destructive': errors?.email}">Correo (Opcional)</Label>
+            <Label htmlFor="email" :class="{'text-destructive': errors?.email}">{{ t('common.email') }} ({{ t('common.optional') }})</Label>
             <Input id="email" type="email" v-model="form.email" placeholder="correo@ejemplo.com" :class="{'border-destructive': errors?.email}" />
             <span v-if="errors?.email" class="text-xs text-destructive">{{ errors.email[0] }}</span>
           </div>
           <div class="space-y-3 mt-2 border rounded-md p-3 bg-muted/20">
-            <Label class="text-sm border-b pb-2 block mb-3">Permisos de Operación</Label>
+            <Label class="text-sm border-b pb-2 block mb-3">{{ t('branches.operation_permissions') }}</Label>
             <div class="flex items-center justify-between">
               <Label htmlFor="allow_sales" class="font-normal cursor-pointer flex-1">
-                <span class="block">Permitir Ventas</span>
-                <span class="text-xs text-muted-foreground font-normal">Puede registrar cotizaciones, ventas POS y cobros.</span>
+                <span class="block">{{ t('branches.allow_sales') }}</span>
+                <span class="text-xs text-muted-foreground font-normal">{{ t('branches.allow_sales_desc') }}</span>
               </Label>
               <Checkbox id="allow_sales" :checked="form.allow_sales" @update:checked="(val: boolean) => (form.allow_sales = val)" />
             </div>
             <div class="flex items-center justify-between">
               <Label htmlFor="allow_inventory" class="font-normal cursor-pointer flex-1">
-                <span class="block">Permitir Inventario</span>
-                <span class="text-xs text-muted-foreground font-normal">Puede autorizar traspasos y ajustes en almacenes.</span>
+                <span class="block">{{ t('branches.allow_inventory') }}</span>
+                <span class="text-xs text-muted-foreground font-normal">{{ t('branches.allow_inventory_desc') }}</span>
               </Label>
               <Checkbox id="allow_inventory" :checked="form.allow_inventory" @update:checked="(val: boolean) => (form.allow_inventory = val)" />
             </div>
@@ -294,14 +297,14 @@ onMounted(() => {
               @update:checked="(val: boolean) => (form.is_active = val)"
             />
             <Label htmlFor="is_active" class="text-sm font-normal">
-              Sucursal activa en el sistema
+              {{ t('stores.active_in_system') }}
             </Label>
           </div>
         </div>
         <div class="flex justify-end gap-2">
-          <Button variant="outline" @click="isDialogOpen = false">Cancelar</Button>
+          <Button variant="outline" @click="isDialogOpen = false">{{ t('common.cancel') }}</Button>
           <Button @click="handleSubmit">
-            {{ isEditing ? 'Guardar Cambios' : 'Crear Sucursal' }}
+            {{ isEditing ? t('common.save_changes') : t('common.create') }}
           </Button>
         </div>
       </DialogContent>
@@ -309,8 +312,8 @@ onMounted(() => {
 
     <ConfirmDialog
       :open="deleteDialogOpen"
-      title="¿Eliminar sucursal?"
-      description="¿Estás seguro de que deseas eliminar esta sucursal? Esta acción no se puede deshacer."
+      :title="t('branches.delete_confirm')"
+      :description="t('branches.delete_desc')"
       :loading="isDeleting"
       @confirm="confirmDelete"
       @update:open="deleteDialogOpen = $event"

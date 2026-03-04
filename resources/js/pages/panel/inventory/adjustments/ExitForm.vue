@@ -2,6 +2,7 @@
 import { ref, reactive, computed } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useToast } from '@/components/ui/toast/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2, ArrowLeft, Save } from 'lucide-vue-next';
 
 const router = useRouter();
+const { t } = useI18n();
 const { toast } = useToast();
 const isSubmitting = ref(false);
 
@@ -23,12 +25,12 @@ const form = reactive({
   ]
 });
 
-const reasons = [
-  { value: 'damaged', label: 'Dañado' },
-  { value: 'lost', label: 'Extravío / Robo' },
-  { value: 'expired', label: 'Caducado' },
-  { value: 'other', label: 'Otro' },
-];
+const reasons = computed(() => [
+  { value: 'damaged', label: t('adjustments.reason_damaged') },
+  { value: 'lost', label: t('adjustments.reason_lost') },
+  { value: 'expired', label: t('adjustments.reason_expired') },
+  { value: 'other', label: t('adjustments.reason_other') },
+]);
 
 const locationEndpoint = computed(() => {
   return form.warehouse_id ? `/api/admin/inventory/locations?warehouse_id=${form.warehouse_id}` : undefined;
@@ -48,7 +50,6 @@ function addItem() {
 }
 
 function handleWarehouseChange() {
-  // Clear items when warehouse changes to maintain consistency
   form.items = [{ product_id: '', quantity_to_remove: 0, current_quantity: 0, reason: 'damaged' }];
 }
 
@@ -80,8 +81,8 @@ async function handleProductSelect(productId: string, index: number) {
 async function handleSubmit() {
   if (!form.warehouse_id || form.items.some(i => !i.product_id || i.quantity_to_remove <= 0)) {
     toast({
-      title: 'Validación',
-      description: 'Completa todos los campos obligatorios.',
+      title: t('common.validation_error'),
+      description: t('adjustments.validation_msg'),
       variant: 'destructive'
     });
     return;
@@ -105,12 +106,12 @@ async function handleSubmit() {
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    toast({ title: 'Éxito', description: 'Salida de almacén registrada.' });
+    toast({ title: t('common.success'), description: t('adjustments.exit_success') });
     router.push('/panel/inventory/adjustments');
   } catch (error) {
     toast({
-      title: 'Error',
-      description: 'No se pudo registrar la salida.',
+      title: t('common.error'),
+      description: t('adjustments.exit_error'),
       variant: 'destructive'
     });
   } finally {
@@ -126,8 +127,8 @@ async function handleSubmit() {
         <ArrowLeft class="h-4 w-4" />
       </Button>
       <div>
-        <h1 class="text-3xl font-bold tracking-tight">Nueva Salida</h1>
-        <p class="text-muted-foreground">Registra la baja de mercancía del almacén.</p>
+        <h1 class="text-3xl font-bold tracking-tight">{{ t('adjustments.new_exit') }}</h1>
+        <p class="text-muted-foreground">{{ t('adjustments.subtitle_exit') }}</p>
       </div>
     </div>
 
@@ -135,24 +136,24 @@ async function handleSubmit() {
     <div class="bg-card border rounded-lg p-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="space-y-2">
-          <Label>Almacén <span class="text-destructive">*</span></Label>
+          <Label>{{ t('inventory.warehouse') }} <span class="text-destructive">*</span></Label>
           <SearchableSelect
             v-model="form.warehouse_id"
             endpoint="/api/admin/warehouses"
             label-key="name"
             value-key="id"
-            placeholder="Seleccionar almacén..."
+            :placeholder="t('adjustments.select_warehouse')"
             @update:model-value="handleWarehouseChange"
           />
         </div>
         <div class="space-y-2">
-          <Label>Ubicación (Opcional)</Label>
+          <Label>{{ t('inventory.location') }} ({{ t('common.optional') }})</Label>
           <SearchableSelect
             v-model="form.storage_location_id"
             :endpoint="locationEndpoint"
             label-key="name"
             value-key="id"
-            placeholder="Seleccionar ubicación..."
+            :placeholder="t('adjustments.select_location')"
             :disabled="!form.warehouse_id"
             @update:model-value="handleWarehouseChange"
           />
@@ -163,7 +164,7 @@ async function handleSubmit() {
     <!-- Step 2: Products -->
     <div class="bg-card border rounded-lg p-6">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold">Productos a dar de baja</h2>
+        <h2 class="text-lg font-semibold">{{ t('adjustments.products_to_remove') }}</h2>
         <Button 
           type="button" 
           variant="outline" 
@@ -172,7 +173,7 @@ async function handleSubmit() {
           :disabled="!form.warehouse_id"
         >
           <Plus class="mr-2 h-4 w-4" />
-          Agregar Item
+          {{ t('adjustments.add_item') }}
         </Button>
       </div>
 
@@ -183,26 +184,26 @@ async function handleSubmit() {
           class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start border-b pb-8 last:border-0"
         >
           <div class="md:col-span-5 space-y-2">
-            <Label>Producto</Label>
+            <Label>{{ t('inventory.product') }}</Label>
             <SearchableSelect
               v-model="item.product_id"
               :endpoint="productEndpoint"
               label-key="name"
               value-key="id"
-              placeholder="Buscar producto..."
+              :placeholder="t('adjustments.search_product')"
               :disabled="!form.warehouse_id"
               @update:model-value="val => handleProductSelect(val as string, index)"
             />
           </div>
           <div class="md:col-span-2 space-y-2 relative">
-            <Label>A retirar</Label>
+            <Label>{{ t('adjustments.qty_to_remove') }}</Label>
             <Input type="number" v-model.number="item.quantity_to_remove" min="1" class="h-10" />
             <div class="absolute -bottom-5 left-0 text-[10px] text-muted-foreground whitespace-nowrap">
-              En stock: <span class="font-medium text-primary">{{ item.current_quantity }}</span>
+              {{ t('adjustments.in_stock') }}: <span class="font-medium text-primary">{{ item.current_quantity }}</span>
             </div>
           </div>
           <div class="md:col-span-4 space-y-2">
-            <Label>Motivo</Label>
+            <Label>{{ t('adjustments.reason_label') }}</Label>
             <Select v-model="item.reason">
               <SelectTrigger>
                 <SelectValue />
@@ -239,7 +240,7 @@ async function handleSubmit() {
           @click="handleSubmit"
         >
           <Save class="mr-2 h-6 w-6" />
-          {{ isSubmitting ? 'Guardando...' : 'Registrar Salida' }}
+          {{ isSubmitting ? t('common.saving') : t('adjustments.submit_exit') }}
         </Button>
       </div>
     </div>
