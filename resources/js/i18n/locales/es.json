@@ -96,10 +96,21 @@
     "products": "Productos",
     "customers": "Clientes",
     "categories": "Categorías",
-    "sales_by_day": "Ventas por Día",
-    "top_products": "Top Productos"
+    "sales_summary": "Resumen de Ventas",
+    "top_products": "Top Productos (Mes)",
+    "low_stock": "Artículos con Stock Bajo",
+    "recent_activity": "Actividad Reciente",
+    "today_sales": "Ventas de Hoy",
+    "month_sales": "Ventas del Mes",
+    "periods": {
+      "today": "Hoy",
+      "7d": "Últimos 7 días",
+      "30d": "Últimos 30 días",
+      "year": "Este año"
+    }
   },
   "sidebar": {
+    "control_panel": "Panel de Control",
     "main_menu": "Menú Principal",
     "dashboard": "Dashboard",
     "sales": "Ventas",
@@ -438,5 +449,24 @@
     "users_list_title": "Usuarios",
     "roles_title": "Roles",
     "permissions_title": "Permisos"
+  },
+  "activity": {
+    "title": "Actividad Reciente",
+    "types": {
+      "auth": "Autenticación",
+      "inventory": "Inventario",
+      "sales": "Ventas",
+      "catalog": "Catálogo",
+      "organization": "Organización",
+      "system": "Sistema"
+    },
+    "events": {
+      "sale": {
+        "created": "Venta Registrada"
+      },
+      "catalog": {
+        "seeded": "Carga de Datos"
+      }
+    }
   }
 }

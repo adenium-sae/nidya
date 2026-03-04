@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\ActivityLog;
 use App\Models\Address;
 use App\Models\Branch;
 use App\Models\Category;
@@ -179,7 +180,6 @@ class DevelopmentSeeder extends Seeder
         ]);
 
         $branch1 = Branch::create([
-            'store_id' => $store->id,
             'address_id' => $address1->id,
             'name' => 'Sucursal Centro',
             'code' => 'SUC-001',
@@ -188,6 +188,7 @@ class DevelopmentSeeder extends Seeder
             'allow_sales' => true,
             'allow_inventory' => true,
         ]);
+        $branch1->stores()->attach($store->id);
 
         $address2 = Address::create([
             'street' => 'Blvd. Colosio',
@@ -200,7 +201,6 @@ class DevelopmentSeeder extends Seeder
         ]);
 
         $branch2 = Branch::create([
-            'store_id' => $store->id,
             'address_id' => $address2->id,
             'name' => 'Sucursal Norte',
             'code' => 'SUC-002',
@@ -209,36 +209,37 @@ class DevelopmentSeeder extends Seeder
             'allow_sales' => true,
             'allow_inventory' => true,
         ]);
+        $branch2->stores()->attach($store->id);
 
         $this->command->info('✅ Sucursales creadas: Centro y Norte');
 
         // 6. Crear Almacenes
         $warehouse1 = Warehouse::create([
-            'store_id' => $store->id,
             'branch_id' => $branch1->id,
             'name' => 'Almacén Principal Centro',
             'code' => 'ALM-001',
             'type' => 'branch',
             'is_active' => true,
         ]);
+        $warehouse1->stores()->attach($store->id);
 
         $warehouse2 = Warehouse::create([
-            'store_id' => $store->id,
             'branch_id' => $branch2->id,
             'name' => 'Almacén Sucursal Norte',
             'code' => 'ALM-002',
             'type' => 'branch',
             'is_active' => true,
         ]);
+        $warehouse2->stores()->attach($store->id);
 
         // Almacén central (sin sucursal)
         $warehouseCentral = Warehouse::create([
-            'store_id' => $store->id,
             'name' => 'Almacén Central',
             'code' => 'ALM-CENTRAL',
             'type' => 'central',
             'is_active' => true,
         ]);
+        $warehouseCentral->stores()->attach($store->id);
 
         $this->command->info('✅ Almacenes creados');
 
@@ -308,12 +309,118 @@ class DevelopmentSeeder extends Seeder
 
         $this->command->info('✅ Productos creados con stock inicial');
 
+        // Log de creación de catálogo
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'store_id' => $store->id,
+            'type' => ActivityLog::TYPE_CATALOG,
+            'event' => 'catalog.seeded',
+            'description' => 'Carga inicial de productos y categorías completada.',
+            'level' => ActivityLog::LEVEL_INFO,
+        ]);
+
+        // 9. Crear Clientes
+        $customers = [
+            ['first_name' => 'Juan', 'last_name' => 'García', 'email' => 'juan@gmail.com', 'phone' => '6441010101'],
+            ['first_name' => 'María', 'last_name' => 'Rodríguez', 'email' => 'maria@gmail.com', 'phone' => '6442020202'],
+            ['first_name' => 'Pedro', 'last_name' => 'Sánchez', 'email' => 'pedro@gmail.com', 'phone' => '6443030303'],
+            ['first_name' => 'Ana', 'last_name' => 'Martínez', 'email' => 'ana@gmail.com', 'phone' => '6444040404'],
+            ['first_name' => 'Luis', 'last_name' => 'Hernández', 'email' => 'luis@gmail.com', 'phone' => '6445050505'],
+        ];
+
+        $createdCustomers = [];
+        foreach ($customers as $c) {
+            $createdCustomers[] = Customer::create(array_merge($c, [
+                'code' => 'CLI-' . rand(100, 999),
+                'is_active' => true,
+            ]));
+        }
+        $this->command->info('✅ Clientes creados');
+
+        // 10. Crear Ventas de los últimos 7 días (para el Chart)
+        $this->command->info('📈 Generando historial de ventas...');
+        
+        $folioCounter = 1;
+        $year = Carbon::now()->year;
+
+        for ($i = 0; $i < 7; $i++) {
+            $date = Carbon::now()->subDays($i);
+            $salesCount = rand(5, 15);
+            
+            for ($j = 0; $j < $salesCount; $j++) {
+                $customer = $createdCustomers[array_rand($createdCustomers)];
+                $folio = 'VENTA-' . $year . '-' . str_pad($folioCounter++, 5, '0', STR_PAD_LEFT);
+
+                $sale = Sale::create([
+                    'folio' => $folio,
+                    'store_id' => $store->id,
+                    'branch_id' => $branch1->id,
+                    'warehouse_id' => $warehouse1->id,
+                    'customer_id' => $customer->id,
+                    'user_id' => $user->id,
+                    'subtotal' => 0,
+                    'tax' => 0,
+                    'discount' => 0,
+                    'total' => 0,
+                    'status' => 'completed',
+                    'payment_method' => 'cash',
+                    'completed_at' => $date->copy()->addHours(rand(8, 20)),
+                    'created_at' => $date->copy()->addHours(rand(8, 20)),
+                ]);
+
+                // Agregar de 1 a 3 productos por venta
+                $itemsCount = rand(1, 3);
+                $saleTotal = 0;
+                
+                $randomKeys = array_rand($createdProducts, $itemsCount);
+                if (!is_array($randomKeys)) $randomKeys = [$randomKeys];
+                
+                foreach ($randomKeys as $key) {
+                    $prodItem = $createdProducts[$key];
+                    $qty = rand(1, 5);
+                    $itemTotal = $prodItem['price'] * $qty;
+                    
+                    SaleItem::create([
+                        'sale_id' => $sale->id,
+                        'product_id' => $prodItem['product']->id,
+                        'quantity' => $qty,
+                        'unit_price' => $prodItem['price'],
+                        'discount' => 0,
+                        'tax' => 0,
+                        'subtotal' => $itemTotal,
+                        'total' => $itemTotal,
+                    ]);
+                    
+                    $saleTotal += $itemTotal;
+                }
+                
+                $sale->update([
+                    'subtotal' => $saleTotal,
+                    'total' => $saleTotal,
+                ]);
+
+                // Log a few recent sales for the dashboard activity feed
+                if ($i === 0 && $j < 3) {
+                    ActivityLog::create([
+                        'user_id' => $user->id,
+                        'store_id' => $store->id,
+                        'type' => ActivityLog::TYPE_SALES,
+                        'event' => 'sale.created',
+                        'description' => "Venta {$sale->folio} registrada por $" . number_format($sale->total, 2),
+                        'level' => ActivityLog::LEVEL_INFO,
+                        'created_at' => $sale->created_at,
+                    ]);
+                }
+            }
+        }
+        $this->command->info('✅ Historial de ventas generado');
+
         $this->command->info('');
         $this->command->info('🎉 ¡Datos de demostración creados exitosamente!');
         $this->command->info('');
-        $this->command->info('📧 Usuario: admin@abarrotes.com');
+        $this->command->info("📧 Usuario: {$user->email}");
         $this->command->info('🔑 Password: password');
-        $this->command->info('🏪 Tienda: Abarrotes Don Pepe');
+        $this->command->info("🏪 Tienda: {$store->name}");
         $this->command->info('');
     }
 }

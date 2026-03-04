@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Management\Inventory\Warehouses\WarehousesControlle
 use App\Http\Controllers\Api\Management\Inventory\StorageLocationController;
 use App\Http\Controllers\Api\Management\Catalog\CategoryController;
 use App\Http\Controllers\Api\Management\Inventory\Stock\StockController;
+use App\Http\Controllers\Api\Management\ActivityLogController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -94,4 +95,6 @@ Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->grou
         Route::post("/transfer/{id}/confirm", [StockController::class, "confirmTransfer"]);
         Route::post("/transfer/{id}/cancel", [StockController::class, "cancelTransfer"]);
     });
+
+    Route::get("/activity-logs", [ActivityLogController::class, "index"]);
 });

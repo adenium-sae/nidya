@@ -96,10 +96,21 @@
     "products": "Products",
     "customers": "Customers",
     "categories": "Categories",
-    "sales_by_day": "Sales per Day",
-    "top_products": "Top Products"
+    "sales_summary": "Sales Summary",
+    "top_products": "Top Products (Month)",
+    "low_stock": "Low Stock Items",
+    "recent_activity": "Recent Activity",
+    "today_sales": "Today's Sales",
+    "month_sales": "Month's Sales",
+    "periods": {
+      "today": "Today",
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "year": "This year"
+    }
   },
   "sidebar": {
+    "control_panel": "Control Panel",
     "main_menu": "Main Menu",
     "dashboard": "Dashboard",
     "sales": "Sales",
@@ -438,5 +449,24 @@
     "users_list_title": "Users",
     "roles_title": "Roles",
     "permissions_title": "Permissions"
+  },
+  "activity": {
+    "title": "Recent Activity",
+    "types": {
+      "auth": "Authentication",
+      "inventory": "Inventory",
+      "sales": "Sales",
+      "catalog": "Catalog",
+      "organization": "Organization",
+      "system": "System"
+    },
+    "events": {
+      "sale": {
+        "created": "Sale Recorded"
+      },
+      "catalog": {
+        "seeded": "Data Ingestion"
+      }
+    }
   }
 }
