@@ -26,6 +26,8 @@ class UpdateWarehouseRequest extends FormRequest
             'type' => ['sometimes', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
             'branch_id' => ['sometimes', 'string', 'exists:branches,id'],
+            'store_ids' => ['sometimes', 'array'],
+            'store_ids.*' => ['required', 'string', 'exists:stores,id'],
         ];
     }
 }

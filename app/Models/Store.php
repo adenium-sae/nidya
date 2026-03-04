@@ -14,7 +14,7 @@ class Store extends Model
     use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
-        
+
         'name',
         'slug',
         'description',
@@ -32,9 +32,9 @@ class Store extends Model
         return $this->hasMany(Branch::class);
     }
 
-    public function warehouses(): HasMany
+    public function warehouses()
     {
-        return $this->hasMany(Warehouse::class);
+        return $this->belongsToMany(Warehouse::class);
     }
 
     public function products(): HasMany

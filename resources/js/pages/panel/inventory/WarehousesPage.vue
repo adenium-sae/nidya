@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Plus, Warehouse } from 'lucide-vue-next';
 import { useToast } from '@/components/ui/toast/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -62,7 +63,7 @@ const form = reactive({
   name: '',
   code: '',
   type: 'central',
-  store_id: '',
+  store_ids: [] as { id: string; name: string }[],
   branch_id: '',
   is_active: true,
 });
@@ -110,7 +111,7 @@ function openDeleteDialog(item: WarehouseModel) {
 function openCreateDialog() {
   isEditing.value = false;
   currentId.value = null;
-  Object.assign(form, { name: '', code: '', type: 'central', store_id: '', branch_id: '', is_active: true });
+  Object.assign(form, { name: '', code: '', type: 'central', store_ids: [], branch_id: '', is_active: true });
   isDialogOpen.value = true;
 }
 
@@ -121,7 +122,7 @@ function openEditDialog(warehouse: WarehouseModel) {
     name: warehouse.name,
     code: warehouse.code || '',
     type: warehouse.type,
-    store_id: warehouse.store_id || '',
+    store_ids: warehouse.stores?.map((s: any) => ({ id: s.id, name: s.name })) || [],
     branch_id: warehouse.branch_id || '',
     is_active: warehouse.is_active,
   });
@@ -130,11 +131,12 @@ function openEditDialog(warehouse: WarehouseModel) {
 
 async function handleSubmit() {
   try {
+    const payload = { ...form, store_ids: form.store_ids.map(s => s.id) };
     if (isEditing.value && currentId.value) {
-      await warehousesApi.update(currentId.value, form);
+      await warehousesApi.update(currentId.value, payload);
       toast({ title: 'Éxito', description: 'Almacén actualizado correctamente.' });
     } else {
-      await warehousesApi.create(form);
+      await warehousesApi.create(payload);
       toast({ title: 'Éxito', description: 'Almacén creado correctamente.' });
     }
     fetchWarehouses();
@@ -181,7 +183,16 @@ onMounted(() => {
       </template>
 
       <template #cell-store="{ row }">
-        {{ row.store?.name || '-' }}
+        <div class="flex flex-wrap gap-1">
+          <span
+            v-for="store in row.stores || []"
+            :key="store.id"
+            class="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10"
+          >
+            {{ store.name }}
+          </span>
+          <span v-if="!row.stores || row.stores.length === 0" class="text-gray-400">-</span>
+        </div>
       </template>
 
       <template #cell-branch="{ row }">
@@ -233,7 +244,44 @@ onMounted(() => {
               </Select>
             </div>
           </div>
-          <div class="flex items-center space-x-2">
+          <div class="grid gap-2 mt-2">
+            <Label>Tiendas <span class="text-destructive">*</span></Label>
+            <SearchableSelect
+              :model-value="null"
+              @select="(option: any) => {
+                if (option && option.value && !form.store_ids.some(s => s.id === option.value)) {
+                  form.store_ids.push({ id: option.value, name: option.label })
+                }
+              }"
+              endpoint="/api/admin/stores"
+              label-key="name"
+              value-key="id"
+              placeholder="Añadir tienda..."
+            />
+            <div class="flex flex-wrap gap-2 mt-2" v-if="form.store_ids.length > 0">
+               <div 
+                  v-for="(store, index) in form.store_ids" 
+                  :key="store.id" 
+                  class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800"
+               >
+                 <span>{{ store.name }}</span>
+                 <button type="button" class="ml-1 hover:text-blue-900 font-bold" @click="form.store_ids.splice(index, 1)">×</button>
+               </div>
+            </div>
+            <p class="text-xs text-muted-foreground mt-1">Selecciona una o más tiendas para este almacén.</p>
+          </div>
+          <div class="grid gap-2 mt-2">
+            <Label>Sucursal (Opcional)</Label>
+            <SearchableSelect
+              v-model="form.branch_id"
+              endpoint="/api/admin/branches"
+              label-key="name"
+              value-key="id"
+              placeholder="Seleccionar sucursal..."
+              :disabled="form.store_ids.length === 0"
+            />
+          </div>
+          <div class="flex items-center space-x-2 mt-2">
             <Checkbox id="is_active" :checked="form.is_active" @update:checked="form.is_active = $event" />
             <Label htmlFor="is_active">Activo</Label>
           </div>

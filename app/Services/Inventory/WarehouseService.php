@@ -20,9 +20,11 @@ class WarehouseService
 
     public function findAll(array $filters)
     {
-        $query = Warehouse::with(['store', 'branch', 'address']);
+        $query = Warehouse::with(['stores', 'branch', 'address']);
         if (!empty($filters['store_id'])) {
-            $query->where('store_id', $filters['store_id']);
+            $query->whereHas('stores', function ($q) use ($filters) {
+                $q->where('stores.id', $filters['store_id']);
+            });
         }
         if (!empty($filters['branch_id'])) {
             $query->where('branch_id', $filters['branch_id']);
@@ -35,9 +37,9 @@ class WarehouseService
         }
         if (!empty($filters['search'])) {
             $search = $filters['search'];
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%");
             });
         }
         return $query->get();
@@ -45,7 +47,7 @@ class WarehouseService
 
     public function getById(string $id): Warehouse
     {
-        $warehouse = Warehouse::with(['store', 'branch', 'address', 'storageLocations', 'stock'])->find($id);
+        $warehouse = Warehouse::with(['stores', 'branch', 'address', 'storageLocations', 'stock'])->find($id);
         if (!$warehouse) {
             throw new WarehouseNotFoundException();
         }

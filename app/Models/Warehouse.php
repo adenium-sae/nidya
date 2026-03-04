@@ -15,8 +15,7 @@ class Warehouse extends Model
     use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
-        
-        'store_id',
+
         'branch_id',
         'address_id',
         'name',
@@ -29,9 +28,9 @@ class Warehouse extends Model
         'is_active' => 'boolean',
     ];
 
-    public function store(): BelongsTo
+    public function stores()
     {
-        return $this->belongsTo(Store::class);
+        return $this->belongsToMany(Store::class);
     }
 
     public function branch(): BelongsTo

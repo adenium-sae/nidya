@@ -21,7 +21,6 @@ class WarehouseFactory extends Factory
     public function definition(): array
     {
         return [
-            'store_id' => Store::factory(),
             'branch_id' => null,
             'address_id' => null,
             'name' => fake()->words(2, true) . ' Warehouse',
@@ -32,11 +31,23 @@ class WarehouseFactory extends Factory
     }
 
     /**
+     * Configure the model factory.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (Warehouse $warehouse) {
+            if ($warehouse->stores()->count() === 0) {
+                $warehouse->stores()->attach(Store::factory()->create());
+            }
+        });
+    }
+
+    /**
      * Set the warehouse type to central.
      */
     public function central(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'type' => 'central',
         ]);
     }
@@ -46,7 +57,7 @@ class WarehouseFactory extends Factory
      */
     public function branch(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'type' => 'branch',
         ]);
     }
@@ -56,7 +67,7 @@ class WarehouseFactory extends Factory
      */
     public function transit(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'type' => 'transit',
         ]);
     }
@@ -66,7 +77,7 @@ class WarehouseFactory extends Factory
      */
     public function inactive(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'is_active' => false,
         ]);
     }
@@ -76,8 +87,8 @@ class WarehouseFactory extends Factory
      */
     public function forStore(Store $store): static
     {
-        return $this->state(fn (array $attributes) => [
-            'store_id' => $store->id,
-        ]);
+        return $this->afterCreating(function (Warehouse $warehouse) use ($store) {
+            $warehouse->stores()->sync([$store->id]);
+        });
     }
 }
