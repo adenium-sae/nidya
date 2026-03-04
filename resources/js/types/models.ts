@@ -42,6 +42,10 @@ export interface UserProfile {
 export interface Store {
   id: string
   name: string
+  slug?: string
+  description?: string
+  logo_url?: string
+  primary_color?: string
   address?: string
   phone?: string
   email?: string
@@ -51,10 +55,14 @@ export interface Store {
 export interface Branch {
   id: string
   name: string
-  store_id: string
-  store?: Store
+  code?: string
+  stores?: Store[]
   address?: string
   phone?: string
+  email?: string
+  allow_sales?: boolean
+  allow_inventory?: boolean
+  is_active?: boolean
 }
 
 export interface Category {

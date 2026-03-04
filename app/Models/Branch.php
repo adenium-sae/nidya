@@ -15,8 +15,7 @@ class Branch extends Model
     use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
-        
-        'store_id',
+
         'address_id',
         'name',
         'code',
@@ -33,9 +32,9 @@ class Branch extends Model
         'allow_inventory' => 'boolean',
     ];
 
-    public function store(): BelongsTo
+    public function stores()
     {
-        return $this->belongsTo(Store::class);
+        return $this->belongsToMany(Store::class);
     }
 
     public function address(): BelongsTo

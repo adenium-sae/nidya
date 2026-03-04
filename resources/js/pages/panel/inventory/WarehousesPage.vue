@@ -253,7 +253,7 @@ onMounted(() => {
                   form.store_ids.push({ id: option.value, name: option.label })
                 }
               }"
-              endpoint="/api/admin/stores"
+              endpoint="/admin/stores"
               label-key="name"
               value-key="id"
               placeholder="Añadir tienda..."
@@ -274,7 +274,7 @@ onMounted(() => {
             <Label>Sucursal (Opcional)</Label>
             <SearchableSelect
               v-model="form.branch_id"
-              endpoint="/api/admin/branches"
+              endpoint="/admin/branches"
               label-key="name"
               value-key="id"
               placeholder="Seleccionar sucursal..."

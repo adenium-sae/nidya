@@ -49,12 +49,15 @@ Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->grou
         Route::post("/", [StoresController::class, "store"]);
         Route::put("/{id}", [StoresController::class, "update"]);
         Route::get("/{id}", [StoresController::class, "show"]);
+        Route::delete("/{id}", [StoresController::class, "destroy"]);
     });
 
     Route::prefix("branches")->group(function () {
         Route::get("/", [BranchesController::class, "index"]);
+        Route::post("/", [BranchesController::class, "store"]);
         Route::put("/{id}", [BranchesController::class, "update"]);
         Route::get("/{id}", [BranchesController::class, "show"]);
+        Route::delete("/{id}", [BranchesController::class, "destroy"]);
     });
 
     Route::prefix("warehouses")->group(function () {

@@ -12,6 +12,7 @@ class StoreService
     public function __construct(
         protected CreateStoreAction $createStoreAction,
         protected UpdateStoreAction $updateStoreAction,
+        protected \App\Actions\Organization\Stores\DeleteStoreAction $deleteStoreAction,
     ) {}
 
     // --- Queries ---
@@ -24,9 +25,9 @@ class StoreService
         }
         if (!empty($filters['search'])) {
             $search = $filters['search'];
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('slug', 'like', "%{$search}%");
+                    ->orWhere('slug', 'like', "%{$search}%");
             });
         }
         return $query->get();
@@ -51,5 +52,10 @@ class StoreService
     public function update(string $id, array $data): Store
     {
         return ($this->updateStoreAction)($id, $data);
+    }
+
+    public function delete(string $id): void
+    {
+        ($this->deleteStoreAction)($id);
     }
 }

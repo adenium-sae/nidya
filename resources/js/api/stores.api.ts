@@ -17,4 +17,8 @@ export const storesApi = {
   update(id: string | number, data: any): Promise<AxiosResponse> {
     return client.put(`/admin/stores/${id}`, data)
   },
+
+  destroy(id: string | number): Promise<AxiosResponse> {
+    return client.delete(`/admin/stores/${id}`)
+  },
 }

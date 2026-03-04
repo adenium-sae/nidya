@@ -27,9 +27,9 @@ class Store extends Model
         'is_active' => 'boolean',
     ];
 
-    public function branches(): HasMany
+    public function branches()
     {
-        return $this->hasMany(Branch::class);
+        return $this->belongsToMany(Branch::class);
     }
 
     public function warehouses()

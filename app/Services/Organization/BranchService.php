@@ -12,24 +12,27 @@ class BranchService
     public function __construct(
         protected CreateBranchAction $createBranchAction,
         protected UpdateBranchAction $updateBranchAction,
+        protected \App\Actions\Organization\Branches\DeleteBranchAction $deleteBranchAction,
     ) {}
 
     // --- Queries ---
 
     public function findAll(array $filters)
     {
-        $query = Branch::with(['store', 'address', 'warehouses']);
+        $query = Branch::with(['stores', 'address', 'warehouses']);
         if (!empty($filters['store_id'])) {
-            $query->where('store_id', $filters['store_id']);
+            $query->whereHas('stores', function ($q) use ($filters) {
+                $q->where('stores.id', $filters['store_id']);
+            });
         }
         if (!empty($filters['is_active'])) {
             $query->where('is_active', $filters['is_active']);
         }
         if (!empty($filters['search'])) {
             $search = $filters['search'];
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%");
             });
         }
         return $query->get();
@@ -37,7 +40,7 @@ class BranchService
 
     public function getById(string $id): Branch
     {
-        $branch = Branch::with(['store', 'address', 'warehouses', 'cashRegisters'])->find($id);
+        $branch = Branch::with(['stores', 'address', 'warehouses', 'cashRegisters'])->find($id);
         if (!$branch) {
             throw new BranchNotFoundException();
         }
@@ -54,5 +57,10 @@ class BranchService
     public function update(string $id, array $data): Branch
     {
         return ($this->updateBranchAction)($id, $data);
+    }
+
+    public function delete(string $id): void
+    {
+        ($this->deleteBranchAction)($id);
     }
 }

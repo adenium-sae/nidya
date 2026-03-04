@@ -12,7 +12,8 @@ class StoresController extends Controller
 {
     public function __construct(private readonly StoreService $storeService) {}
 
-    public function index(Request $request) {
+    public function index(Request $request)
+    {
         $result = $this->storeService->findAll($request->all());
         return response()->json([
             "status" => true,
@@ -21,7 +22,8 @@ class StoresController extends Controller
         ]);
     }
 
-    public function store(CreateStoreRequest $request) {
+    public function store(CreateStoreRequest $request)
+    {
         $data = $request->validated();
         $store = $this->storeService->create($data);
         return response()->json([
@@ -31,7 +33,8 @@ class StoresController extends Controller
         ], 201);
     }
 
-    public function update(UpdateStoreRequest $request, string $id) {
+    public function update(UpdateStoreRequest $request, string $id)
+    {
         $data = $request->validated();
         $store = $this->storeService->update($id, $data);
         return response()->json([
@@ -41,12 +44,22 @@ class StoresController extends Controller
         ]);
     }
 
-    public function show(string $id) {
+    public function show(string $id)
+    {
         $store = $this->storeService->getById($id);
         return response()->json([
             "status" => true,
             "message" => __('messages.store_retrieved_successfully'),
             "data" => $store
+        ]);
+    }
+
+    public function destroy(string $id)
+    {
+        $this->storeService->delete($id);
+        return response()->json([
+            "status" => true,
+            "message" => __('messages.store_deleted_successfully')
         ]);
     }
 }

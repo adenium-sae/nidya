@@ -8,11 +8,14 @@ use App\Http\Requests\Management\Organization\Branches\UpdateBranchRequest;
 use App\Services\Organization\BranchService;
 use Illuminate\Http\Request;
 
+use App\Http\Requests\Management\Organization\Branches\CreateBranchRequest;
+
 class BranchesController extends Controller
 {
     public function __construct(private readonly BranchService $branchService) {}
 
-    public function index(GetBranchesRequest $request) {
+    public function index(GetBranchesRequest $request)
+    {
         $filters = $request->validated();
         $branches = $this->branchService->findAll($filters);
         return response()->json([
@@ -20,6 +23,17 @@ class BranchesController extends Controller
             "message" => __('messages.branches_retrieved_successfully'),
             "data" => $branches
         ]);
+    }
+
+    public function store(CreateBranchRequest $request)
+    {
+        $data = $request->validated();
+        $branch = $this->branchService->create($data);
+        return response()->json([
+            "status" => true,
+            "message" => __('messages.branch_created_successfully'),
+            "data" => $branch
+        ], 201);
     }
 
     public function update(UpdateBranchRequest $request, string $id)
@@ -40,6 +54,15 @@ class BranchesController extends Controller
             "status" => true,
             "message" => __('messages.branch_retrieved_successfully'),
             "data" => $branch
+        ]);
+    }
+
+    public function destroy(string $id)
+    {
+        $this->branchService->delete($id);
+        return response()->json([
+            "status" => true,
+            "message" => __('messages.branch_deleted_successfully')
         ]);
     }
 }
