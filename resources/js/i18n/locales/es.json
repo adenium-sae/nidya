@@ -565,7 +565,19 @@
       "hero_subtitle_pl": "El mejor lugar para tus necesidades...",
       "about_us_pl": "Describe brevemente quiénes son...",
       "contact_email_pl": "contacto@nidya.com",
-      "contact_phone_pl": "+1 234 567 890"
+      "contact_phone_pl": "+1 234 567 890",
+      "branding_section": "Identidad de Marca",
+      "branding_description": "Personaliza el nombre y los colores de tu tienda pública.",
+      "display_name": "Nombre Público",
+      "display_name_pl": "Ej. ObreSport",
+      "display_name_hint": "Este nombre aparecerá en la cabecera de la tienda y en la pestaña del navegador.",
+      "primary_color": "Color Principal",
+      "primary_color_hint": "Botones principales, sidebar activo y elementos destacados.",
+      "secondary_color": "Color Secundario",
+      "secondary_color_hint": "Bordes y elementos sutiles de la interfaz.",
+      "accent_color": "Color de Acento",
+      "accent_color_hint": "Badges, alertas e insignias.",
+      "color_preview": "Vista Previa de Colores"
     }
   }
 }

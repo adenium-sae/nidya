@@ -14,12 +14,14 @@ class Store extends Model
     use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
-
         'name',
+        'display_name',
         'slug',
         'description',
         'logo_url',
         'primary_color',
+        'secondary_color',
+        'accent_color',
         'is_active',
     ];
 
