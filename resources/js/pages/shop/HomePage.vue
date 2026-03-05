@@ -1,58 +1,58 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Card, CardContent } from '@/components/ui/card'
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel'
-import { Mail, Phone, ChevronRight, Sparkles, Package, Heart, ArrowRight, Star, ShieldCheck } from 'lucide-vue-next'
-import { RouterLink } from 'vue-router'
-import ProductCard from '@/components/shop/ProductCard.vue'
+import { ref, onMounted } from 'vue';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent } from '@/components/ui/card';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Mail, Phone, ChevronRight, Sparkles, Package, Heart, ArrowRight, Star, ShieldCheck } from 'lucide-vue-next';
+import { RouterLink } from 'vue-router';
+import ProductCard from '@/components/shop/ProductCard.vue';
 
 interface LandingSettings {
-  hero_title: string | null
-  hero_subtitle: string | null
-  hero_image_url: string | null
-  about_us_text: string | null
-  contact_email: string | null
-  contact_phone: string | null
+  hero_title: string | null;
+  hero_subtitle: string | null;
+  hero_image_url: string | null;
+  about_us_text: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
 }
 
-const settings = ref<LandingSettings | null>(null)
-const isLoading = ref(true)
-const featuredProducts = ref<any[]>([])
-const isLoadingProducts = ref(true)
+const settings = ref<LandingSettings | null>(null);
+const isLoading = ref(true);
+const featuredProducts = ref<any[]>([]);
+const isLoadingProducts = ref(true);
 
-const fetchSettings = async () => {
+async function fetchSettings() {
   try {
-    const res = await fetch('/api/shop/landing-page')
+    const res = await fetch('/api/shop/landing-page');
     if (res.ok) {
-      settings.value = await res.json()
+      settings.value = await res.json();
     }
   } catch (error) {
-    console.error('Failed to load landing page settings:', error)
+    console.error('Failed to load landing page settings:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
-const fetchFeaturedProducts = async () => {
+async function fetchFeaturedProducts() {
   try {
-    const res = await fetch('/api/shop/catalog/products?per_page=8')
+    const res = await fetch('/api/shop/catalog/products?per_page=8');
     if (res.ok) {
-      const data = await res.json()
-      featuredProducts.value = data.data?.slice(0, 8) || []
+      const data = await res.json();
+      featuredProducts.value = data.data?.slice(0, 8) || [];
     }
   } catch (error) {
-    console.error('Failed to load featured products:', error)
+    console.error('Failed to load featured products:', error);
   } finally {
-    isLoadingProducts.value = false
+    isLoadingProducts.value = false;
   }
 }
 
-onMounted(() => {
-  fetchSettings()
-  fetchFeaturedProducts()
-})
+onMounted(function() {
+  fetchSettings();
+  fetchFeaturedProducts();
+});
 </script>
 
 <template>

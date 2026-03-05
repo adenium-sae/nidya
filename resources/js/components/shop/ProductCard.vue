@@ -1,54 +1,82 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { RouterLink } from 'vue-router'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Eye, ImageOff } from 'lucide-vue-next'
+import { computed, ref } from 'vue';
+import { RouterLink } from 'vue-router';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Eye, ImageOff, Box } from 'lucide-vue-next';
 
 const props = defineProps<{
-  product: any
-}>()
+  product: any;
+}>();
 
-const imageError = ref(false)
+const imageError = ref(false);
 
-const primaryImage = computed(() => {
+const primaryImage = computed(function() {
   if (props.product.images && props.product.images.length > 0) {
-    const primary = props.product.images.find((img: any) => img.is_primary)
-    return primary ? primary.url : props.product.images[0].url
+    const primary = props.product.images.find(function(img: any) {
+      return img.is_primary;
+    });
+    return primary ? primary.url : props.product.images[0].url;
   }
-  return props.product.image_url || null
-})
+  return props.product.image_url || null;
+});
 
-const storeProduct = computed(() => {
+const storeProduct = computed(function() {
   if (props.product.store_products && props.product.store_products.length > 0) {
-    return props.product.store_products[0]
+    return props.product.store_products[0];
   }
-  return null
-})
+  return null;
+});
 
-const price = computed(() => storeProduct.value?.price || 0)
-const comparePrice = computed(() => storeProduct.value?.compare_at_price)
-const hasDiscount = computed(() => comparePrice.value && comparePrice.value > price.value)
+const price = computed(function() {
+  return storeProduct.value?.price || 0;
+});
 
-const formattedPrice = computed(() => {
+const comparePrice = computed(function() {
+  return storeProduct.value?.compare_at_price;
+});
+
+const hasDiscount = computed(function() {
+  return comparePrice.value && comparePrice.value > price.value;
+});
+
+const formattedPrice = computed(function() {
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
     currency: storeProduct.value?.currency || 'MXN',
-  }).format(price.value)
-})
+  }).format(price.value);
+});
 
-const formattedComparePrice = computed(() => {
-  if (!hasDiscount.value) return ''
+const formattedComparePrice = computed(function() {
+  if (!hasDiscount.value) {
+    return '';
+  }
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
     currency: storeProduct.value?.currency || 'MXN',
-  }).format(comparePrice.value)
-})
+  }).format(comparePrice.value);
+});
 
-const discountPercentage = computed(() => {
-  if (!hasDiscount.value) return 0
-  return Math.round(((comparePrice.value - price.value) / comparePrice.value) * 100)
-})
+const discountPercentage = computed(function() {
+  if (!hasDiscount.value) {
+    return 0;
+  }
+  return Math.round(((comparePrice.value - price.value) / comparePrice.value) * 100);
+});
+
+const stockStatus = computed(function() {
+  if (!props.product.track_inventory) {
+    return { label: 'Disponible', color: 'text-emerald-600 bg-emerald-500/10' };
+  }
+  const qty = props.product.available_stock || 0;
+  if (qty <= 0) {
+    return { label: 'Agotado', color: 'text-red-600 bg-red-500/10' };
+  }
+  if (qty <= (props.product.min_stock || 5)) {
+    return { label: `Pocas unidades (${qty})`, color: 'text-amber-600 bg-amber-500/10' };
+  }
+  return { label: `${qty} disponibles`, color: 'text-emerald-600 bg-emerald-500/10' };
+});
 </script>
 
 <template>
@@ -83,6 +111,16 @@ const discountPercentage = computed(() => {
             -{{ discountPercentage }}%
           </Badge>
         </div>
+
+        <!-- Stock Indicator Overlay -->
+        <div class="absolute top-2.5 right-2.5">
+          <div 
+            class="px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md shadow-sm border border-white/20"
+            :class="stockStatus.color"
+          >
+            {{ stockStatus.label }}
+          </div>
+        </div>
       </div>
 
       <!-- Content -->
@@ -102,11 +140,13 @@ const discountPercentage = computed(() => {
         
         <!-- Price -->
         <div class="mt-auto pt-2">
-          <div class="flex items-baseline gap-2" v-if="storeProduct">
-            <span class="text-lg font-bold text-foreground">{{ formattedPrice }}</span>
-            <span v-if="hasDiscount" class="text-xs text-muted-foreground line-through">
-              {{ formattedComparePrice }}
-            </span>
+          <div class="flex items-baseline justify-between gap-2" v-if="storeProduct">
+            <div class="flex items-baseline gap-2">
+              <span class="text-lg font-bold text-foreground">{{ formattedPrice }}</span>
+              <span v-if="hasDiscount" class="text-xs text-muted-foreground line-through">
+                {{ formattedComparePrice }}
+              </span>
+            </div>
           </div>
           <div v-else class="text-xs text-muted-foreground italic">
             Precio no disponible

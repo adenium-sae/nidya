@@ -1,97 +1,127 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowLeft, Tag, ChevronRight, ImageOff, ZoomIn, Package, Info, List } from 'lucide-vue-next'
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, RouterLink } from 'vue-router';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Tag, ChevronRight, ImageOff, ZoomIn, Package, Info, List } from 'lucide-vue-next';
 
-const route = useRoute()
+const route = useRoute();
+const product = ref<any>(null);
+const isLoading = ref(true);
+const selectedImageIndex = ref(0);
+const imageError = ref(false);
+const isZoomed = ref(false);
+const zoomPosition = ref({ x: 50, y: 50 });
 
-const product = ref<any>(null)
-const isLoading = ref(true)
-const selectedImageIndex = ref(0)
-const imageError = ref(false)
-const isZoomed = ref(false)
-const zoomPosition = ref({ x: 50, y: 50 })
-
-const fetchProduct = async () => {
-  isLoading.value = true
+async function fetchProduct() {
+  isLoading.value = true;
   try {
-    const res = await fetch(`/api/shop/catalog/products/${route.params.id}`)
+    const res = await fetch(`/api/shop/catalog/products/${route.params.id}`);
     if (res.ok) {
-      product.value = await res.json()
+      product.value = await res.json();
     }
   } catch (error) {
-    console.error('Failed to load product:', error)
+    console.error('Failed to load product:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
-const allImages = computed(() => {
-  if (!product.value) return []
-  const imgs: { url: string }[] = []
+const allImages = computed(function() {
+  if (!product.value) {
+    return [];
+  }
+  const imgs: { url: string }[] = [];
   if (product.value.images && product.value.images.length > 0) {
-    imgs.push(...product.value.images)
+    imgs.push(...product.value.images);
   } else if (product.value.image_url) {
-    imgs.push({ url: product.value.image_url })
+    imgs.push({ url: product.value.image_url });
   }
-  return imgs
-})
+  return imgs;
+});
 
-const currentImage = computed(() => {
+const currentImage = computed(function() {
   if (allImages.value.length > 0) {
-    return allImages.value[selectedImageIndex.value]?.url
+    return allImages.value[selectedImageIndex.value]?.url;
   }
-  return null
-})
+  return null;
+});
 
-const storeProduct = computed(() => {
+const storeProduct = computed(function() {
   if (product.value?.store_products?.length > 0) {
-    return product.value.store_products[0]
+    return product.value.store_products[0];
   }
-  return null
-})
+  return null;
+});
 
-const price = computed(() => storeProduct.value?.price || 0)
-const comparePrice = computed(() => storeProduct.value?.compare_at_price)
-const hasDiscount = computed(() => comparePrice.value && comparePrice.value > price.value)
+const price = computed(function() {
+  return storeProduct.value?.price || 0;
+});
 
-const formattedPrice = computed(() => {
+const comparePrice = computed(function() {
+  return storeProduct.value?.compare_at_price;
+});
+
+const hasDiscount = computed(function() {
+  return comparePrice.value && comparePrice.value > price.value;
+});
+
+const formattedPrice = computed(function() {
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
     currency: storeProduct.value?.currency || 'MXN',
-  }).format(price.value)
-})
+  }).format(price.value);
+});
 
-const formattedComparePrice = computed(() => {
-  if (!hasDiscount.value) return ''
+const formattedComparePrice = computed(function() {
+  if (!hasDiscount.value) {
+    return '';
+  }
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
     currency: storeProduct.value?.currency || 'MXN',
-  }).format(comparePrice.value)
-})
+  }).format(comparePrice.value);
+});
 
-const discountPercentage = computed(() => {
-  if (!hasDiscount.value) return 0
-  return Math.round(((comparePrice.value - price.value) / comparePrice.value) * 100)
-})
+const discountPercentage = computed(function() {
+  if (!hasDiscount.value) {
+    return 0;
+  }
+  return Math.round(((comparePrice.value - price.value) / comparePrice.value) * 100);
+});
 
-const handleMouseMove = (e: MouseEvent) => {
-  const target = e.currentTarget as HTMLElement
-  const rect = target.getBoundingClientRect()
+const stockStatus = computed(function() {
+  if (!product.value) {
+    return null;
+  }
+  if (!product.value.track_inventory) {
+    return { label: 'Disponible', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' };
+  }
+  const qty = product.value.available_stock || 0;
+  if (qty <= 0) {
+    return { label: 'Agotado', color: 'bg-red-500/10 text-red-600 border-red-500/20' };
+  }
+  if (qty <= (product.value.min_stock || 5)) {
+    return { label: `Stock Crítico: ${qty} unidades`, color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' };
+  }
+  return { label: `${qty} unidades disponibles`, color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' };
+});
+
+function handleMouseMove(e: MouseEvent) {
+  const target = e.currentTarget as HTMLElement;
+  const rect = target.getBoundingClientRect();
   zoomPosition.value = {
     x: ((e.clientX - rect.left) / rect.width) * 100,
     y: ((e.clientY - rect.top) / rect.height) * 100,
-  }
+  };
 }
 
-onMounted(() => {
-  fetchProduct()
-})
+onMounted(function() {
+  fetchProduct();
+});
 </script>
 
 <template>
@@ -229,12 +259,21 @@ onMounted(() => {
           <!-- Product Info -->
           <div class="flex flex-col gap-8">
             <div class="space-y-6">
-              <!-- Category -->
-              <div v-if="product.category">
-                <Badge variant="secondary" class="text-xs px-2.5 py-1">
+              <!-- Category & Stock -->
+              <div class="flex items-center gap-3">
+                <Badge v-if="product.category" variant="secondary" class="text-xs px-2.5 py-1">
                   <Tag class="size-3 mr-1.5" />
                   {{ product.category.name }}
                 </Badge>
+                
+                <span 
+                  v-if="stockStatus" 
+                  class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border shadow-sm transition-all duration-300"
+                  :class="stockStatus.color"
+                >
+                  <Box class="size-3 mr-1.5" />
+                  {{ stockStatus.label }}
+                </span>
               </div>
 
               <!-- Name & SKU -->
