@@ -293,7 +293,6 @@
     "resulting_quantity": "Resulting Quantity",
     "select_type": "Select type",
     "select_reason": "Select reason",
-    "no_location": "No location",
     "low_stock": "Low Stock",
     "only_low_stock": "Low stock only",
     "all_locations": "All locations"
@@ -542,5 +541,33 @@
     "type_floor": "Floor",
     "type_other": "Other",
     "new_location": "New Location"
+  },
+  "settings": {
+    "landing_page": {
+      "title": "Landing Page Settings",
+      "description": "Manage the content displayed on the public shop landing page.",
+      "hero_section": "Hero Section",
+      "hero_description": "The main headline and subtitle shown at the top of the page.",
+      "hero_title": "Hero Title",
+      "hero_subtitle": "Hero Subtitle",
+      "hero_image": "Hero Image",
+      "about_us_section": "About Us Section",
+      "about_us_description": "Information about your store or brand.",
+      "about_us_text": "About Us Text",
+      "contact_section": "Contact Information",
+      "contact_description": "Public contact details shown on the footer.",
+      "contact_email": "Contact Email",
+      "contact_phone": "Contact Phone",
+      "save_success": "Landing page settings updated successfully",
+      "save_error": "Failed to update settings",
+      "load_error": "Failed to load settings",
+      "image_upload_hint": "Click to upload or drag an image. PNG, JPG up to 2MB.",
+      "image_optional": "Optional background image for the hero section.",
+      "hero_title_pl": "Welcome to Nidya",
+      "hero_subtitle_pl": "The best place for your needs...",
+      "about_us_pl": "Briefly describe who you are...",
+      "contact_email_pl": "contact@nidya.com",
+      "contact_phone_pl": "+1 234 567 890"
+    }
   }
 }

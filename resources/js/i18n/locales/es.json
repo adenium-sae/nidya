@@ -539,5 +539,33 @@
     "type_floor": "Piso",
     "type_other": "Otro",
     "new_location": "Nueva Ubicación"
+  },
+  "settings": {
+    "landing_page": {
+      "title": "Configuración de Página de Inicio",
+      "description": "Gestiona el contenido que se muestra en la página pública de la tienda.",
+      "hero_section": "Sección Principal (Hero)",
+      "hero_description": "El título y subtítulo principal que se muestran en la parte superior.",
+      "hero_title": "Título Principal",
+      "hero_subtitle": "Subtítulo",
+      "hero_image": "Imagen de Fondo",
+      "about_us_section": "Sección Sobre Nosotros",
+      "about_us_description": "Información sobre tu tienda o marca.",
+      "about_us_text": "Texto Sobre Nosotros",
+      "contact_section": "Información de Contacto",
+      "contact_description": "Detalles de contacto públicos que se muestran en el pie de página.",
+      "contact_email": "Email de Contacto",
+      "contact_phone": "Teléfono de Contacto",
+      "save_success": "Configuración actualizada correctamente",
+      "save_error": "Error al actualizar la configuración",
+      "load_error": "Error al cargar la configuración",
+      "image_upload_hint": "Haz clic para subir o arrastra una imagen. PNG, JPG hasta 2MB.",
+      "image_optional": "Imagen opcional para la sección principal.",
+      "hero_title_pl": "Bienvenido a Nidya",
+      "hero_subtitle_pl": "El mejor lugar para tus necesidades...",
+      "about_us_pl": "Describe brevemente quiénes son...",
+      "contact_email_pl": "contacto@nidya.com",
+      "contact_phone_pl": "+1 234 567 890"
+    }
   }
 }

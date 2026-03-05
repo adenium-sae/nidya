@@ -91,12 +91,6 @@ onMounted(function() {
         
         <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-28 md:py-40">
           <div class="max-w-4xl mx-auto text-center space-y-8">
-            <!-- Pill badge -->
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20 animate-fadeIn">
-              <Sparkles class="size-4" />
-              Catálogo en línea
-            </div>
-
             <h1 class="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight text-foreground leading-[1.1] animate-fadeInUp">
               {{ settings?.hero_title || 'Bienvenido a nuestra tienda' }}
             </h1>

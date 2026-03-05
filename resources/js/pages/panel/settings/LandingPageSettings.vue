@@ -1,218 +1,287 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useForm } from 'vee-validate'
-import { toTypedSchema } from '@vee-validate/zod'
-import * as z from 'zod'
-import { useToast } from '@/components/ui/toast/use-toast'
+import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useForm } from 'vee-validate';
+import { toTypedSchema } from '@vee-validate/zod';
+import * as z from 'zod';
+import { useToast } from '@/components/ui/toast/use-toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { ImageOff, Upload, X } from 'lucide-vue-next';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
-
-const { toast } = useToast()
-
-const token = localStorage.getItem('auth_token'); // Or however auth token is accessed in this codebase
-const apiHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+const { t } = useI18n();
+const { toast } = useToast();
+const imagePreview = ref<string | null>(null);
+const imageFile = ref<File | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
 
 const formSchema = toTypedSchema(
   z.object({
-    hero_title: z.string().nullable().optional(),
-    hero_subtitle: z.string().nullable().optional(),
-    hero_image_url: z.string().url('Must be a valid URL').nullable().optional().or(z.literal('')),
-    about_us_text: z.string().nullable().optional(),
-    contact_email: z.string().email('Must be a valid email').nullable().optional().or(z.literal('')),
-    contact_phone: z.string().nullable().optional(),
+    hero_title: z.string().nullable().optional().or(z.literal('')),
+    hero_subtitle: z.string().nullable().optional().or(z.literal('')),
+    about_us_text: z.string().nullable().optional().or(z.literal('')),
+    contact_email: z.string().email(t('products.invalid_email')).nullable().optional().or(z.literal('')),
+    contact_phone: z.string().nullable().optional().or(z.literal('')),
   })
-)
+);
 
 const form = useForm({
   validationSchema: formSchema,
   initialValues: {
     hero_title: '',
     hero_subtitle: '',
-    hero_image_url: '',
     about_us_text: '',
     contact_email: '',
     contact_phone: '',
   },
-})
+});
 
-const isLoading = ref(true)
-const isSaving = ref(false)
+const isLoading = ref(true);
+const isSaving = ref(false);
 
-const fetchSettings = async () => {
-  isLoading.value = true
+async function fetchSettings() {
+  isLoading.value = true;
   try {
     const response = await fetch('/api/admin/settings/landing-page', {
-        headers: apiHeaders
-    })
-    
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+    });
     if (response.ok) {
-        const data = await response.json()
-        form.setValues({
-            hero_title: data.hero_title || '',
-            hero_subtitle: data.hero_subtitle || '',
-            hero_image_url: data.hero_image_url || '',
-            about_us_text: data.about_us_text || '',
-            contact_email: data.contact_email || '',
-            contact_phone: data.contact_phone || '',
-        })
+      const data = await response.json();
+      form.setValues({
+        hero_title: data.hero_title || '',
+        hero_subtitle: data.hero_subtitle || '',
+        about_us_text: data.about_us_text || '',
+        contact_email: data.contact_email || '',
+        contact_phone: data.contact_phone || '',
+      });
+      if (data.hero_image_url) {
+        imagePreview.value = data.hero_image_url;
+      }
     }
   } catch (error) {
-    toast({ variant: 'destructive', title: 'Error', description: 'Failed to load settings' })
+    toast({ variant: 'destructive', title: t('common.error'), description: t('settings.landing_page.load_error') });
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
-const onSubmit = form.handleSubmit(async (values) => {
-  isSaving.value = true
-  try {
-    const response = await fetch('/api/admin/settings/landing-page', {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            ...apiHeaders
-        },
-        body: JSON.stringify(values)
-    })
+function handleFileChange(event: Event) {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files[0]) {
+    const file = target.files[0];
+    imageFile.value = file;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      imagePreview.value = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+}
 
+function removeImage() {
+  imageFile.value = null;
+  imagePreview.value = null;
+  if (fileInput.value) {
+    fileInput.value.value = '';
+  }
+}
+
+const onSubmit = form.handleSubmit(async function(values) {
+  isSaving.value = true;
+  try {
+    const formData = new FormData();
+    formData.append('_method', 'PUT');
+    Object.keys(values).forEach(function(key) {
+      const val = (values as any)[key];
+      formData.append(key, val || '');
+    });
+    if (imageFile.value) {
+      formData.append('hero_image', imageFile.value);
+    }
+    const response = await fetch('/api/admin/settings/landing-page', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
+      body: formData
+    });
     if (response.ok) {
-        toast({ title: 'Success', description: 'Landing page settings updated successfully' })
+      toast({ title: t('common.success'), description: t('settings.landing_page.save_success') });
+      fetchSettings();
     } else {
-        throw new Error('Failed to update')
+      throw new Error('Failed to update');
     }
   } catch (error) {
-    toast({ variant: 'destructive', title: 'Error', description: 'Failed to update settings' })
+    toast({ variant: 'destructive', title: t('common.error'), description: t('settings.landing_page.save_error') });
   } finally {
-    isSaving.value = false
+    isSaving.value = false;
   }
-})
+});
 
-onMounted(() => {
-  fetchSettings()
-})
+onMounted(function() {
+  fetchSettings();
+});
 </script>
 
 <template>
-  <div class="h-full flex-1 flex-col space-y-8 p-8 md:flex">
-    <div class="flex items-center justify-between space-y-2">
-      <div>
-        <h2 class="text-2xl font-bold tracking-tight">Landing Page Settings</h2>
-        <p class="text-muted-foreground">
-          Manage the content displayed on the public shop landing page.
-        </p>
+  <div class="h-full flex-1 flex-col space-y-8 p-8 md:flex max-w-5xl mx-auto w-full">
+    <div class="flex flex-col space-y-2">
+      <h2 class="text-3xl font-extrabold tracking-tight">{{ t('settings.landing_page.title') }}</h2>
+      <p class="text-muted-foreground">
+        {{ t('settings.landing_page.description') }}
+      </p>
+    </div>
+
+    <div v-if="isLoading" class="flex items-center justify-center p-20">
+      <div class="flex flex-col items-center gap-4">
+        <div class="size-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <span class="text-sm font-medium text-muted-foreground">{{ t('common.loading') }}</span>
       </div>
     </div>
 
-    <div v-if="isLoading" class="flex justify-center p-8">
-      <span class="text-muted-foreground">Loading settings...</span>
-    </div>
-
-    <form v-else @submit="onSubmit" class="space-y-8">
-      <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <form v-else @submit="onSubmit" class="space-y-8 mx-auto w-full">
+      <div class="grid gap-8">
         <!-- Hero Section -->
-        <Card class="col-span-1 md:col-span-2 lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Hero Section</CardTitle>
-            <CardDescription>The main headline and subtitle shown at the top of the page.</CardDescription>
+        <Card class="overflow-hidden border-border/50 shadow-sm">
+          <CardHeader class="bg-muted/30">
+            <CardTitle class="text-xl flex items-center gap-2">
+              <Upload class="size-5 text-primary" />
+              {{ t('settings.landing_page.hero_section') }}
+            </CardTitle>
+            <CardDescription>{{ t('settings.landing_page.hero_description') }}</CardDescription>
           </CardHeader>
-          <CardContent class="space-y-4">
-            <FormField v-slot="{ componentField }" name="hero_title">
-              <FormItem>
-                <FormLabel>Hero Title</FormLabel>
-                <FormControl>
-                  <Input type="text" placeholder="Welcome to Nidya" v-bind="componentField" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
+          <CardContent class="p-6 space-y-6">
+            <div class="grid md:grid-cols-2 gap-6">
+              <div class="space-y-4">
+                <FormField v-slot="{ componentField }" name="hero_title">
+                  <FormItem>
+                    <FormLabel>{{ t('settings.landing_page.hero_title') }}</FormLabel>
+                    <FormControl>
+                      <Input type="text" :placeholder="t('settings.landing_page.hero_title_pl')" v-bind="componentField" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                </FormField>
 
-            <FormField v-slot="{ componentField }" name="hero_subtitle">
-              <FormItem>
-                <FormLabel>Hero Subtitle</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="The best place for your needs..." v-bind="componentField" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
+                <FormField v-slot="{ componentField }" name="hero_subtitle">
+                  <FormItem>
+                    <FormLabel>{{ t('settings.landing_page.hero_subtitle') }}</FormLabel>
+                    <FormControl>
+                      <Textarea :placeholder="t('settings.landing_page.hero_subtitle_pl')" v-bind="componentField" class="min-h-[100px]" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                </FormField>
+              </div>
 
-            <FormField v-slot="{ componentField }" name="hero_image_url">
-              <FormItem>
-                <FormLabel>Hero Image URL</FormLabel>
-                <FormControl>
-                  <Input type="text" placeholder="https://example.com/image.jpg" v-bind="componentField" />
-                </FormControl>
-                <p class="text-[0.8rem] text-muted-foreground">Optional background image for the hero section.</p>
-                <FormMessage />
-              </FormItem>
-            </FormField>
+              <!-- Hero Image Upload -->
+              <div class="space-y-2">
+                <Label>{{ t('settings.landing_page.hero_image') }}</Label>
+                <div 
+                  @click="fileInput?.click()"
+                  class="relative aspect-video rounded-xl border-2 border-dashed border-border/60 hover:border-primary/50 hover:bg-muted/20 transition-all cursor-pointer overflow-hidden group flex flex-col items-center justify-center gap-3 bg-muted/10"
+                >
+                  <template v-if="imagePreview">
+                    <img :src="imagePreview" alt="Hero Preview" class="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Button type="button" variant="secondary" size="sm" class="gap-2">
+                        <Upload class="size-4" />
+                        Cambiar imagen
+                      </Button>
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="destructive" 
+                      size="icon" 
+                      class="absolute top-2 right-2 size-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                      @click.stop="removeImage"
+                    >
+                      <X class="size-4" />
+                    </Button>
+                  </template>
+                  <template v-else>
+                    <div class="size-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                      <ImageOff class="size-6" />
+                    </div>
+                    <div class="text-center">
+                      <p class="text-sm font-medium">{{ t('settings.landing_page.image_upload_hint') }}</p>
+                      <p class="text-xs text-muted-foreground mt-1">{{ t('settings.landing_page.image_optional') }}</p>
+                    </div>
+                  </template>
+                </div>
+                <input 
+                  type="file" 
+                  ref="fileInput" 
+                  class="hidden" 
+                  accept="image/*"
+                  @change="handleFileChange"
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <!-- About Us Section -->
-        <Card class="col-span-1 md:col-span-2 lg:col-span-3">
-          <CardHeader>
-            <CardTitle>About Us Section</CardTitle>
-            <CardDescription>Information about your store or brand.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FormField v-slot="{ componentField }" name="about_us_text">
-              <FormItem>
-                <FormLabel>About Us Text</FormLabel>
-                <FormControl>
-                  <Textarea class="min-h-[150px]" placeholder="Briefly describe who you are..." v-bind="componentField" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
-          </CardContent>
-        </Card>
+        <!-- About Us & Contact -->
+        <div class="grid md:grid-cols-2 gap-8">
+          <!-- About Us Section -->
+          <Card class="border-border/50 shadow-sm">
+            <CardHeader class="bg-muted/30">
+              <CardTitle class="text-xl">{{ t('settings.landing_page.about_us_section') }}</CardTitle>
+              <CardDescription>{{ t('settings.landing_page.about_us_description') }}</CardDescription>
+            </CardHeader>
+            <CardContent class="p-6">
+              <FormField v-slot="{ componentField }" name="about_us_text">
+                <FormItem>
+                  <FormLabel>{{ t('settings.landing_page.about_us_text') }}</FormLabel>
+                  <FormControl>
+                    <Textarea class="min-h-[200px]" :placeholder="t('settings.landing_page.about_us_pl')" v-bind="componentField" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              </FormField>
+            </CardContent>
+          </Card>
 
-        <!-- Contact Section -->
-        <Card class="col-span-1 md:col-span-2 lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Contact Information</CardTitle>
-            <CardDescription>Public contact details shown on the footer.</CardDescription>
-          </CardHeader>
-          <CardContent class="grid gap-4 md:grid-cols-2">
-            <FormField v-slot="{ componentField }" name="contact_email">
-              <FormItem>
-                <FormLabel>Contact Email</FormLabel>
-                <FormControl>
-                  <Input type="email" placeholder="contact@nidya.com" v-bind="componentField" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
+          <!-- Contact Section -->
+          <Card class="border-border/50 shadow-sm">
+            <CardHeader class="bg-muted/30">
+              <CardTitle class="text-xl">{{ t('settings.landing_page.contact_section') }}</CardTitle>
+              <CardDescription>{{ t('settings.landing_page.contact_description') }}</CardDescription>
+            </CardHeader>
+            <CardContent class="p-6 space-y-6">
+              <FormField v-slot="{ componentField }" name="contact_email">
+                <FormItem>
+                  <FormLabel>{{ t('settings.landing_page.contact_email') }}</FormLabel>
+                  <FormControl>
+                    <Input type="email" :placeholder="t('settings.landing_page.contact_email_pl')" v-bind="componentField" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              </FormField>
 
-            <FormField v-slot="{ componentField }" name="contact_phone">
-              <FormItem>
-                <FormLabel>Contact Phone</FormLabel>
-                <FormControl>
-                  <Input type="text" placeholder="+1 234 567 890" v-bind="componentField" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
-          </CardContent>
-        </Card>
+              <FormField v-slot="{ componentField }" name="contact_phone">
+                <FormItem>
+                  <FormLabel>{{ t('settings.landing_page.contact_phone') }}</FormLabel>
+                  <FormControl>
+                    <Input type="text" :placeholder="t('settings.landing_page.contact_phone_pl')" v-bind="componentField" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              </FormField>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      <div class="flex justify-end">
-        <Button type="submit" :disabled="isSaving">
-            <span v-if="isSaving">Saving...</span>
-            <span v-else>Save Settings</span>
+      <div class="flex justify-end pt-4">
+        <Button type="submit" size="lg" :disabled="isSaving" class="px-10 h-12 shadow-md hover:shadow-lg transition-all">
+          <template v-if="isSaving">
+            <div class="size-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+            {{ t('common.saving') }}
+          </template>
+          <span v-else>{{ t('common.save_changes') }}</span>
         </Button>
       </div>
     </form>
