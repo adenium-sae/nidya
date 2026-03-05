@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Eye, ImageOff } from 'lucide-vue-next'
 
 const props = defineProps<{
   product: any
 }>()
+
+const imageError = ref(false)
 
 const primaryImage = computed(() => {
   if (props.product.images && props.product.images.length > 0) {
     const primary = props.product.images.find((img: any) => img.is_primary)
     return primary ? primary.url : props.product.images[0].url
   }
-  return props.product.image_url || 'https://placehold.co/400x400?text=Sin+imagen'
+  return props.product.image_url || null
 })
 
 const storeProduct = computed(() => {
@@ -41,50 +44,81 @@ const formattedComparePrice = computed(() => {
     currency: storeProduct.value?.currency || 'MXN',
   }).format(comparePrice.value)
 })
+
+const discountPercentage = computed(() => {
+  if (!hasDiscount.value) return 0
+  return Math.round(((comparePrice.value - price.value) / comparePrice.value) * 100)
+})
 </script>
 
 <template>
-  <RouterLink :to="`/shop/catalog/${product.id}`" class="block group">
-    <Card class="flex flex-col h-full overflow-hidden transition-all duration-300 group-hover:shadow-lg group-hover:border-primary/30">
+  <RouterLink :to="`/shop/catalog/${product.id}`" class="block group outline-none">
+    <Card class="product-card flex flex-col h-full overflow-hidden border border-border/60 bg-card transition-all duration-300 group-hover:shadow-xl group-hover:shadow-primary/5 group-hover:border-primary/25 group-focus-visible:ring-2 group-focus-visible:ring-ring">
       <!-- Image -->
-      <div class="relative bg-muted/20 aspect-square overflow-hidden flex items-center justify-center p-4">
+      <div class="relative bg-gradient-to-br from-muted/30 to-muted/10 aspect-[4/3] overflow-hidden flex items-center justify-center">
+        <!-- No image fallback -->
+        <div v-if="!primaryImage || imageError" class="flex flex-col items-center justify-center gap-2 text-muted-foreground/40">
+          <ImageOff class="size-10" />
+        </div>
+        
         <img 
+          v-else
           :src="primaryImage" 
           :alt="product.name"
-          class="object-contain w-full h-full mix-blend-multiply transition-transform duration-300 group-hover:scale-105"
+          class="object-contain w-full h-full p-4 transition-transform duration-500 ease-out group-hover:scale-110"
+          @error="imageError = true"
         />
         
+        <!-- Overlay on hover -->
+        <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm">
+            <Eye class="size-3.5" />
+            Ver detalle
+          </span>
+        </div>
+        
         <!-- Badges -->
-        <div class="absolute top-2 left-2 flex flex-col gap-2">
-          <Badge v-if="hasDiscount" variant="destructive">
-            Oferta
-          </Badge>
-          <Badge v-if="product.category" variant="secondary" class="opacity-90">
-            {{ product.category.name }}
+        <div class="absolute top-2.5 left-2.5 flex flex-col gap-1.5">
+          <Badge v-if="hasDiscount" class="bg-red-500 hover:bg-red-500 text-white border-0 text-[11px] px-2 py-0.5 font-semibold shadow-sm">
+            -{{ discountPercentage }}%
           </Badge>
         </div>
       </div>
 
       <!-- Content -->
-      <CardContent class="flex-1 p-4 space-y-2">
-        <div class="text-xs text-muted-foreground line-clamp-1" v-if="product.sku">
-          SKU: {{ product.sku }}
-        </div>
-        <h3 class="font-semibold text-base line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+      <CardContent class="flex-1 p-4 flex flex-col gap-1.5">
+        <!-- Category -->
+        <span v-if="product.category" class="text-[11px] font-medium text-primary/70 uppercase tracking-wider">
+          {{ product.category.name }}
+        </span>
+
+        <h3 class="font-semibold text-sm line-clamp-2 leading-snug text-foreground group-hover:text-primary transition-colors duration-200">
           {{ product.name }}
         </h3>
+
+        <div class="text-[11px] text-muted-foreground/70 tabular-nums" v-if="product.sku">
+          {{ product.sku }}
+        </div>
         
         <!-- Price -->
-        <div class="flex items-center gap-2 mt-2" v-if="storeProduct">
-          <span class="text-lg font-bold text-primary">{{ formattedPrice }}</span>
-          <span v-if="hasDiscount" class="text-sm text-muted-foreground line-through">
-            {{ formattedComparePrice }}
-          </span>
-        </div>
-        <div v-else class="text-sm text-muted-foreground mt-2">
-          Precio no disponible
+        <div class="mt-auto pt-2">
+          <div class="flex items-baseline gap-2" v-if="storeProduct">
+            <span class="text-lg font-bold text-foreground">{{ formattedPrice }}</span>
+            <span v-if="hasDiscount" class="text-xs text-muted-foreground line-through">
+              {{ formattedComparePrice }}
+            </span>
+          </div>
+          <div v-else class="text-xs text-muted-foreground italic">
+            Precio no disponible
+          </div>
         </div>
       </CardContent>
     </Card>
   </RouterLink>
 </template>
+
+<style scoped>
+.product-card {
+  will-change: transform, box-shadow;
+}
+</style>

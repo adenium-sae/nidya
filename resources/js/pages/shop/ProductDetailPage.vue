@@ -5,13 +5,17 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
-import { ArrowLeft, Tag } from 'lucide-vue-next'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ArrowLeft, Tag, ChevronRight, ImageOff, ZoomIn, Package, Info, List } from 'lucide-vue-next'
 
 const route = useRoute()
 
 const product = ref<any>(null)
 const isLoading = ref(true)
 const selectedImageIndex = ref(0)
+const imageError = ref(false)
+const isZoomed = ref(false)
+const zoomPosition = ref({ x: 50, y: 50 })
 
 const fetchProduct = async () => {
   isLoading.value = true
@@ -42,7 +46,7 @@ const currentImage = computed(() => {
   if (allImages.value.length > 0) {
     return allImages.value[selectedImageIndex.value]?.url
   }
-  return 'https://placehold.co/600x600?text=Sin+imagen'
+  return null
 })
 
 const storeProduct = computed(() => {
@@ -76,32 +80,54 @@ const discountPercentage = computed(() => {
   return Math.round(((comparePrice.value - price.value) / comparePrice.value) * 100)
 })
 
+const handleMouseMove = (e: MouseEvent) => {
+  const target = e.currentTarget as HTMLElement
+  const rect = target.getBoundingClientRect()
+  zoomPosition.value = {
+    x: ((e.clientX - rect.left) / rect.width) * 100,
+    y: ((e.clientY - rect.top) / rect.height) * 100,
+  }
+}
+
 onMounted(() => {
   fetchProduct()
 })
 </script>
 
 <template>
-  <div class="container mx-auto px-4 py-8">
+  <div class="min-h-[80vh]">
 
     <!-- Loading State -->
-    <div v-if="isLoading" class="space-y-8">
-      <Skeleton class="h-8 w-48" />
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-        <Skeleton class="aspect-square w-full rounded-xl" />
-        <div class="space-y-4">
-          <Skeleton class="h-10 w-3/4" />
-          <Skeleton class="h-6 w-1/4" />
-          <Skeleton class="h-6 w-1/3" />
-          <Skeleton class="h-24 w-full" />
+    <div v-if="isLoading" class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <Skeleton class="h-5 w-64" />
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
+        <Skeleton class="aspect-square w-full rounded-2xl" />
+        <div class="space-y-5">
+          <Skeleton class="h-5 w-20 rounded-full" />
+          <Skeleton class="h-9 w-3/4" />
+          <Skeleton class="h-5 w-24" />
+          <div class="space-y-2">
+            <Skeleton class="h-10 w-1/3" />
+            <Skeleton class="h-4 w-1/4" />
+          </div>
+          <Skeleton class="h-px w-full" />
+          <Skeleton class="h-32 w-full" />
         </div>
       </div>
     </div>
 
     <!-- Not Found State -->
-    <div v-else-if="!product" class="text-center py-24 space-y-4">
-      <h2 class="text-2xl font-bold">Producto no encontrado</h2>
-      <p class="text-muted-foreground">El producto que buscas no existe o ya no está disponible.</p>
+    <div v-else-if="!product" class="flex flex-col items-center justify-center text-center py-32 space-y-5">
+      <div class="relative">
+        <div class="absolute inset-0 bg-primary/5 rounded-full blur-xl scale-150"></div>
+        <div class="relative inline-flex items-center justify-center size-20 rounded-full bg-muted border">
+          <Package class="h-9 w-9 text-muted-foreground" />
+        </div>
+      </div>
+      <div class="space-y-2">
+        <h2 class="text-2xl font-bold">Producto no encontrado</h2>
+        <p class="text-muted-foreground max-w-sm mx-auto text-sm">El producto que buscas no existe o ya no está disponible.</p>
+      </div>
       <RouterLink to="/shop/catalog">
         <Button variant="outline">
           <ArrowLeft class="size-4 mr-2" />
@@ -113,115 +139,173 @@ onMounted(() => {
     <!-- Product Detail -->
     <div v-else>
       <!-- Breadcrumb -->
-      <div class="flex items-center gap-2 mb-8 text-sm text-muted-foreground">
-        <RouterLink to="/shop/catalog" class="hover:text-foreground transition-colors">
-          Catálogo
-        </RouterLink>
-        <span>/</span>
-        <span v-if="product.category" class="hover:text-foreground transition-colors">
-          {{ product.category.name }}
-        </span>
-        <span v-if="product.category">/</span>
-        <span class="text-foreground font-medium">{{ product.name }}</span>
+      <div class="border-b bg-muted/20">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <nav class="flex items-center gap-1.5 text-sm text-muted-foreground" aria-label="Breadcrumb">
+            <RouterLink to="/shop/catalog" class="hover:text-foreground transition-colors text-xs">
+              Catálogo
+            </RouterLink>
+            <ChevronRight class="size-3 text-muted-foreground/50" />
+            <span v-if="product.category" class="text-xs">
+              {{ product.category.name }}
+            </span>
+            <ChevronRight v-if="product.category" class="size-3 text-muted-foreground/50" />
+            <span class="text-foreground font-medium text-xs truncate max-w-[200px]">{{ product.name }}</span>
+          </nav>
+        </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-        
-        <!-- Image Gallery -->
-        <div class="space-y-4">
-          <!-- Main Image -->
-          <div class="bg-muted/20 rounded-xl aspect-square overflow-hidden flex items-center justify-center p-6 border">
-            <img 
-              :src="currentImage" 
-              :alt="product.name"
-              class="object-contain w-full h-full mix-blend-multiply"
-            />
-          </div>
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
           
-          <!-- Thumbnails -->
-          <div v-if="allImages.length > 1" class="flex gap-3 overflow-x-auto pb-2">
-            <button 
-              v-for="(img, idx) in allImages" 
-              :key="idx"
-              class="shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden bg-muted/20 transition-all p-1"
-              :class="selectedImageIndex === idx ? 'border-primary' : 'border-transparent hover:border-muted-foreground/30'"
-              @click="selectedImageIndex = idx"
+          <!-- Image Gallery -->
+          <div class="space-y-4">
+            <!-- Main Image -->
+            <div 
+              class="relative bg-gradient-to-br from-muted/20 to-muted/5 rounded-2xl aspect-square overflow-hidden flex items-center justify-center border cursor-crosshair"
+              @mouseenter="isZoomed = true"
+              @mouseleave="isZoomed = false"
+              @mousemove="handleMouseMove"
             >
-              <img :src="img.url" :alt="`Imagen ${idx + 1}`" class="w-full h-full object-contain" />
-            </button>
-          </div>
-        </div>
+              <!-- No image fallback -->
+              <div v-if="!currentImage || imageError" class="flex flex-col items-center justify-center gap-3 text-muted-foreground/40">
+                <ImageOff class="size-16" />
+                <span class="text-sm">Sin imagen</span>
+              </div>
+              
+              <img 
+                v-else
+                :src="currentImage" 
+                :alt="product.name"
+                class="object-contain w-full h-full p-6 transition-transform duration-300"
+                :style="isZoomed ? {
+                  transform: 'scale(2)',
+                  transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`
+                } : {}"
+                @error="imageError = true"
+              />
 
-        <!-- Product Info -->
-        <div class="space-y-6">
-          <!-- Category -->
-          <Badge v-if="product.category" variant="secondary">
-            <Tag class="size-3 mr-1" />
-            {{ product.category.name }}
-          </Badge>
+              <!-- Zoom hint -->
+              <div 
+                v-if="currentImage && !imageError && !isZoomed" 
+                class="absolute bottom-3 right-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-background/80 backdrop-blur-sm text-xs text-muted-foreground border shadow-sm"
+              >
+                <ZoomIn class="size-3" />
+                Pasar el cursor para ampliar
+              </div>
 
-          <!-- Name -->
-          <h1 class="text-3xl font-bold tracking-tight">{{ product.name }}</h1>
-
-          <!-- SKU -->
-          <p class="text-sm text-muted-foreground" v-if="product.sku">
-            SKU: {{ product.sku }}
-          </p>
-
-          <!-- Price -->
-          <div v-if="storeProduct" class="space-y-1">
-            <div class="flex items-center gap-3">
-              <span class="text-3xl font-bold text-primary">{{ formattedPrice }}</span>
-              <span v-if="hasDiscount" class="text-lg text-muted-foreground line-through">
-                {{ formattedComparePrice }}
-              </span>
-              <Badge v-if="hasDiscount" variant="destructive">
+              <!-- Discount badge -->
+              <Badge v-if="hasDiscount" class="absolute top-3 left-3 bg-red-500 hover:bg-red-500 text-white border-0 text-xs px-2.5 py-1 font-semibold shadow-sm">
                 -{{ discountPercentage }}%
               </Badge>
             </div>
-            <p class="text-xs text-muted-foreground">Precio de venta al público</p>
-          </div>
-          <div v-else class="text-muted-foreground">
-            Precio no disponible
-          </div>
-
-          <Separator />
-
-          <!-- Description -->
-          <div v-if="product.description" class="space-y-2">
-            <h3 class="font-semibold text-lg">Descripción</h3>
-            <p class="text-muted-foreground whitespace-pre-line leading-relaxed">
-              {{ product.description }}
-            </p>
-          </div>
-
-          <!-- Attributes -->
-          <div v-if="product.attributes && product.attributes.length > 0" class="space-y-3">
-            <h3 class="font-semibold text-lg">Características</h3>
-            <div class="rounded-lg border overflow-hidden">
-              <table class="w-full text-sm">
-                <tbody>
-                  <tr 
-                    v-for="(attr, idx) in product.attributes" 
-                    :key="attr.id"
-                    :class="Number(idx) % 2 === 0 ? 'bg-muted/30' : ''"
-                  >
-                    <td class="px-4 py-2.5 font-medium w-1/3">{{ attr.name }}</td>
-                    <td class="px-4 py-2.5 text-muted-foreground">{{ attr.value }}</td>
-                  </tr>
-                </tbody>
-              </table>
+            
+            <!-- Thumbnails -->
+            <div v-if="allImages.length > 1" class="flex gap-2 overflow-x-auto pb-1">
+              <button 
+                v-for="(img, idx) in allImages" 
+                :key="idx"
+                class="shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl border-2 overflow-hidden bg-muted/20 transition-all duration-200 p-1.5"
+                :class="selectedImageIndex === idx 
+                  ? 'border-primary ring-2 ring-primary/20' 
+                  : 'border-transparent hover:border-muted-foreground/30'"
+                @click="selectedImageIndex = idx"
+              >
+                <img :src="img.url" :alt="`Imagen ${idx + 1}`" class="w-full h-full object-contain" />
+              </button>
             </div>
           </div>
 
-          <!-- Back button -->
-          <div class="pt-4">
-            <RouterLink to="/shop/catalog">
-              <Button variant="outline">
-                <ArrowLeft class="size-4 mr-2" />
-                Volver al catálogo
-              </Button>
-            </RouterLink>
+          <!-- Product Info -->
+          <div class="space-y-6">
+            <!-- Category -->
+            <Badge v-if="product.category" variant="secondary" class="text-xs px-2.5 py-1">
+              <Tag class="size-3 mr-1.5" />
+              {{ product.category.name }}
+            </Badge>
+
+            <!-- Name -->
+            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-tight">{{ product.name }}</h1>
+
+            <!-- SKU -->
+            <p class="text-sm text-muted-foreground font-mono" v-if="product.sku">
+              SKU: {{ product.sku }}
+            </p>
+
+            <!-- Price -->
+            <div v-if="storeProduct" class="space-y-1.5">
+              <div class="flex items-baseline gap-3 flex-wrap">
+                <span class="text-3xl sm:text-4xl font-bold text-foreground">{{ formattedPrice }}</span>
+                <span v-if="hasDiscount" class="text-lg text-muted-foreground line-through">
+                  {{ formattedComparePrice }}
+                </span>
+                <Badge v-if="hasDiscount" class="bg-red-500/10 text-red-600 hover:bg-red-500/10 border-0 font-semibold">
+                  Ahorra {{ discountPercentage }}%
+                </Badge>
+              </div>
+              <p class="text-xs text-muted-foreground">Precio de venta al público · IVA incluido</p>
+            </div>
+            <div v-else class="text-muted-foreground italic">
+              Precio no disponible
+            </div>
+
+            <Separator />
+
+            <!-- Tabs for description and attributes -->
+            <Tabs default-value="description" class="w-full">
+              <TabsList class="w-full grid grid-cols-2 h-10">
+                <TabsTrigger value="description" class="text-xs sm:text-sm gap-1.5">
+                  <Info class="size-3.5" />
+                  Descripción
+                </TabsTrigger>
+                <TabsTrigger value="attributes" class="text-xs sm:text-sm gap-1.5">
+                  <List class="size-3.5" />
+                  Características
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="description" class="mt-4">
+                <div v-if="product.description" class="prose prose-sm max-w-none">
+                  <p class="text-muted-foreground whitespace-pre-line leading-relaxed text-sm">
+                    {{ product.description }}
+                  </p>
+                </div>
+                <p v-else class="text-sm text-muted-foreground italic py-4">
+                  Este producto no tiene descripción disponible.
+                </p>
+              </TabsContent>
+
+              <TabsContent value="attributes" class="mt-4">
+                <div v-if="product.attributes && product.attributes.length > 0" class="rounded-xl border overflow-hidden">
+                  <table class="w-full text-sm">
+                    <tbody>
+                      <tr 
+                        v-for="(attr, idx) in product.attributes" 
+                        :key="attr.id"
+                        :class="Number(idx) % 2 === 0 ? 'bg-muted/30' : 'bg-background'"
+                        class="transition-colors"
+                      >
+                        <td class="px-4 py-3 font-medium w-2/5 text-foreground">{{ attr.name }}</td>
+                        <td class="px-4 py-3 text-muted-foreground">{{ attr.value }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p v-else class="text-sm text-muted-foreground italic py-4">
+                  No hay características registradas para este producto.
+                </p>
+              </TabsContent>
+            </Tabs>
+
+            <!-- Back button -->
+            <div class="pt-4">
+              <RouterLink to="/shop/catalog">
+                <Button variant="outline" size="sm">
+                  <ArrowLeft class="size-4 mr-2" />
+                  Volver al catálogo
+                </Button>
+              </RouterLink>
+            </div>
           </div>
         </div>
       </div>
