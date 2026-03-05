@@ -9,7 +9,12 @@ RUN apk add --no-cache \
     npm \
     postgresql-dev \
     libpq \
-    && docker-php-ext-install pdo pdo_pgsql
+    # Dependencias necesarias para GD
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo pdo_pgsql gd
 
 # Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -25,7 +30,6 @@ RUN npm install && npm run build
 # Configurar permisos para Laravel
 RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache
 
-# Copiar configuración de Nginx (La crearemos en el siguiente paso o usamos una rápida aquí)
 RUN printf 'server {\n\
     listen 8001;\n\
     root /app/public;\n\
