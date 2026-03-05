@@ -22,6 +22,7 @@ import {
   LayoutDashboard,
   Store,
   ClipboardList,
+  Settings,
 } from "lucide-vue-next"
 import {
   Collapsible,
@@ -204,6 +205,18 @@ const navMain = computed(() => [
     title: t('sidebar.activity_logs'),
     url: "/panel/activity-logs",
     icon: ClipboardList,
+  },
+  {
+    title: 'Settings',
+    url: "#",
+    icon: Settings,
+    isOpen: route.path.startsWith('/panel/settings'),
+    items: [
+      {
+        title: 'Landing Page',
+        url: "/panel/settings/landing-page",
+      },
+    ],
   },
 ])
 </script>

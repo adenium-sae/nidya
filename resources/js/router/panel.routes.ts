@@ -161,6 +161,12 @@ export const panelRoutes: RouteRecordRaw[] = [
         name: 'branches',
         component: () => import('@/pages/panel/organization/BranchesPage.vue'),
       },
+      // Settings
+      {
+        path: 'settings/landing-page',
+        name: 'settings-landing-page',
+        component: () => import('@/pages/panel/settings/LandingPageSettings.vue'),
+      },
     ],
   },
 ]

@@ -30,6 +30,11 @@ Route::prefix("auth")->group(function () {
 
 Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('auth:sanctum');
+    
+    Route::prefix("settings/landing-page")->group(function () {
+        Route::get("/", [\App\Http\Controllers\Api\Panel\LandingPageSettingsController::class, "index"]);
+        Route::put("/", [\App\Http\Controllers\Api\Panel\LandingPageSettingsController::class, "update"]);
+    });
 
     Route::prefix("profiles")->group(function () {
         Route::post("/", [ProfileController::class, "store"]);
@@ -97,4 +102,11 @@ Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->grou
     });
 
     Route::get("/activity-logs", [ActivityLogController::class, "index"]);
+});
+
+Route::prefix("shop")->group(function () {
+    Route::get("landing-page", [\App\Http\Controllers\Api\Shop\LandingPageController::class, "index"]);
+    Route::get("catalog/products", [\App\Http\Controllers\Api\Shop\CatalogController::class, "index"]);
+    Route::get("catalog/products/{id}", [\App\Http\Controllers\Api\Shop\CatalogController::class, "show"]);
+    Route::get("categories", [\App\Http\Controllers\Api\Shop\CategoryController::class, "index"]);
 });

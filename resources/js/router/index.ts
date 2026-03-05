@@ -2,18 +2,20 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { authRoutes } from './auth.routes'
 import { panelRoutes } from './panel.routes'
 import { useAuthStore } from '@/stores/auth.store'
+import { shopRoutes } from './shop.routes'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    redirect: '/panel/dashboard',
+    redirect: '/shop/home',
   },
   {
     path: '/home',
-    redirect: '/panel/dashboard',
+    redirect: '/shop/home',
   },
   ...authRoutes,
   ...panelRoutes,
+  ...shopRoutes
 ]
 
 const router = createRouter({
@@ -27,7 +29,7 @@ router.beforeEach((to, _from, next) => {
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     next('/sign-in')
   } else if (to.meta.guest && auth.isAuthenticated) {
-    next('/panel/dashboard')
+    next('/shop/home')
   } else {
     next()
   }
