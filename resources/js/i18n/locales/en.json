@@ -567,7 +567,19 @@
       "hero_subtitle_pl": "The best place for your needs...",
       "about_us_pl": "Briefly describe who you are...",
       "contact_email_pl": "contact@nidya.com",
-      "contact_phone_pl": "+1 234 567 890"
+      "contact_phone_pl": "+1 234 567 890",
+      "branding_section": "Brand Identity",
+      "branding_description": "Customize the name and colors of your public store.",
+      "display_name": "Display Name",
+      "display_name_pl": "E.g. My store",
+      "display_name_hint": "This name will appear in the store header and browser tab.",
+      "primary_color": "Primary Color",
+      "primary_color_hint": "Main buttons, active sidebar, and highlighted elements.",
+      "secondary_color": "Secondary Color",
+      "secondary_color_hint": "Borders and subtle UI elements.",
+      "accent_color": "Accent Color",
+      "accent_color_hint": "Badges, alerts, and highlights.",
+      "color_preview": "Color Preview"
     }
   }
 }

@@ -7,10 +7,14 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth.store';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import { useI18n } from 'vue-i18n';
+import { useBranding } from '@/composables/useBranding';
+import { Store } from 'lucide-vue-next';
 
 const { t } = useI18n();
 const router = useRouter();
 const authStore = useAuthStore();
+const { branding } = useBranding();
+
 const email = ref('');
 const password = ref('');
 const loading = ref(false);
@@ -39,8 +43,19 @@ async function handleLogin() {
   <AuthLayout>
     <div class="w-full max-w-md space-y-8">
       <div class="space-y-2 text-center">
+        <div class="flex justify-center mb-6">
+          <template v-if="branding?.logo_url">
+            <img :src="branding.logo_url" alt="Logo" class="h-12 w-auto object-contain" />
+          </template>
+          <template v-else>
+            <div class="flex items-center justify-center size-12 rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <Store class="size-6" />
+            </div>
+          </template>
+        </div>
+
         <h1 class="text-3xl font-bold tracking-tight">
-          {{ t('auth.sign_in') }}
+          {{ t('auth.sign_in') }} a {{ branding?.display_name || 'Nidya' }}
         </h1>
         <p class="text-muted-foreground">
           {{ t('auth.login_message') }}
@@ -67,10 +82,6 @@ async function handleLogin() {
           <span v-else>{{ t('auth.sign_in') }}</span>
         </Button>
 
-        <div class="text-center text-sm text-muted-foreground">
-          {{ t('auth.no_account') }}
-          <router-link to="/sign-up" class="underline text-primary">{{ t('auth.sign_up') }}</router-link>
-        </div>
       </div>
     </div>
   </AuthLayout>

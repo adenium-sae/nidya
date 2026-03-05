@@ -26,7 +26,8 @@ async function fetchSettings() {
   try {
     const res = await fetch('/api/shop/landing-page');
     if (res.ok) {
-      settings.value = await res.json();
+      const data = await res.json();
+      settings.value = data.settings ?? data;
     }
   } catch (error) {
     console.error('Failed to load landing page settings:', error);
@@ -72,12 +73,12 @@ onMounted(function() {
       <!-- ═══════════════════ HERO ═══════════════════ -->
       <section class="relative overflow-hidden">
         <!-- Gradient Background -->
-        <div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/10"></div>
+        <div class="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/15"></div>
         
         <!-- Decorative elements -->
-        <div class="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
-        <div class="absolute bottom-10 right-10 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/[0.03] rounded-full blur-3xl"></div>
+        <div class="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-[100px] animate-pulse"></div>
+        <div class="absolute bottom-10 right-10 w-96 h-96 bg-secondary/20 rounded-full blur-[120px]"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent/10 rounded-full blur-[100px]"></div>
 
         <!-- Optional Hero Image (subtle overlay) -->
         <div v-if="settings?.hero_image_url" class="absolute inset-0 z-0">
@@ -91,19 +92,29 @@ onMounted(function() {
         
         <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-28 md:py-40">
           <div class="max-w-4xl mx-auto text-center space-y-8">
-            <h1 class="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight text-foreground leading-[1.1] animate-fadeInUp">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent font-medium text-sm tracking-wide border border-accent/20 shadow-sm animate-fadeInUp backdrop-blur-sm">
+              <Sparkles class="size-4" />
+              <span>Nuevos productos disponibles</span>
+            </div>
+
+            <h1 class="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight text-foreground leading-[1.1] animate-fadeInUp drop-shadow-sm" style="animation-delay: 50ms;">
               {{ settings?.hero_title || 'Bienvenido a nuestra tienda' }}
             </h1>
             
-            <p class="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto animate-fadeInUp" style="animation-delay: 100ms;">
-              {{ settings?.hero_subtitle || 'Descubre productos y servicios pensados para ti.' }}
+            <p class="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto animate-fadeInUp" style="animation-delay: 150ms;">
+              {{ settings?.hero_subtitle || 'Descubre productos y servicios pensados para ti, con la mejor calidad y precios competitivos.' }}
             </p>
             
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-fadeInUp" style="animation-delay: 200ms;">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-fadeInUp" style="animation-delay: 250ms;">
               <RouterLink to="/shop/catalog">
-                <Button size="lg" class="text-base px-8 h-12 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300 group">
+                <Button size="lg" class="text-base px-8 h-14 bg-primary text-primary-foreground shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300 group font-bold rounded-xl">
                   Ver catálogo
-                  <ChevronRight class="ml-2 size-5 transition-transform group-hover:translate-x-0.5" />
+                  <ChevronRight class="ml-2 size-5 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </RouterLink>
+              <RouterLink to="/shop/catalog">
+                <Button size="lg" variant="outline" class="text-base px-8 h-14 border-secondary/30 text-secondary hover:bg-secondary/10 hover:border-secondary hover:text-secondary shadow-lg shadow-secondary/5 transition-all duration-300 rounded-xl font-bold bg-background/50 backdrop-blur-sm">
+                  Explorar ofertas
                 </Button>
               </RouterLink>
             </div>
@@ -111,38 +122,39 @@ onMounted(function() {
         </div>
 
         <!-- Bottom fade -->
-        <div class="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent"></div>
+        <div class="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent"></div>
       </section>
 
       <!-- ═══════════════════ FEATURES STRIP ═══════════════════ -->
-      <section class="border-y bg-muted/20">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x">
-            <div class="flex items-center gap-4 py-8 md:py-10 md:px-8 group">
-              <div class="shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center transition-colors group-hover:bg-primary/15">
+      <section class="border-y bg-muted/20 relative">
+        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-secondary/5 to-transparent"></div>
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-border/50">
+            <div class="flex items-center gap-5 py-8 md:py-10 md:px-8 group">
+              <div class="shrink-0 w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center transition-all duration-300 group-hover:bg-primary/20 group-hover:scale-110 shadow-sm border border-primary/10">
                 <Package class="size-6 text-primary" />
               </div>
               <div>
-                <p class="font-semibold text-sm">Productos de calidad</p>
-                <p class="text-xs text-muted-foreground">Seleccionados con cuidado para ti</p>
+                <p class="font-bold text-sm text-foreground">Productos de calidad</p>
+                <p class="text-xs text-muted-foreground mt-0.5">Seleccionados con cuidado para ti</p>
               </div>
             </div>
-            <div class="flex items-center gap-4 py-8 md:py-10 md:px-8 group">
-              <div class="shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center transition-colors group-hover:bg-primary/15">
-                <ShieldCheck class="size-6 text-primary" />
+            <div class="flex items-center gap-5 py-8 md:py-10 md:px-8 group">
+              <div class="shrink-0 w-14 h-14 rounded-2xl bg-secondary/10 flex items-center justify-center transition-all duration-300 group-hover:bg-secondary/20 group-hover:scale-110 shadow-sm border border-secondary/10">
+                <ShieldCheck class="size-6 text-secondary" />
               </div>
               <div>
-                <p class="font-semibold text-sm">Garantía de satisfacción</p>
-                <p class="text-xs text-muted-foreground">Tu tranquilidad es nuestra prioridad</p>
+                <p class="font-bold text-sm text-foreground">Garantía de satisfacción</p>
+                <p class="text-xs text-muted-foreground mt-0.5">Tu tranquilidad es nuestra prioridad</p>
               </div>
             </div>
-            <div class="flex items-center gap-4 py-8 md:py-10 md:px-8 group">
-              <div class="shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center transition-colors group-hover:bg-primary/15">
-                <Star class="size-6 text-primary" />
+            <div class="flex items-center gap-5 py-8 md:py-10 md:px-8 group">
+              <div class="shrink-0 w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center transition-all duration-300 group-hover:bg-accent/20 group-hover:scale-110 shadow-sm border border-accent/10">
+                <Star class="size-6 text-accent" />
               </div>
               <div>
-                <p class="font-semibold text-sm">Precios competitivos</p>
-                <p class="text-xs text-muted-foreground">Las mejores ofertas del mercado</p>
+                <p class="font-bold text-sm text-foreground">Precios competitivos</p>
+                <p class="text-xs text-muted-foreground mt-0.5">Las mejores ofertas del mercado</p>
               </div>
             </div>
           </div>
@@ -237,23 +249,25 @@ onMounted(function() {
       <!-- ═══════════════════ CTA BANNER ═══════════════════ -->
       <section class="py-16">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="relative overflow-hidden rounded-2xl bg-primary px-8 py-16 md:px-16 text-center">
-            <!-- Decorative circles -->
-            <div class="absolute -top-12 -right-12 w-48 h-48 bg-white/10 rounded-full"></div>
-            <div class="absolute -bottom-16 -left-16 w-64 h-64 bg-white/5 rounded-full"></div>
-            <div class="absolute top-1/2 right-1/4 w-32 h-32 bg-white/5 rounded-full"></div>
+          <div class="relative overflow-hidden rounded-3xl border border-secondary/20 shadow-2xl shadow-secondary/5 bg-card px-8 py-20 md:px-16 text-center">
+            <!-- Top accent bar -->
+            <div class="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-primary via-secondary to-accent"></div>
+
+            <!-- Decorative elements -->
+            <div class="absolute -top-16 -right-16 w-64 h-64 bg-secondary/10 rounded-full blur-[80px]"></div>
+            <div class="absolute -bottom-20 -left-20 w-80 h-80 bg-accent/10 rounded-full blur-[100px]"></div>
             
-            <div class="relative z-10 space-y-6 max-w-2xl mx-auto">
-              <h2 class="text-2xl md:text-3xl font-bold text-primary-foreground">
+            <div class="relative z-10 space-y-8 max-w-2xl mx-auto">
+              <h2 class="text-3xl md:text-5xl font-black tracking-tight text-foreground drop-shadow-sm">
                 ¿Listo para explorar?
               </h2>
-              <p class="text-primary-foreground/80">
+              <p class="text-lg text-muted-foreground/80 font-medium">
                 Encuentra todo lo que necesitas en nuestro catálogo de productos.
               </p>
               <RouterLink to="/shop/catalog">
-                <Button size="lg" variant="secondary" class="text-base px-8 h-12 group">
+                <Button size="lg" class="text-base px-10 h-16 bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300 group rounded-2xl font-bold border-0">
                   Explorar catálogo
-                  <ChevronRight class="ml-2 size-5 transition-transform group-hover:translate-x-0.5" />
+                  <ChevronRight class="ml-2 size-6 transition-transform group-hover:translate-x-1.5" />
                 </Button>
               </RouterLink>
             </div>
@@ -277,11 +291,12 @@ onMounted(function() {
               <a 
                 v-if="settings?.contact_email"
                 :href="`mailto:${settings.contact_email}`" 
-                class="flex items-center gap-3 px-6 py-4 rounded-xl border bg-card hover:bg-muted/50 transition-all duration-200 hover:shadow-md group w-full sm:w-auto"
+                class="flex items-center gap-3 px-6 py-4 rounded-xl border border-secondary/20 bg-card hover:bg-secondary/5 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 group w-full sm:w-auto"
               >
-                <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
-                  <Mail class="size-5 text-primary" />
+                <div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0 group-hover:bg-secondary/20 transition-colors">
+                  <Mail class="size-5 text-secondary" />
                 </div>
+                <!-- rest is unchanged -->
                 <div class="text-left">
                   <p class="text-xs text-muted-foreground">Email</p>
                   <p class="font-medium text-sm">{{ settings.contact_email }}</p>
@@ -290,10 +305,10 @@ onMounted(function() {
               <a 
                 v-if="settings?.contact_phone"
                 :href="`tel:${settings.contact_phone}`" 
-                class="flex items-center gap-3 px-6 py-4 rounded-xl border bg-card hover:bg-muted/50 transition-all duration-200 hover:shadow-md group w-full sm:w-auto"
+                class="flex items-center gap-3 px-6 py-4 rounded-xl border border-accent/20 bg-card hover:bg-accent/5 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 group w-full sm:w-auto"
               >
-                <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
-                  <Phone class="size-5 text-primary" />
+                <div class="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 group-hover:bg-accent/20 transition-colors">
+                  <Phone class="size-5 text-accent" />
                 </div>
                 <div class="text-left">
                   <p class="text-xs text-muted-foreground">Teléfono</p>
