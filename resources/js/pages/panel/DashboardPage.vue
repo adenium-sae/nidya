@@ -36,7 +36,6 @@ import {
   ArrowRight,
 } from 'lucide-vue-next';
 import { RouterLink } from 'vue-router';
-import { VisXYContainer, VisLine, VisAxis, VisArea } from '@unovis/vue';
 
 const { t } = useI18n();
 const { formatCurrency, formatNumber, formatDateTime } = useFormatters();

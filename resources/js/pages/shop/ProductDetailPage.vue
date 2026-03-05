@@ -155,7 +155,17 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
+        <!-- Back button at top for better UX -->
+        <div class="mb-6 lg:mb-8">
+          <RouterLink to="/shop/catalog">
+            <Button variant="ghost" size="sm" class="-ml-2.5 text-muted-foreground hover:text-foreground transition-all">
+              <ArrowLeft class="size-4 mr-2" />
+              Volver al catálogo
+            </Button>
+          </RouterLink>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
           
           <!-- Image Gallery -->
@@ -170,7 +180,7 @@ onMounted(() => {
               <!-- No image fallback -->
               <div v-if="!currentImage || imageError" class="flex flex-col items-center justify-center gap-3 text-muted-foreground/40">
                 <ImageOff class="size-16" />
-                <span class="text-sm">Sin imagen</span>
+                <span class="text-sm font-medium">Sin imagen</span>
               </div>
               
               <img 
@@ -217,95 +227,95 @@ onMounted(() => {
           </div>
 
           <!-- Product Info -->
-          <div class="space-y-6">
-            <!-- Category -->
-            <Badge v-if="product.category" variant="secondary" class="text-xs px-2.5 py-1">
-              <Tag class="size-3 mr-1.5" />
-              {{ product.category.name }}
-            </Badge>
-
-            <!-- Name -->
-            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-tight">{{ product.name }}</h1>
-
-            <!-- SKU -->
-            <p class="text-sm text-muted-foreground font-mono" v-if="product.sku">
-              SKU: {{ product.sku }}
-            </p>
-
-            <!-- Price -->
-            <div v-if="storeProduct" class="space-y-1.5">
-              <div class="flex items-baseline gap-3 flex-wrap">
-                <span class="text-3xl sm:text-4xl font-bold text-foreground">{{ formattedPrice }}</span>
-                <span v-if="hasDiscount" class="text-lg text-muted-foreground line-through">
-                  {{ formattedComparePrice }}
-                </span>
-                <Badge v-if="hasDiscount" class="bg-red-500/10 text-red-600 hover:bg-red-500/10 border-0 font-semibold">
-                  Ahorra {{ discountPercentage }}%
+          <div class="flex flex-col gap-8">
+            <div class="space-y-6">
+              <!-- Category -->
+              <div v-if="product.category">
+                <Badge variant="secondary" class="text-xs px-2.5 py-1">
+                  <Tag class="size-3 mr-1.5" />
+                  {{ product.category.name }}
                 </Badge>
               </div>
-              <p class="text-xs text-muted-foreground">Precio de venta al público · IVA incluido</p>
-            </div>
-            <div v-else class="text-muted-foreground italic">
-              Precio no disponible
+
+              <!-- Name & SKU -->
+              <div class="space-y-2">
+                <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-tight">{{ product.name }}</h1>
+                <p class="text-sm text-muted-foreground font-mono" v-if="product.sku">
+                  SKU: {{ product.sku }}
+                </p>
+              </div>
+
+              <!-- Price -->
+              <div v-if="storeProduct" class="space-y-1.5">
+                <div class="flex items-baseline gap-3 flex-wrap">
+                  <span class="text-3xl sm:text-4xl font-bold text-foreground">{{ formattedPrice }}</span>
+                  <span v-if="hasDiscount" class="text-lg text-muted-foreground line-through">
+                    {{ formattedComparePrice }}
+                  </span>
+                  <Badge v-if="hasDiscount" class="bg-red-500/10 text-red-600 hover:bg-red-500/10 border-0 font-semibold">
+                    Ahorra {{ discountPercentage }}%
+                  </Badge>
+                </div>
+                <p class="text-xs text-muted-foreground">Precio de venta al público · IVA incluido</p>
+              </div>
+              <div v-else class="text-muted-foreground italic text-sm">
+                Precio no disponible
+              </div>
             </div>
 
             <Separator />
 
             <!-- Tabs for description and attributes -->
             <Tabs default-value="description" class="w-full">
-              <TabsList class="w-full grid grid-cols-2 h-10">
-                <TabsTrigger value="description" class="text-xs sm:text-sm gap-1.5">
-                  <Info class="size-3.5" />
+              <TabsList class="w-full grid grid-cols-2 h-11 bg-muted/50 p-1">
+                <TabsTrigger value="description" class="text-xs sm:text-sm gap-2">
+                  <Info class="size-4" />
                   Descripción
                 </TabsTrigger>
-                <TabsTrigger value="attributes" class="text-xs sm:text-sm gap-1.5">
-                  <List class="size-3.5" />
+                <TabsTrigger value="attributes" class="text-xs sm:text-sm gap-2">
+                  <List class="size-4" />
                   Características
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="description" class="mt-4">
+              <TabsContent value="description" class="mt-6">
                 <div v-if="product.description" class="prose prose-sm max-w-none">
                   <p class="text-muted-foreground whitespace-pre-line leading-relaxed text-sm">
                     {{ product.description }}
                   </p>
                 </div>
-                <p v-else class="text-sm text-muted-foreground italic py-4">
-                  Este producto no tiene descripción disponible.
-                </p>
+                <div v-else class="flex flex-col items-center justify-center py-10 px-4 text-center border border-dashed rounded-xl bg-muted/10">
+                  <Info class="size-8 text-muted-foreground/30 mb-3" />
+                  <p class="text-sm text-muted-foreground max-w-[250px]">
+                    Este producto no tiene una descripción detallada disponible en este momento.
+                  </p>
+                </div>
               </TabsContent>
 
-              <TabsContent value="attributes" class="mt-4">
-                <div v-if="product.attributes && product.attributes.length > 0" class="rounded-xl border overflow-hidden">
+              <TabsContent value="attributes" class="mt-6">
+                <div v-if="product.attributes && product.attributes.length > 0" class="rounded-xl border overflow-hidden shadow-sm">
                   <table class="w-full text-sm">
                     <tbody>
                       <tr 
                         v-for="(attr, idx) in product.attributes" 
                         :key="attr.id"
                         :class="Number(idx) % 2 === 0 ? 'bg-muted/30' : 'bg-background'"
-                        class="transition-colors"
+                        class="transition-colors border-b last:border-0"
                       >
-                        <td class="px-4 py-3 font-medium w-2/5 text-foreground">{{ attr.name }}</td>
-                        <td class="px-4 py-3 text-muted-foreground">{{ attr.value }}</td>
+                        <td class="px-5 py-3.5 font-medium w-2/5 text-foreground">{{ attr.name }}</td>
+                        <td class="px-5 py-3.5 text-muted-foreground">{{ attr.value }}</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
-                <p v-else class="text-sm text-muted-foreground italic py-4">
-                  No hay características registradas para este producto.
-                </p>
+                <div v-else class="flex flex-col items-center justify-center py-10 px-4 text-center border border-dashed rounded-xl bg-muted/10">
+                  <List class="size-8 text-muted-foreground/30 mb-3" />
+                  <p class="text-sm text-muted-foreground max-w-[250px]">
+                    No se han registrado características técnicas para este producto.
+                  </p>
+                </div>
               </TabsContent>
             </Tabs>
-
-            <!-- Back button -->
-            <div class="pt-4">
-              <RouterLink to="/shop/catalog">
-                <Button variant="outline" size="sm">
-                  <ArrowLeft class="size-4 mr-2" />
-                  Volver al catálogo
-                </Button>
-              </RouterLink>
-            </div>
           </div>
         </div>
       </div>
