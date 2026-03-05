@@ -99,7 +99,7 @@ function applyBrandingToDOM(brand: Branding) {
   root.style.setProperty('--shop-accent-foreground', foregroundForHex(brand.accent_color))
 
   // Browser tab title
-  document.title = `${brand.display_name} | NidyaShop`
+  document.title = `${brand.display_name} | Nidya`
 
   // Dynamic favicon from icon_url
   if (brand.icon_url) {

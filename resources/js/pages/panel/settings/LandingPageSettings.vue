@@ -63,9 +63,9 @@ const form = useForm({
     contact_email: '',
     contact_phone: '',
     display_name: '',
-    primary_color: '#3B82F6',
-    secondary_color: '#6B7280',
-    accent_color: '#F59E0B',
+    primary_color: '#171717',
+    secondary_color: '#F5F5F5',
+    accent_color: '#F5F5F5',
   },
 });
 
@@ -87,9 +87,9 @@ async function fetchSettings() {
         contact_email: data.contact_email || '',
         contact_phone: data.contact_phone || '',
         display_name: data.display_name || '',
-        primary_color: data.primary_color || '#3B82F6',
-        secondary_color: data.secondary_color || '#6B7280',
-        accent_color: data.accent_color || '#F59E0B',
+        primary_color: data.primary_color || '#171717',
+        secondary_color: data.secondary_color || '#F5F5F5',
+        accent_color: data.accent_color || '#F5F5F5',
       });
       if (data.hero_image_url) {
         imagePreview.value = data.hero_image_url;

@@ -10,9 +10,9 @@ return new class extends Migration
     {
         Schema::table('landing_page_settings', function (Blueprint $table) {
             $table->string('display_name')->nullable()->after('id');
-            $table->string('primary_color')->default('#3B82F6')->after('contact_phone');
-            $table->string('secondary_color')->default('#6B7280')->after('primary_color');
-            $table->string('accent_color')->default('#F59E0B')->after('secondary_color');
+            $table->string('primary_color')->default('#171717')->after('contact_phone');
+            $table->string('secondary_color')->default('#F5F5F5')->after('primary_color');
+            $table->string('accent_color')->default('#F5F5F5')->after('secondary_color');
         });
     }
 

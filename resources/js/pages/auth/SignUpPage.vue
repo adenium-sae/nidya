@@ -17,9 +17,11 @@ import {
 import { User, Store, MapPin, Package } from 'lucide-vue-next';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import axios from 'axios';
+import { useBranding } from '@/composables/useBranding';
 
 const router = useRouter();
 const { t } = useI18n();
+const { branding } = useBranding();
 const currentStep = ref(1);
 const loading = ref(false);
 const error = ref('');
@@ -134,8 +136,19 @@ function updateWarehouse() {
 <template>
     <AuthLayout>
         
+        <div class="w-full max-w-3xl flex justify-center mt-6">
+            <template v-if="branding?.logo_url">
+                <img :src="branding.logo_url" alt="Logo" class="h-12 w-auto object-contain" />
+            </template>
+            <template v-else>
+                <div class="flex items-center justify-center size-12 rounded-xl bg-primary text-primary-foreground shadow-sm">
+                    <Store class="size-6" />
+                </div>
+            </template>
+        </div>
+
         <!-- Stepper Header -->
-        <div class="w-full max-w-3xl mb-12 mt-10">
+        <div class="w-full max-w-3xl mb-12 mt-6">
              <Stepper v-model="currentStep" class="flex w-full items-start gap-2">
                 <StepperItem
                     v-for="item in steps"

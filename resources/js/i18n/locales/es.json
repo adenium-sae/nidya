@@ -569,7 +569,7 @@
       "branding_section": "Identidad de Marca",
       "branding_description": "Personaliza el nombre y los colores de tu tienda pública.",
       "display_name": "Nombre Público",
-      "display_name_pl": "Ej. ObreSport",
+      "display_name_pl": "Ej. Mi tienda",
       "display_name_hint": "Este nombre aparecerá en la cabecera de la tienda y en la pestaña del navegador.",
       "primary_color": "Color Principal",
       "primary_color_hint": "Botones principales, sidebar activo y elementos destacados.",

@@ -24,12 +24,12 @@ class LandingPageService
         $settings = $this->getSettings();
 
         return $settings ? [
-            'display_name'    => $settings->display_name ?: 'NidyaShop',
+            'display_name'    => $settings->display_name ?: 'Nidya',
             'logo_url'        => $settings->logo_url,
             'icon_url'        => $settings->icon_url,
-            'primary_color'   => $settings->primary_color ?: '#3B82F6',
-            'secondary_color' => $settings->secondary_color ?: '#6B7280',
-            'accent_color'    => $settings->accent_color ?: '#F59E0B',
+            'primary_color'   => $settings->primary_color ?: '#171717',
+            'secondary_color' => $settings->secondary_color ?: '#F5F5F5',
+            'accent_color'    => $settings->accent_color ?: '#F5F5F5',
         ] : null;
     }
 
@@ -108,9 +108,9 @@ class LandingPageService
     {
         return [
             'colors' => [
-                ['hex' => '#3B82F6', 'role' => 'primary'],
-                ['hex' => '#6B7280', 'role' => 'secondary'],
-                ['hex' => '#F59E0B', 'role' => 'accent'],
+                ['hex' => '#171717', 'role' => 'primary'],
+                ['hex' => '#F5F5F5', 'role' => 'secondary'],
+                ['hex' => '#F5F5F5', 'role' => 'accent'],
             ],
         ];
     }
