@@ -34,6 +34,7 @@ Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->grou
     Route::prefix("settings/landing-page")->group(function () {
         Route::get("/", [\App\Http\Controllers\Api\Panel\LandingPageSettingsController::class, "index"]);
         Route::put("/", [\App\Http\Controllers\Api\Panel\LandingPageSettingsController::class, "update"]);
+        Route::post("/extract-colors", [\App\Http\Controllers\Api\Panel\LandingPageSettingsController::class, "extractColors"]);
     });
 
     Route::prefix("profiles")->group(function () {
