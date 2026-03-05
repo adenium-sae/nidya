@@ -1,0 +1,78 @@
+<?php
+
+namespace App\Actions\Catalog\Products;
+
+use App\Models\Product;
+use App\Models\Stock;
+use App\Models\Store;
+use App\Models\StoreProduct;
+use Illuminate\Support\Facades\DB;
+
+class CreateProductAction
+{
+    public function __invoke(array $data): Product
+    {
+        return DB::transaction(function () use ($data) {
+            $product = $this->createBaseProduct($data);
+
+            if (!empty($data['store_id'])) {
+                $this->attachToStore($product->id, $data['store_id'], $data);
+                if ($data['type'] === 'product' && !empty($data['initial_stock']) && $data['initial_stock'] > 0) {
+                    $this->createInitialStock($product->id, $data);
+                }
+            } elseif (!empty($data['store_ids'])) {
+                foreach ($data['store_ids'] as $storeId) {
+                    $this->attachToStore($product->id, $storeId, $data);
+                }
+            } elseif (!empty($data['all_stores'])) {
+                $storeIds = Store::pluck('id');
+                foreach ($storeIds as $storeId) {
+                    $this->attachToStore($product->id, $storeId, $data);
+                }
+            }
+            return $product;
+        });
+    }
+
+    private function createBaseProduct(array $data): Product
+    {
+        return Product::create([
+            'category_id' => $data['category_id'],
+            'name' => $data['name'],
+            'description' => $data['description'] ?? null,
+            'sku' => $data['sku'],
+            'barcode' => $data['barcode'] ?? null,
+            'type' => $data['type'],
+            'cost' => $data['cost'],
+            'image_url' => $data['image_url'] ?? null,
+            'track_inventory' => $data['type'] === 'product' ? ($data['track_inventory'] ?? true) : false,
+            'min_stock' => $data['min_stock'] ?? 0,
+            'max_stock' => $data['max_stock'] ?? 0,
+            'is_active' => true,
+        ]);
+    }
+
+    private function attachToStore(string $productId, string $storeId, array $data): void
+    {
+        StoreProduct::create([
+            'store_id' => $storeId,
+            'product_id' => $productId,
+            'price' => $data['price'],
+            'currency' => 'MXN',
+            'is_active' => true,
+            'is_visible' => true,
+        ]);
+    }
+
+    private function createInitialStock(string $productId, array $data): void
+    {
+        Stock::create([
+            'product_id' => $productId,
+            'warehouse_id' => $data['warehouse_id'],
+            'storage_location_id' => null,
+            'quantity' => $data['initial_stock'],
+            'reserved' => 0,
+            'avg_cost' => $data['cost'],
+        ]);
+    }
+}

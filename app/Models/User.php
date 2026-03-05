@@ -2,82 +2,105 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasUuids, HasApiTokens;
+    use HasApiTokens, HasFactory, Notifiable, HasUuids, SoftDeletes;
 
-    protected $keyType = 'string';
-    public $incrementing = false;
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'email',
         'password',
+        'otp_code',
+        'otp_expires_at',
+        'is_active',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
+        'otp_code',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
         'otp_expires_at' => 'datetime',
+        'password' => 'hashed',
+        'is_active' => 'boolean',
     ];
 
-    public function roles() {
-        return $this->belongsToMany(Role::class, 'store_user_roles', 'user_id', 'role_id');
-    }
-
-    public function stores() {
-        return $this->belongsToMany(Store::class, 'store_user_roles', 'user_id', 'store_id');
-    }
-
-    public function checkPassword(string $password): bool {
-        return password_verify($password, $this->password);
+    public function profile(): HasOne
+    {
+        return $this->hasOne(Profile::class);
     }
 
 
-    public function generateOtp(): string {
-        $otp = rand(100000, 999999);
-        return (string) $otp;
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(Sale::class);
     }
 
-    public function validateOtp(?string $otp): bool {
-        if (!$otp) {
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
+    public function cashRegisterSessions(): HasMany
+    {
+        return $this->hasMany(CashRegisterSession::class);
+    }
+
+
+
+    public function generateOtp(): string
+    {
+        $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $this->update([
+            'otp_code' => $otp,
+            'otp_expires_at' => now()->addMinutes(2),
+        ]);
+        return $otp;
+    }
+
+    public function verifyOtp(string $otp): bool
+    {
+        if ($this->otp_code !== $otp) {
             return false;
         }
-        if (!$this->otp_expires_at) {
+        if ($this->otp_expires_at < now()) {
             return false;
         }
-        return $this->otp_code === $otp && $this->otp_expires_at->isFuture();
+        $this->update([
+            'otp_code' => null,
+            'otp_expires_at' => null,
+            'email_verified_at' => now(),
+        ]);
+        return true;
     }
 
-    public function clearTokens(): void {
-        $this->tokens()->delete();
+    public function fullName(): string
+    {
+        if (!$this->profile) {
+            return $this->email;
+        }
+        $name = $this->profile->first_name;
+        if ($this->profile->middle_name) {
+            $name .= ' ' . $this->profile->middle_name;
+        }
+        $name .= ' ' . $this->profile->last_name;
+        if ($this->profile->second_last_name) {
+            $name .= ' ' . $this->profile->second_last_name;
+        }
+        return $name;
     }
 }

@@ -2,29 +2,54 @@
 
 namespace App\Models;
 
+
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Warehouse extends Model
 {
-    use HasUuids;
-
-    protected $keyType = 'string';
-    public $incrementing = false;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
-        "name",
-        "type",
-        "is_active",
-        "branch_id",
-        "store_id",
+
+        'branch_id',
+        'address_id',
+        'name',
+        'code',
+        'type',
+        'is_active',
     ];
 
-    public function branch() {
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    public function stores()
+    {
+        return $this->belongsToMany(Store::class);
+    }
+
+    public function branch(): BelongsTo
+    {
         return $this->belongsTo(Branch::class);
     }
 
-    public function store() {
-        return $this->belongsTo(Store::class);
+    public function address(): BelongsTo
+    {
+        return $this->belongsTo(Address::class);
+    }
+
+    public function storageLocations(): HasMany
+    {
+        return $this->hasMany(StorageLocation::class);
+    }
+
+    public function stock(): HasMany
+    {
+        return $this->hasMany(Stock::class);
     }
 }
