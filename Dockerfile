@@ -17,7 +17,7 @@ oniguruma-dev
 icu-dev 
 bash
 
-# Instalar extensiones PHP necesarias para Laravel
+# Instalar extensiones PHP necesarias
 
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg 
 && docker-php-ext-install 
@@ -32,11 +32,9 @@ opcache
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Carpeta de trabajo
-
 WORKDIR /app
 
-# Copiar archivos del proyecto
+# Copiar proyecto
 
 COPY . .
 
@@ -44,20 +42,19 @@ COPY . .
 
 RUN composer install --no-dev --optimize-autoloader
 
-# Instalar dependencias frontend y compilar assets
+# Compilar frontend
 
 RUN npm install && npm run build
 
-# Crear carpetas necesarias (si el volumen aún no existe)
+# Crear carpetas necesarias
 
-RUN mkdir -p /app/storage 
-/app/storage/app 
+RUN mkdir -p 
 /app/storage/app/public 
 /app/storage/framework 
 /app/storage/logs 
 /app/bootstrap/cache
 
-# Configurar Nginx
+# Configurar nginx
 
 RUN cat <<EOF > /etc/nginx/http.d/default.conf
 server {
@@ -83,26 +80,20 @@ location ~ \.php$ {
 }
 EOF
 
-# Exponer puerto
-
 EXPOSE 8001
 
 # Script de inicio
 
 RUN printf "#!/bin/sh\n
-echo 'Configurando permisos...'\n
+echo 'Fixing permissions...'\n
 chown -R www-data:www-data /app/storage\n
 chmod -R 775 /app/storage\n
 chmod -R 775 /app/bootstrap/cache\n
 \n
-echo 'Creando enlace de storage...'\n
+echo 'Creating storage link...'\n
 php artisan storage:link --force || true\n
 \n
-echo 'Iniciando PHP-FPM...'\n
 php-fpm -D\n
-\n
-echo 'Iniciando Nginx...'\n
-nginx -g 'daemon off;'\n" > /app/start.sh 
-&& chmod +x /app/start.sh
+nginx -g 'daemon off;'\n" > /app/start.sh && chmod +x /app/start.sh
 
 CMD ["/app/start.sh"]
