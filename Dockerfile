@@ -32,6 +32,7 @@ RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache
 
 RUN printf 'server {\n\
     listen 8001;\n\
+    client_max_body_size 10M;\n\
     root /app/public;\n\
     index index.php index.html;\n\
     location / {\n\

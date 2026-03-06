@@ -222,7 +222,7 @@ onMounted(() => {
             <Label htmlFor="name">{{ t('common.name') }} <span class="text-destructive">*</span></Label>
             <Input id="name" v-model="form.name" placeholder="Ej. Almacén Central" />
           </div>
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="grid gap-2">
               <Label htmlFor="code">{{ t('common.code') }}</Label>
               <Input id="code" v-model="form.code" placeholder="AL-001" />

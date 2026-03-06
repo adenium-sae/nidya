@@ -50,6 +50,7 @@ const stats = ref({
   total_categories: 0,
   low_stock_count: 0,
   sales_by_day: [] as any[],
+  sales_by_store: [] as any[],
   top_products: [] as any[],
   recent_activity: [] as any[],
 });
@@ -165,8 +166,8 @@ watch(period, () => fetchStats());
 
     <!-- Charts -->
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-      <Card class="col-span-4">
-        <CardHeader class="flex flex-row items-center justify-between space-y-0">
+      <Card class="col-span-1 md:col-span-2 lg:col-span-4">
+        <CardHeader class="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
           <CardTitle>{{ t('dashboard.sales_summary') }} - {{ t(`dashboard.periods.${period}`) }}</CardTitle>
           <Select v-model="period">
             <SelectTrigger class="w-[180px]">
@@ -211,7 +212,7 @@ watch(period, () => fetchStats());
         </CardContent>
       </Card>
 
-      <Card class="col-span-3">
+      <Card class="col-span-1 md:col-span-2 lg:col-span-3">
         <CardHeader>
           <CardTitle>{{ t('dashboard.top_products') }}</CardTitle>
         </CardHeader>
@@ -242,7 +243,7 @@ watch(period, () => fetchStats());
     <!-- Recent Activity -->
     <Card>
       <CardHeader>
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
           <CardTitle class="flex items-center gap-2">
             <Activity class="h-5 w-5" />
             {{ t('dashboard.recent_activity') }}

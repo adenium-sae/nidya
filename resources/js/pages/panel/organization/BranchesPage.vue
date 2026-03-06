@@ -250,7 +250,7 @@ onMounted(() => {
             <span v-if="errors?.store_ids" class="text-xs text-destructive mt-1">{{ errors.store_ids[0] }}</span>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="grid gap-2">
               <Label htmlFor="code" :class="{'text-destructive': errors?.code}">{{ t('common.code') }}</Label>
               <div class="flex gap-2">

@@ -172,7 +172,6 @@ function removeIcon() {
   if (iconInput.value) iconInput.value.value = '';
 }
 
-// Color extraction
 async function extractColorsFromFile(file: File) {
   isExtractingColors.value = true;
   suggestedColors.value = [];
@@ -181,15 +180,18 @@ async function extractColorsFromFile(file: File) {
     formData.append('image', file);
     const res = await fetch('/api/admin/settings/landing-page/extract-colors', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
+      headers: { 
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        'Accept': 'application/json' // <-- Agrégalo también aquí
+      },
       body: formData,
     });
     if (res.ok) {
       const data = await res.json();
       suggestedColors.value = data.colors || [];
     }
-  } catch {
-    // silently ignore
+  } catch (error) {
+    console.error('Error al extraer colores:', error);
   } finally {
     isExtractingColors.value = false;
   }
@@ -253,7 +255,7 @@ onMounted(function() {
 </script>
 
 <template>
-  <div class="h-full flex-1 flex-col space-y-8 p-8 md:flex max-w-5xl mx-auto w-full">
+  <div class="h-full flex-1 flex flex-col space-y-6 md:space-y-8 p-4 md:p-8 max-w-5xl mx-auto w-full">
     <div class="flex flex-col space-y-2">
       <h2 class="text-3xl font-extrabold tracking-tight">{{ t('settings.landing_page.title') }}</h2>
       <p class="text-muted-foreground">
