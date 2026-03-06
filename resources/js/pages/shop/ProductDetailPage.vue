@@ -93,22 +93,7 @@ const discountPercentage = computed(function() {
   return Math.round(((comparePrice.value - price.value) / comparePrice.value) * 100);
 });
 
-const stockStatus = computed(function() {
-  if (!product.value) {
-    return null;
-  }
-  if (!product.value.track_inventory) {
-    return { label: 'Disponible', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' };
-  }
-  const qty = product.value.available_stock || 0;
-  if (qty <= 0) {
-    return { label: 'Agotado', color: 'bg-red-500/10 text-red-600 border-red-500/20' };
-  }
-  if (qty <= (product.value.min_stock || 5)) {
-    return { label: `Stock Crítico: ${qty} unidades`, color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' };
-  }
-  return { label: `${qty} unidades disponibles`, color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' };
-});
+
 
 function handleMouseMove(e: MouseEvent) {
   const target = e.currentTarget as HTMLElement;
@@ -266,14 +251,7 @@ onMounted(function() {
                   {{ product.category.name }}
                 </Badge>
                 
-                <span 
-                  v-if="stockStatus" 
-                  class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border shadow-sm transition-all duration-300"
-                  :class="stockStatus.color"
-                >
-                  <Box class="size-3 mr-1.5" />
-                  {{ stockStatus.label }}
-                </span>
+
               </div>
 
               <!-- Name & SKU -->

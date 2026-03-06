@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Eye, ImageOff, Box } from 'lucide-vue-next';
+import { Eye, ImageOff } from 'lucide-vue-next';
 
 const props = defineProps<{
   product: any;
@@ -64,19 +64,6 @@ const discountPercentage = computed(function() {
   return Math.round(((comparePrice.value - price.value) / comparePrice.value) * 100);
 });
 
-const stockStatus = computed(function() {
-  if (!props.product.track_inventory) {
-    return { label: 'Disponible', color: 'text-emerald-600 bg-emerald-500/10' };
-  }
-  const qty = props.product.available_stock || 0;
-  if (qty <= 0) {
-    return { label: 'Agotado', color: 'text-red-600 bg-red-500/10' };
-  }
-  if (qty <= (props.product.min_stock || 5)) {
-    return { label: `Pocas unidades (${qty})`, color: 'text-amber-600 bg-amber-500/10' };
-  }
-  return { label: `${qty} disponibles`, color: 'text-emerald-600 bg-emerald-500/10' };
-});
 </script>
 
 <template>
@@ -112,15 +99,7 @@ const stockStatus = computed(function() {
           </Badge>
         </div>
 
-        <!-- Stock Indicator Overlay -->
-        <div class="absolute top-2.5 right-2.5">
-          <div 
-            class="px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md shadow-sm border border-white/20"
-            :class="stockStatus.color"
-          >
-            {{ stockStatus.label }}
-          </div>
-        </div>
+
       </div>
 
       <!-- Content -->

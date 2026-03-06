@@ -34,11 +34,19 @@ class ProductService
             }
         ], "quantity");
         if (!empty($filters["search"])) {
-            $search = strtolower($filters["search"]);
-            $query->where(function ($q) use ($search) {
-                $q->whereRaw("LOWER(name) LIKE ?", ["%{$search}%"])
-                    ->orWhereRaw("LOWER(sku) LIKE ?", ["%{$search}%"])
-                    ->orWhereRaw("LOWER(barcode) LIKE ?", ["%{$search}%"]);
+            $terms = array_filter(explode(' ', $filters["search"]));
+            $query->where(function ($q) use ($terms) {
+                foreach ($terms as $term) {
+                    $q->where(function ($sq) use ($term) {
+                        $sq->where('products.name', 'ilike', "%{$term}%")
+                            ->orWhere('products.sku', 'ilike', "%{$term}%")
+                            ->orWhere('products.barcode', 'ilike', "%{$term}%")
+                            ->orWhere('products.description', 'ilike', "%{$term}%")
+                            ->orWhereHas('category', function ($cq) use ($term) {
+                                $cq->where('name', 'ilike', "%{$term}%");
+                            });
+                    });
+                }
             });
         }
         if (!empty($filters["category_id"])) {

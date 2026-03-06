@@ -36,9 +36,24 @@ class CatalogController extends Controller
         }]);
 
         // Filters
-        if ($request->has('search')) {
-            $search = $request->input('search');
-            $query->where('name', 'like', "%{$search}%");
+        if ($search = $request->input('search')) {
+            $terms = array_filter(explode(' ', $search));
+            
+            $query->where(function ($q) use ($terms) {
+                foreach ($terms as $term) {
+                    $q->where(function ($sq) use ($term) {
+                        $sq->where('products.name', 'ilike', "%{$term}%")
+                           ->orWhere('products.description', 'ilike', "%{$term}%")
+                           ->orWhere('products.sku', 'ilike', "%{$term}%")
+                           ->orWhereHas('category', function ($cq) use ($term) {
+                               $cq->where('name', 'ilike', "%{$term}%");
+                           })
+                           ->orWhereHas('attributes', function ($aq) use ($term) {
+                               $aq->where('value', 'ilike', "%{$term}%");
+                           });
+                    });
+                }
+            });
         }
 
         if ($request->has('category')) {
