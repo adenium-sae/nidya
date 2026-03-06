@@ -262,9 +262,9 @@ function handleSearchInput(v: string | number | undefined) {
     </div>
 
     <!-- Table Container -->
-    <div class="rounded-md border bg-card flex-1 flex flex-col overflow-hidden min-h-0">
+    <div class="rounded-md border bg-card flex-1 flex flex-col overflow-hidden w-full min-w-0">
       <!-- Scrollable Table Wrapper -->
-      <div class="flex-1 overflow-auto flex flex-col">
+      <div class="flex-1 overflow-auto flex flex-col min-w-0 w-full">
         <Table class="flex-1 h-full">
           <TableHeader class="sticky top-0 z-10 bg-card shadow-sm">
             <TableRow class="hover:bg-transparent">
@@ -370,9 +370,9 @@ function handleSearchInput(v: string | number | undefined) {
 
                 <!-- Default text/currency/date -->
                 <template v-else>
-                  <span :class="column.type === 'currency' ? 'font-medium tabular-nums' : ''">
+                  <div :class="column.type === 'currency' ? 'font-medium tabular-nums truncate max-w-[200px]' : 'truncate max-w-[300px]'">
                     {{ getCellValue(row, column) }}
-                  </span>
+                  </div>
                 </template>
               </TableCell>
 
