@@ -5,6 +5,9 @@ import {
   Settings,
   User,
   Languages,
+  Moon,
+  Sun,
+  Monitor,
 } from "lucide-vue-next"
 
 import {
@@ -34,6 +37,7 @@ import {
 import { useRouter } from "vue-router"
 import { useAuthStore } from '@/stores/auth.store'
 import { useI18n } from 'vue-i18n'
+import { useColorMode } from '@vueuse/core'
 
 const props = defineProps<{
   user: {
@@ -47,6 +51,7 @@ const { isMobile } = useSidebar()
 const router = useRouter()
 const authStore = useAuthStore()
 const { t, locale } = useI18n()
+const colorMode = useColorMode()
 
 const getInitials = (name: string) => {
   return name
@@ -148,6 +153,34 @@ const goToGeneralSettings = () => {
                   <DropdownMenuItem @click="changeLanguage('en')">
                     English (US)
                     <span v-if="locale === 'en'" class="ml-auto text-xs opacity-60">✓</span>
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+            
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Sun v-if="colorMode === 'light'" class="mr-2 h-4 w-4" />
+                <Moon v-else-if="colorMode === 'dark'" class="mr-2 h-4 w-4" />
+                <Monitor v-else class="mr-2 h-4 w-4" />
+                {{ t('common.theme') }}
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem @click="colorMode = 'light'">
+                    <Sun class="mr-2 h-4 w-4" />
+                    {{ t('common.light') }}
+                    <span v-if="colorMode === 'light'" class="ml-auto text-xs opacity-60">✓</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="colorMode = 'dark'">
+                    <Moon class="mr-2 h-4 w-4" />
+                    {{ t('common.dark') }}
+                    <span v-if="colorMode === 'dark'" class="ml-auto text-xs opacity-60">✓</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="colorMode = 'auto'">
+                    <Monitor class="mr-2 h-4 w-4" />
+                    {{ t('common.system') }}
+                    <span v-if="colorMode === 'auto'" class="ml-auto text-xs opacity-60">✓</span>
                   </DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>

@@ -40,6 +40,10 @@
     "profile": "Profile",
     "settings": "Settings",
     "language": "Language",
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
     "code": "Code",
     "type": "Type",
     "email": "Email",
@@ -59,8 +63,7 @@
     "cancel_action": "Cancel",
     "in_development": "Module in development.",
     "coming_soon": "Coming Soon",
-    "check_errors": "Please check the fields for errors."
-    ,
+    "check_errors": "Please check the fields for errors.",
     "active_m": "Active",
     "inactive_m": "Inactive"
   },
@@ -176,8 +179,7 @@
     "empty": "No categories registered.",
     "deleted": "Category deleted successfully.",
     "delete_confirm": "Delete category?",
-    "delete_desc": "The category '{name}' will be deleted. This action cannot be undone."
-    ,
+    "delete_desc": "The category '{name}' will be deleted. This action cannot be undone.",
     "form_dialog_title_new": "New Category",
     "form_dialog_title_edit": "Edit Category",
     "form_dialog_description": "Fill the category details here.",
