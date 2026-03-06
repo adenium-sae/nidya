@@ -73,20 +73,7 @@ EOF
 EXPOSE 8001
 
 # Script de inicio
-COPY <<'EOF' /app/start.sh
-#!/bin/sh
-echo 'Fixing permissions...'
-chown -R www-data:www-data /app/storage
-chmod -R 775 /app/storage
-chmod -R 775 /app/bootstrap/cache
-
-echo 'Creating storage link...'
-php artisan storage:link --force || true
-
-php-fpm -D
-nginx -g 'daemon off;'
-EOF
-
+COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
 CMD ["/app/start.sh"]
