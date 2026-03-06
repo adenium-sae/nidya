@@ -9,7 +9,8 @@ trait CompletesLogin
     protected function completeLogin(User $user): array
     {
         $user->load('profile');
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $abilities = $user->getAllPermissionsAbilities();
+        $token = $user->createToken('auth_token', $abilities)->plainTextToken;
         return [
             'user' => [
                 'id' => $user->id,

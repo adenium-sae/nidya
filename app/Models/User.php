@@ -44,8 +44,6 @@ class User extends Authenticatable
         return $this->hasOne(Profile::class);
     }
 
-
-
     public function sales(): HasMany
     {
         return $this->hasMany(Sale::class);
@@ -101,6 +99,21 @@ class User extends Authenticatable
             $name .= ' ' . $this->profile->second_last_name;
         }
         return $name;
+    }
+
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'branch_user_roles');
+    }
+
+    public function getAllPermissionsAbilities(): array
+    {
+        return $this->roles()->with('permissions')->get()
+            ->pluck('permissions')
+            ->flatten()
+            ->pluck('key')
+            ->unique()
+            ->toArray();
     }
 
     public function hasRoleInBranch(string $roleKey, string $branchId): bool
