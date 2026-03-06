@@ -216,30 +216,37 @@ const onSubmit = form.handleSubmit(async function(values) {
   isSaving.value = true;
   try {
     const formData = new FormData();
+    // 1. El _method PUT debe ir siempre para que Laravel entienda la actualización con archivos
     formData.append('_method', 'PUT');
+    
     Object.keys(values).forEach(function(key) {
       const val = (values as any)[key];
       formData.append(key, val || '');
     });
-    if (imageFile.value) {
-      formData.append('hero_image', imageFile.value);
-    }
-    if (logoFile.value) {
-      formData.append('logo', logoFile.value);
-    }
-    if (iconFile.value) {
-      formData.append('icon', iconFile.value);
-    }
+
+    if (imageFile.value) formData.append('hero_image', imageFile.value);
+    if (logoFile.value) formData.append('logo', logoFile.value);
+    if (iconFile.value) formData.append('icon', iconFile.value);
+
+    // 2. Aquí está el truco:
     const response = await fetch('/api/admin/settings/landing-page', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
+      headers: { 
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        'Accept': 'application/json' // <--- ESTO ES LO QUE QUITA EL 302
+      },
       body: formData
+      // NOTA: No pongas 'Content-Type', el navegador lo pone solo con el boundary
     });
+
     if (response.ok) {
       toast({ title: t('common.success'), description: t('settings.landing_page.save_success') });
       await fetchSettings();
       await fetchBranding();
     } else {
+      // Si no es ok, intentamos ver qué dijo el servidor
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Error del servidor:', errorData);
       throw new Error('Failed to update');
     }
   } catch (error) {
