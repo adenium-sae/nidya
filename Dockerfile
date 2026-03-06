@@ -22,35 +22,41 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 COPY . .
 
-# Instalar dependencias (Sin dev para que pese menos)
+# Instalar dependencias de PHP y JS
 RUN composer install --no-dev --optimize-autoloader
 RUN npm install && npm run build
 
-# PERMISOS: Aseguramos que www-data sea dueño de todo el storage
-RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache && \
-    chmod -R 775 /app/storage
+# Configurar permisos iniciales
+RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache
 
-# Configuración de Nginx con límite de subida aumentado
-RUN printf 'server {\n\
-    listen 8001;\n\
-    client_max_body_size 20M;\n\
-    root /app/public;\n\
-    index index.php index.html;\n\
-    location / {\n\
-        try_files $uri $uri/ /index.php?$query_string;\n\
-    }\n\
-    location /storage/ {\n\
-        add_header "Access-Control-Allow-Origin" "*";\n\
-    }\n\
-    location ~ \.php$ {\n\
-        fastcgi_pass 127.0.0.1:9000;\n\
-        fastcgi_index index.php;\n\
-        include fastcgi_params;\n\
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;\n\
-    }\n\
-}' > /etc/nginx/http.d/default.conf
+# Crear el archivo de Nginx usando un formato heredoc (más limpio y sin errores de comillas)
+RUN cat <<EOF > /etc/nginx/http.d/default.conf
+server {
+    listen 8001;
+    client_max_body_size 20M;
+    root /app/public;
+    index index.php index.html;
+
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+    }
+}
+EOF
 
 EXPOSE 8001
 
-# Comando de inicio: Forzamos el link del storage en cada arranque
-CMD php artisan storage:link --force && php-fpm -D && nginx -g "daemon off;
+# Script de arranque para asegurar el link y permisos en cada deploy
+RUN printf "#!/bin/sh\n\
+php artisan storage:link --force\n\
+chown -R www-data:www-data /app/storage\n\
+php-fpm -D\n\
+nginx -g 'daemon off;'\n" > /app/start.sh && chmod +x /app/start.sh
+
+CMD ["/app/start.sh"]
