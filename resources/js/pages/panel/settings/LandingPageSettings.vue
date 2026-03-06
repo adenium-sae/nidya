@@ -76,7 +76,10 @@ async function fetchSettings() {
   isLoading.value = true;
   try {
     const response = await fetch('/api/admin/settings/landing-page', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+      headers: { 
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        'Accept': 'application/json'
+      },
     });
     if (response.ok) {
       const data = await response.json();
