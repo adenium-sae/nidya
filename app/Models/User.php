@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -60,8 +61,6 @@ class User extends Authenticatable
         return $this->hasMany(CashRegisterSession::class);
     }
 
-
-
     public function generateOtp(): string
     {
         $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -102,5 +101,15 @@ class User extends Authenticatable
             $name .= ' ' . $this->profile->second_last_name;
         }
         return $name;
+    }
+
+    public function hasRoleInBranch(string $roleKey, string $branchId): bool
+    {
+        return DB::table('branch_user_roles')
+            ->join('roles', 'branch_user_roles.role_id', '=', 'roles.id')
+            ->where('branch_user_roles.user_id', $this->id)
+            ->where('branch_user_roles.branch_id', $branchId)
+            ->where('roles.key', $roleKey)
+            ->exists();
     }
 }

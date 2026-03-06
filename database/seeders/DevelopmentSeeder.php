@@ -18,6 +18,7 @@ use App\Models\Store;
 use App\Models\StoreProduct;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Models\LandingPageSetting;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -97,7 +98,7 @@ class DevelopmentSeeder extends Seeder
 
         // 3. Crear Roles
         $allPermissions = Permission::all();
-        
+
         // Helper function to attach permissions (idempotent, avoids duplicates)
         $attachPermissions = function ($roleId, $permissionIds) {
             $now = now();
@@ -123,11 +124,11 @@ class DevelopmentSeeder extends Seeder
                 DB::table('role_permissions')->insert($records);
             }
         };
-        
+
         // Rol: Administrador (todos los permisos)
         $adminRole = Role::firstOrCreate([
             'key' => 'admin'
-        ],[
+        ], [
             'name' => 'Administrador',
             'description' => 'Acceso total al sistema',
             'is_system' => true,
@@ -137,29 +138,46 @@ class DevelopmentSeeder extends Seeder
         // Rol: Gerente de Sucursal
         $managerRole = Role::firstOrCreate([
             'key' => 'branch_manager'
-        ],[
+        ], [
             'name' => 'Gerente de Sucursal',
             'description' => 'Gestión completa de una sucursal',
             'is_system' => true,
         ]);
         $managerPermissions = $allPermissions->whereIn('key', [
-            'dashboard.view', 'products.view', 'inventory.view', 'inventory.adjust',
-            'sales.view', 'sales.create', 'cash.view', 'cash.open', 'cash.close',
-            'customers.view', 'customers.create', 'reports.sales', 'reports.inventory'
+            'dashboard.view',
+            'products.view',
+            'inventory.view',
+            'inventory.adjust',
+            'sales.view',
+            'sales.create',
+            'cash.view',
+            'cash.open',
+            'cash.close',
+            'customers.view',
+            'customers.create',
+            'reports.sales',
+            'reports.inventory'
         ]);
         $attachPermissions($managerRole->id, $managerPermissions->pluck('id')->toArray());
 
         // Rol: Vendedor
         $sellerRole = Role::firstOrCreate([
             'key' => 'seller'
-        ],[
+        ], [
             'name' => 'Vendedor',
             'description' => 'Ventas y caja',
             'is_system' => true,
         ]);
         $sellerPermissions = $allPermissions->whereIn('key', [
-            'dashboard.view', 'products.view', 'sales.view', 'sales.create',
-            'cash.view', 'cash.open', 'cash.close', 'customers.view', 'customers.create'
+            'dashboard.view',
+            'products.view',
+            'sales.view',
+            'sales.create',
+            'cash.view',
+            'cash.open',
+            'cash.close',
+            'customers.view',
+            'customers.create'
         ]);
         $attachPermissions($sellerRole->id, $sellerPermissions->pluck('id')->toArray());
 
@@ -170,13 +188,33 @@ class DevelopmentSeeder extends Seeder
             ['slug' => 'abarrotes-don-pepe'],
             [
                 'name' => 'Abarrotes Don Pepe',
+                'display_name' => 'Abarrotes Don Pepe',
                 'description' => 'Tu abarrotera de confianza',
                 'primary_color' => '#10B981',
+                'secondary_color' => '#047857',
+                'accent_color' => '#34D399',
                 'is_active' => true,
             ]
         );
 
         $this->command->info("✅ Tienda creada: {$store->name}");
+
+        // 4.5. Configuración de Landing Page
+        LandingPageSetting::firstOrCreate(
+            ['id' => 1],
+            [
+                'display_name' => 'Abarrotes Don Pepe',
+                'hero_title' => 'Bienvenido a Abarrotes Don Pepe',
+                'hero_subtitle' => 'Los mejores productos al mejor precio cerca de ti.',
+                'about_us_text' => 'Somos tu abarrotera de confianza con más de 10 años de experiencia.',
+                'contact_email' => 'contacto@abarrotesdonpepe.com',
+                'contact_phone' => '6441234567',
+                'primary_color' => '#10B981',
+                'secondary_color' => '#047857',
+                'accent_color' => '#34D399',
+            ]
+        );
+        $this->command->info('✅ Configuración de Landing Page inicializada');
 
         // 5. Crear Direcciones y Sucursales
         $address1 = Address::create([
@@ -255,11 +293,11 @@ class DevelopmentSeeder extends Seeder
 
         // 7. Crear Categorías (flat structure)
         $categoryNames = ['Refrescos', 'Agua', 'Papas', 'Arroz', 'Frijol', 'Galletas', 'Abarrotes', 'Bebidas', 'Botanas', 'Limpieza'];
-        
+
         foreach ($categoryNames as $catName) {
             Category::firstOrCreate([
                 'slug' => Str::slug($catName)
-            ],[
+            ], [
                 'name' => $catName,
                 'is_active' => true,
             ]);
@@ -346,14 +384,14 @@ class DevelopmentSeeder extends Seeder
 
         // 10. Crear Ventas de los últimos 7 días (para el Chart)
         $this->command->info('📈 Generando historial de ventas...');
-        
+
         $folioCounter = 1;
         $year = Carbon::now()->year;
 
         for ($i = 0; $i < 7; $i++) {
             $date = Carbon::now()->subDays($i);
             $salesCount = rand(5, 15);
-            
+
             for ($j = 0; $j < $salesCount; $j++) {
                 $customer = $createdCustomers[array_rand($createdCustomers)];
                 $folio = 'VENTA-' . $year . '-' . strtoupper(substr((string) Str::uuid(), 0, 8));
@@ -378,15 +416,15 @@ class DevelopmentSeeder extends Seeder
                 // Agregar de 1 a 3 productos por venta
                 $itemsCount = rand(1, 3);
                 $saleTotal = 0;
-                
+
                 $randomKeys = array_rand($createdProducts, $itemsCount);
                 if (!is_array($randomKeys)) $randomKeys = [$randomKeys];
-                
+
                 foreach ($randomKeys as $key) {
                     $prodItem = $createdProducts[$key];
                     $qty = rand(1, 5);
                     $itemTotal = $prodItem['price'] * $qty;
-                    
+
                     SaleItem::create([
                         'sale_id' => $sale->id,
                         'product_id' => $prodItem['product']->id,
@@ -397,10 +435,10 @@ class DevelopmentSeeder extends Seeder
                         'subtotal' => $itemTotal,
                         'total' => $itemTotal,
                     ]);
-                    
+
                     $saleTotal += $itemTotal;
                 }
-                
+
                 $sale->update([
                     'subtotal' => $saleTotal,
                     'total' => $saleTotal,
@@ -437,8 +475,11 @@ class DevelopmentSeeder extends Seeder
                 ['slug' => Str::slug($storeName)],
                 [
                     'name' => $storeName,
+                    'display_name' => $storeName,
                     'description' => "Demo store {$si} for testing",
                     'primary_color' => sprintf('#%06X', mt_rand(0, 0xFFFFFF)),
+                    'secondary_color' => sprintf('#%06X', mt_rand(0, 0xFFFFFF)),
+                    'accent_color' => sprintf('#%06X', mt_rand(0, 0xFFFFFF)),
                     'is_active' => true,
                 ]
             );
@@ -448,7 +489,7 @@ class DevelopmentSeeder extends Seeder
             for ($b = 1; $b <= $branchesPerStore; $b++) {
                 $addr = Address::create([
                     'street' => "Street {$si}{$b}",
-                    'ext_number' => (string)rand(1,999),
+                    'ext_number' => (string)rand(1, 999),
                     'neighborhood' => 'Demo Area',
                     'city' => 'Demo City',
                     'state' => 'State',
@@ -458,7 +499,7 @@ class DevelopmentSeeder extends Seeder
 
                 $branch = Branch::firstOrCreate([
                     'code' => "S{$si}{$b}"
-                ],[
+                ], [
                     'address_id' => $addr->id,
                     'name' => "{$storeName} - Branch {$b}",
                     'phone' => '0000000000',
@@ -475,7 +516,7 @@ class DevelopmentSeeder extends Seeder
             for ($w = 1; $w <= $warehousesPerStore - 1; $w++) {
                 $wh = Warehouse::firstOrCreate([
                     'code' => "W{$si}{$w}"
-                ],[
+                ], [
                     'branch_id' => $branches[($w - 1) % count($branches)]->id,
                     'name' => "{$storeName} Warehouse {$w}",
                     'type' => 'branch',
@@ -487,7 +528,7 @@ class DevelopmentSeeder extends Seeder
             // Central
             $wCentral = Warehouse::firstOrCreate([
                 'code' => "W{$si}C"
-            ],[
+            ], [
                 'name' => "{$storeName} Central Warehouse",
                 'type' => 'central',
                 'is_active' => true,
@@ -505,10 +546,10 @@ class DevelopmentSeeder extends Seeder
                 $sku = $tmpl['sku'] . "-S{$si}-" . ($p + 1);
                 $product = Product::firstOrCreate([
                     'sku' => $sku
-                ],[
+                ], [
                     'category_id' => $cat->id,
                     'name' => "{$tmpl['name']} ({$si})",
-                    'barcode' => $tmpl['barcode'] . rand(100,999),
+                    'barcode' => $tmpl['barcode'] . rand(100, 999),
                     'type' => 'product',
                     'track_inventory' => true,
                     'min_stock' => 5,
@@ -519,8 +560,8 @@ class DevelopmentSeeder extends Seeder
                 StoreProduct::updateOrCreate([
                     'store_id' => $additionalStore->id,
                     'product_id' => $product->id,
-                ],[
-                    'price' => round($tmpl['price'] * (1 + (rand(0,20) / 100)), 2),
+                ], [
+                    'price' => round($tmpl['price'] * (1 + (rand(0, 20) / 100)), 2),
                     'currency' => 'MXN',
                     'is_active' => true,
                 ]);
@@ -529,7 +570,7 @@ class DevelopmentSeeder extends Seeder
                     Stock::updateOrCreate([
                         'product_id' => $product->id,
                         'warehouse_id' => $wh->id,
-                    ],[
+                    ], [
                         'quantity' => rand(10, 200),
                         'reserved' => 0,
                         'avg_cost' => $tmpl['cost'],
@@ -544,7 +585,7 @@ class DevelopmentSeeder extends Seeder
             for ($c = 1; $c <= $customersPerStore; $c++) {
                 $localCustomers[] = Customer::firstOrCreate([
                     'email' => "client{$si}{$c}@example.com"
-                ],[
+                ], [
                     'first_name' => "Client{$si}{$c}",
                     'last_name' => 'Demo',
                     'phone' => '0000000000',

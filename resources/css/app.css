@@ -83,3 +83,11 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Fix for unovis generic tooltip */
+.vis-tooltip {
+  @apply !bg-card !border !border-border !text-card-foreground !p-0 !rounded-lg !shadow-md;
+}
+.vis-crosshair {
+  @apply !border-border;
+}

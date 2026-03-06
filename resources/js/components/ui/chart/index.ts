@@ -6,15 +6,11 @@ export { default as AreaChart } from "./AreaChart.vue"
 export { default as LineChart } from "./LineChart.vue"
 
 export function defaultColors(count: number = 3) {
-  const quotient = Math.floor(count / 2)
-  const remainder = count % 2
-
-  const primaryCount = quotient + remainder
-  const secondaryCount = quotient
-  return [
-    ...Array.from(new Array(primaryCount).keys()).map(i => `hsl(var(--vis-primary-color) / ${1 - (1 / primaryCount) * i})`),
-    ...Array.from(new Array(secondaryCount).keys()).map(i => `hsl(var(--vis-secondary-color) / ${1 - (1 / secondaryCount) * i})`),
-  ]
+  const colors = []
+  for (let i = 0; i < count; i++) {
+    colors.push(`hsl(var(--chart-${(i % 5) + 1}))`)
+  }
+  return colors
 }
 
 export * from "./interface"
