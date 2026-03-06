@@ -27,4 +27,5 @@ return [
     'user_signed_in_successfully' => 'Signed in successfully',
     'user_signed_out_successfully' => 'Signed out successfully',
     'otp_generated_successfully' => 'OTP code generated successfully',
+    'no_action_permission' => "You don't have permission for this action"
 ];

@@ -16,7 +16,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
-    return $request->user()->load('profile');
+    $user = $request->user()->load('profile');
+    $user->permissions = $user->getAllPermissionsAbilities();
+    return $user;
 })->middleware('auth:sanctum');
 
 

@@ -16,9 +16,11 @@ trait CompletesLogin
                 'id' => $user->id,
                 'email' => $user->email,
                 'full_name' => $user->fullName(),
-                'profile' => $user->profile
+                'profile' => $user->profile,
+                'permissions' => $abilities
             ],
-            'token' => $token
+            'token' => $token,
+            'permissions' => $abilities
         ];
     }
 }

@@ -30,4 +30,5 @@ return [
     'user_signed_in_successfully' => 'Sesión iniciada exitosamente',
     'user_signed_out_successfully' => 'Sesión cerrada exitosamente',
     'otp_generated_successfully' => 'Código OTP generado exitosamente',
+    'no_action_permission' => 'No tienes permiso para realizar esta acción'
 ];

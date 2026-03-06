@@ -26,9 +26,10 @@ export interface PaginatedResponse<T> {
 // ============================
 
 export interface User {
-  id: string
-  email: string
-  profile?: UserProfile
+  id: string;
+  email: string;
+  profile?: UserProfile;
+  permissions?: string[];
 }
 
 export interface UserProfile {

@@ -2,19 +2,23 @@
 
 namespace App\Actions\Catalog\Products;
 
+use App\Exceptions\Access\Auth\AccessDeniedException;
 use App\Models\Product;
 use App\Models\Stock;
 use App\Models\Store;
 use App\Models\StoreProduct;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class CreateProductAction
 {
     public function __invoke(array $data): Product
     {
+        if (!Auth::user()->tokenCan("products.create")) {
+            throw new AccessDeniedException(__("messages.no_action_permission"));
+        }
         return DB::transaction(function () use ($data) {
             $product = $this->createBaseProduct($data);
-
             if (!empty($data['store_id'])) {
                 $this->attachToStore($product->id, $data['store_id'], $data);
                 if ($data['type'] === 'product' && !empty($data['initial_stock']) && $data['initial_stock'] > 0) {
