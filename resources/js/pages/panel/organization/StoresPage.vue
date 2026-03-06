@@ -177,7 +177,7 @@ onMounted(() => {
             <Label htmlFor="name">{{ t('common.name') }} <span class="text-destructive">*</span></Label>
             <Input id="name" v-model="form.name" placeholder="Ej. Nidya Cancún" />
           </div>
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="grid gap-2">
               <Label htmlFor="slug">{{ t('stores.slug') }}</Label>
               <Input id="slug" v-model="form.slug" placeholder="nidya-cancun" />

@@ -76,7 +76,10 @@ async function fetchSettings() {
   isLoading.value = true;
   try {
     const response = await fetch('/api/admin/settings/landing-page', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+      headers: { 
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        'Accept': 'application/json'
+      },
     });
     if (response.ok) {
       const data = await response.json();
@@ -169,7 +172,6 @@ function removeIcon() {
   if (iconInput.value) iconInput.value.value = '';
 }
 
-// Color extraction
 async function extractColorsFromFile(file: File) {
   isExtractingColors.value = true;
   suggestedColors.value = [];
@@ -178,15 +180,18 @@ async function extractColorsFromFile(file: File) {
     formData.append('image', file);
     const res = await fetch('/api/admin/settings/landing-page/extract-colors', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
+      headers: { 
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        'Accept': 'application/json' // <-- Agrégalo también aquí
+      },
       body: formData,
     });
     if (res.ok) {
       const data = await res.json();
       suggestedColors.value = data.colors || [];
     }
-  } catch {
-    // silently ignore
+  } catch (error) {
+    console.error('Error al extraer colores:', error);
   } finally {
     isExtractingColors.value = false;
   }
@@ -211,30 +216,37 @@ const onSubmit = form.handleSubmit(async function(values) {
   isSaving.value = true;
   try {
     const formData = new FormData();
+    // 1. El _method PUT debe ir siempre para que Laravel entienda la actualización con archivos
     formData.append('_method', 'PUT');
+    
     Object.keys(values).forEach(function(key) {
       const val = (values as any)[key];
       formData.append(key, val || '');
     });
-    if (imageFile.value) {
-      formData.append('hero_image', imageFile.value);
-    }
-    if (logoFile.value) {
-      formData.append('logo', logoFile.value);
-    }
-    if (iconFile.value) {
-      formData.append('icon', iconFile.value);
-    }
+
+    if (imageFile.value) formData.append('hero_image', imageFile.value);
+    if (logoFile.value) formData.append('logo', logoFile.value);
+    if (iconFile.value) formData.append('icon', iconFile.value);
+
+    // 2. Aquí está el truco:
     const response = await fetch('/api/admin/settings/landing-page', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
+      headers: { 
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        'Accept': 'application/json' // <--- ESTO ES LO QUE QUITA EL 302
+      },
       body: formData
+      // NOTA: No pongas 'Content-Type', el navegador lo pone solo con el boundary
     });
+
     if (response.ok) {
       toast({ title: t('common.success'), description: t('settings.landing_page.save_success') });
       await fetchSettings();
       await fetchBranding();
     } else {
+      // Si no es ok, intentamos ver qué dijo el servidor
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Error del servidor:', errorData);
       throw new Error('Failed to update');
     }
   } catch (error) {
@@ -250,7 +262,7 @@ onMounted(function() {
 </script>
 
 <template>
-  <div class="h-full flex-1 flex-col space-y-8 p-8 md:flex max-w-5xl mx-auto w-full">
+  <div class="h-full flex-1 flex flex-col space-y-6 md:space-y-8 p-4 md:p-8 max-w-5xl mx-auto w-full">
     <div class="flex flex-col space-y-2">
       <h2 class="text-3xl font-extrabold tracking-tight">{{ t('settings.landing_page.title') }}</h2>
       <p class="text-muted-foreground">

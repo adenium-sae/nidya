@@ -76,28 +76,28 @@ const breadcrumbs = computed(() => {
 <template>
   <SidebarProvider>
     <AppSidebar />
-    <SidebarInset>
-      <header class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-        <div class="flex items-center gap-2 px-4">
-          <SidebarTrigger class="-ml-1" />
+    <SidebarInset class="overflow-x-hidden w-full max-w-full">
+      <header class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 w-full">
+        <div class="flex items-center gap-2 px-4 w-full">
+          <SidebarTrigger class="-ml-1 flex-shrink-0" />
           <Separator
             orientation="vertical"
-            class="mr-2 h-4"
+            class="mr-2 h-4 flex-shrink-0"
           />
-          <Breadcrumb>
-            <BreadcrumbList>
+          <Breadcrumb class="min-w-0 flex-1">
+            <BreadcrumbList class="flex-nowrap truncate w-full">
               <template v-for="(crumb, index) in breadcrumbs" :key="crumb.path">
-                <BreadcrumbSeparator v-if="index > 0" class="hidden md:block" />
-                <BreadcrumbItem :class="index < breadcrumbs.length - 1 ? 'hidden md:block' : ''">
-                  <BreadcrumbPage v-if="crumb.isLast">{{ crumb.label }}</BreadcrumbPage>
-                  <BreadcrumbLink v-else :href="crumb.path">{{ crumb.label }}</BreadcrumbLink>
+                <BreadcrumbSeparator v-if="index > 0" class="hidden md:block flex-shrink-0" />
+                <BreadcrumbItem :class="index < breadcrumbs.length - 1 ? 'hidden md:flex' : 'flex min-w-0'">
+                  <BreadcrumbPage v-if="crumb.isLast" class="truncate">{{ crumb.label }}</BreadcrumbPage>
+                  <BreadcrumbLink v-else :href="crumb.path" class="truncate">{{ crumb.label }}</BreadcrumbLink>
                 </BreadcrumbItem>
               </template>
             </BreadcrumbList>
           </Breadcrumb>
         </div>
       </header>
-      <div class="flex flex-1 flex-col gap-4 p-4 pt-0">
+      <div class="flex flex-1 flex-col gap-4 p-2 sm:p-4 pt-0 w-full min-w-0 overflow-x-hidden">
          <slot />
       </div>
     </SidebarInset>

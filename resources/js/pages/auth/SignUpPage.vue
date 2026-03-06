@@ -197,7 +197,7 @@ function updateWarehouse() {
 
                 <!-- Step 1: Account -->
                 <div v-if="currentStep === 1" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-2">
                             <Label for="first-name">{{ t('auth.first_name') }}</Label>
                             <Input id="first-name" placeholder="John" v-model="form.first_name" />
