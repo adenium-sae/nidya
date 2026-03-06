@@ -11,11 +11,15 @@ class DatabaseSeeder extends Seeder
 
     /**
      * Seed the application's database.
+     *
+     * Usage:
+     *   php artisan db:seed                          → Production (datos mínimos)
+     *   php artisan db:seed --class=DevelopmentSeeder → Development (datos de demo)
      */
     public function run(): void
     {
         $this->call([
-            DevelopmentSeeder::class,
+            ProductionSeeder::class,
         ]);
     }
 }

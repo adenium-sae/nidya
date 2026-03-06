@@ -4,9 +4,13 @@ import { computed, ref, watch } from 'vue'
 import { Store, Menu, X, Home, LayoutGrid } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { useBranding } from '@/composables/useBranding'
 
 const route = useRoute()
 const mobileMenuOpen = ref(false)
+const { branding } = useBranding()
+
+const storeName = computed(() => branding.value?.display_name || 'Nidya')
 
 const navLinks = [
   { label: 'Inicio', to: '/shop/home', icon: Home },
@@ -27,20 +31,24 @@ watch(() => route.path, () => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-background">
+  <div class="min-h-screen flex flex-col bg-white">
     <!-- Header -->
-    <header class="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-lg supports-[backdrop-filter]:bg-background/60">
+    <header class="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-lg supports-[backdrop-filter]:bg-white/60">
       <div class="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         
         <!-- Logo -->
         <RouterLink to="/shop/home" class="flex items-center gap-2.5 group">
-          <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground transition-transform duration-200 group-hover:scale-105">
-            <Store class="size-4" />
-          </div>
-          <div class="flex items-baseline gap-1.5">
-            <span class="text-lg font-bold tracking-tight text-foreground">Nidya</span>
-            <span class="text-xs font-medium text-muted-foreground uppercase tracking-widest">Shop</span>
-          </div>
+          <template v-if="branding?.logo_url">
+            <img :src="branding.logo_url" :alt="storeName" class="h-8 w-auto object-contain transition-transform duration-200 group-hover:scale-105" />
+          </template>
+          <template v-else>
+            <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground transition-transform duration-200 group-hover:scale-105">
+              <Store class="size-4" />
+            </div>
+          </template>
+          <!-- <div class="flex items-baseline gap-1.5">
+            <span class="text-lg font-bold tracking-tight text-foreground">{{ storeName }}</span>
+          </div> -->
         </RouterLink>
 
         <!-- Desktop Nav -->
@@ -81,7 +89,7 @@ watch(() => route.path, () => {
       <Transition name="slideDown">
         <div 
           v-if="mobileMenuOpen" 
-          class="md:hidden border-t bg-background px-4 py-3 space-y-0.5"
+          class="md:hidden border-t bg-white px-4 py-3 space-y-0.5"
         >
           <RouterLink 
             v-for="link in navLinks" 
@@ -111,10 +119,15 @@ watch(() => route.path, () => {
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <!-- Brand -->
           <div class="flex items-center gap-2.5">
-            <div class="flex items-center justify-center w-7 h-7 rounded-lg bg-primary text-primary-foreground">
-              <Store class="size-3.5" />
-            </div>
-            <span class="text-sm font-semibold text-foreground">Nidya Shop</span>
+            <template v-if="branding?.logo_url">
+              <img :src="branding.logo_url" :alt="storeName" class="h-7 w-auto object-contain" />
+            </template>
+            <template v-else>
+              <div class="flex items-center justify-center w-7 h-7 rounded-lg bg-primary text-primary-foreground">
+                <Store class="size-3.5" />
+              </div>
+            </template>
+            <span class="text-sm font-semibold text-foreground">{{ storeName }}</span>
           </div>
 
           <!-- Nav Links -->
@@ -133,7 +146,7 @@ watch(() => route.path, () => {
         <Separator class="my-6" />
         
         <p class="text-xs text-muted-foreground text-center md:text-left">
-          &copy; {{ new Date().getFullYear() }} Nidya. Todos los derechos reservados.
+          &copy; {{ new Date().getFullYear() }} {{ storeName }}. Todos los derechos reservados.
         </p>
       </div>
     </footer>

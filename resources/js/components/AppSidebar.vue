@@ -12,6 +12,7 @@ const appDomain = computed(() => {
 import { RouterLink, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { useI18n } from 'vue-i18n'
+import { useBranding } from '@/composables/useBranding'
 
 import { 
   ChevronRight, 
@@ -48,6 +49,7 @@ import NavUser from "@/components/NavUser.vue"
 
 const { t } = useI18n()
 const route = useRoute()
+const { branding } = useBranding()
 
 interface SidebarProps {
   side?: "left" | "right"
@@ -228,12 +230,19 @@ const navMain = computed(() => [
         <SidebarMenuItem>
           <SidebarMenuButton size="lg" as-child>
             <RouterLink to="/panel/dashboard">
-              <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <Store class="size-4" />
-              </div>
+              <template v-if="branding?.logo_url">
+                <div class="flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden bg-transparent">
+                  <img :src="branding.logo_url" alt="Logo" class="w-full h-full object-contain" />
+                </div>
+              </template>
+              <template v-else>
+                <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <Store class="size-4" />
+                </div>
+              </template>
               <div class="flex flex-col gap-0.5 leading-none">
-                <span class="font-medium">Nidya</span>
-                <span class="text-xs text-muted-foreground">{{ appDomain }}</span>
+                <span class="font-medium truncate max-w-[140px]">{{ branding?.display_name || 'Nidya' }}</span>
+                <span class="text-xs text-muted-foreground truncate">{{ appDomain }}</span>
               </div>
             </RouterLink>
           </SidebarMenuButton>

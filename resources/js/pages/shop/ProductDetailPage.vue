@@ -1,97 +1,127 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowLeft, Tag, ChevronRight, ImageOff, ZoomIn, Package, Info, List } from 'lucide-vue-next'
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, RouterLink } from 'vue-router';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Tag, ChevronRight, ImageOff, ZoomIn, Package, Info, List } from 'lucide-vue-next';
 
-const route = useRoute()
+const route = useRoute();
+const product = ref<any>(null);
+const isLoading = ref(true);
+const selectedImageIndex = ref(0);
+const imageError = ref(false);
+const isZoomed = ref(false);
+const zoomPosition = ref({ x: 50, y: 50 });
 
-const product = ref<any>(null)
-const isLoading = ref(true)
-const selectedImageIndex = ref(0)
-const imageError = ref(false)
-const isZoomed = ref(false)
-const zoomPosition = ref({ x: 50, y: 50 })
-
-const fetchProduct = async () => {
-  isLoading.value = true
+async function fetchProduct() {
+  isLoading.value = true;
   try {
-    const res = await fetch(`/api/shop/catalog/products/${route.params.id}`)
+    const res = await fetch(`/api/shop/catalog/products/${route.params.id}`);
     if (res.ok) {
-      product.value = await res.json()
+      product.value = await res.json();
     }
   } catch (error) {
-    console.error('Failed to load product:', error)
+    console.error('Failed to load product:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
-const allImages = computed(() => {
-  if (!product.value) return []
-  const imgs: { url: string }[] = []
+const allImages = computed(function() {
+  if (!product.value) {
+    return [];
+  }
+  const imgs: { url: string }[] = [];
   if (product.value.images && product.value.images.length > 0) {
-    imgs.push(...product.value.images)
+    imgs.push(...product.value.images);
   } else if (product.value.image_url) {
-    imgs.push({ url: product.value.image_url })
+    imgs.push({ url: product.value.image_url });
   }
-  return imgs
-})
+  return imgs;
+});
 
-const currentImage = computed(() => {
+const currentImage = computed(function() {
   if (allImages.value.length > 0) {
-    return allImages.value[selectedImageIndex.value]?.url
+    return allImages.value[selectedImageIndex.value]?.url;
   }
-  return null
-})
+  return null;
+});
 
-const storeProduct = computed(() => {
+const storeProduct = computed(function() {
   if (product.value?.store_products?.length > 0) {
-    return product.value.store_products[0]
+    return product.value.store_products[0];
   }
-  return null
-})
+  return null;
+});
 
-const price = computed(() => storeProduct.value?.price || 0)
-const comparePrice = computed(() => storeProduct.value?.compare_at_price)
-const hasDiscount = computed(() => comparePrice.value && comparePrice.value > price.value)
+const price = computed(function() {
+  return storeProduct.value?.price || 0;
+});
 
-const formattedPrice = computed(() => {
+const comparePrice = computed(function() {
+  return storeProduct.value?.compare_at_price;
+});
+
+const hasDiscount = computed(function() {
+  return comparePrice.value && comparePrice.value > price.value;
+});
+
+const formattedPrice = computed(function() {
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
     currency: storeProduct.value?.currency || 'MXN',
-  }).format(price.value)
-})
+  }).format(price.value);
+});
 
-const formattedComparePrice = computed(() => {
-  if (!hasDiscount.value) return ''
+const formattedComparePrice = computed(function() {
+  if (!hasDiscount.value) {
+    return '';
+  }
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
     currency: storeProduct.value?.currency || 'MXN',
-  }).format(comparePrice.value)
-})
+  }).format(comparePrice.value);
+});
 
-const discountPercentage = computed(() => {
-  if (!hasDiscount.value) return 0
-  return Math.round(((comparePrice.value - price.value) / comparePrice.value) * 100)
-})
+const discountPercentage = computed(function() {
+  if (!hasDiscount.value) {
+    return 0;
+  }
+  return Math.round(((comparePrice.value - price.value) / comparePrice.value) * 100);
+});
 
-const handleMouseMove = (e: MouseEvent) => {
-  const target = e.currentTarget as HTMLElement
-  const rect = target.getBoundingClientRect()
+const stockStatus = computed(function() {
+  if (!product.value) {
+    return null;
+  }
+  if (!product.value.track_inventory) {
+    return { label: 'Disponible', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' };
+  }
+  const qty = product.value.available_stock || 0;
+  if (qty <= 0) {
+    return { label: 'Agotado', color: 'bg-red-500/10 text-red-600 border-red-500/20' };
+  }
+  if (qty <= (product.value.min_stock || 5)) {
+    return { label: `Stock Crítico: ${qty} unidades`, color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' };
+  }
+  return { label: `${qty} unidades disponibles`, color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' };
+});
+
+function handleMouseMove(e: MouseEvent) {
+  const target = e.currentTarget as HTMLElement;
+  const rect = target.getBoundingClientRect();
   zoomPosition.value = {
     x: ((e.clientX - rect.left) / rect.width) * 100,
     y: ((e.clientY - rect.top) / rect.height) * 100,
-  }
+  };
 }
 
-onMounted(() => {
-  fetchProduct()
-})
+onMounted(function() {
+  fetchProduct();
+});
 </script>
 
 <template>
@@ -155,7 +185,17 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
+        <!-- Back button at top for better UX -->
+        <div class="mb-6 lg:mb-8">
+          <RouterLink to="/shop/catalog">
+            <Button variant="ghost" size="sm" class="-ml-2.5 text-muted-foreground hover:text-foreground transition-all">
+              <ArrowLeft class="size-4 mr-2" />
+              Volver al catálogo
+            </Button>
+          </RouterLink>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
           
           <!-- Image Gallery -->
@@ -170,7 +210,7 @@ onMounted(() => {
               <!-- No image fallback -->
               <div v-if="!currentImage || imageError" class="flex flex-col items-center justify-center gap-3 text-muted-foreground/40">
                 <ImageOff class="size-16" />
-                <span class="text-sm">Sin imagen</span>
+                <span class="text-sm font-medium">Sin imagen</span>
               </div>
               
               <img 
@@ -217,95 +257,104 @@ onMounted(() => {
           </div>
 
           <!-- Product Info -->
-          <div class="space-y-6">
-            <!-- Category -->
-            <Badge v-if="product.category" variant="secondary" class="text-xs px-2.5 py-1">
-              <Tag class="size-3 mr-1.5" />
-              {{ product.category.name }}
-            </Badge>
-
-            <!-- Name -->
-            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-tight">{{ product.name }}</h1>
-
-            <!-- SKU -->
-            <p class="text-sm text-muted-foreground font-mono" v-if="product.sku">
-              SKU: {{ product.sku }}
-            </p>
-
-            <!-- Price -->
-            <div v-if="storeProduct" class="space-y-1.5">
-              <div class="flex items-baseline gap-3 flex-wrap">
-                <span class="text-3xl sm:text-4xl font-bold text-foreground">{{ formattedPrice }}</span>
-                <span v-if="hasDiscount" class="text-lg text-muted-foreground line-through">
-                  {{ formattedComparePrice }}
-                </span>
-                <Badge v-if="hasDiscount" class="bg-red-500/10 text-red-600 hover:bg-red-500/10 border-0 font-semibold">
-                  Ahorra {{ discountPercentage }}%
+          <div class="flex flex-col gap-8">
+            <div class="space-y-6">
+              <!-- Category & Stock -->
+              <div class="flex items-center gap-3">
+                <Badge v-if="product.category" variant="secondary" class="text-xs px-2.5 py-1">
+                  <Tag class="size-3 mr-1.5" />
+                  {{ product.category.name }}
                 </Badge>
+                
+                <span 
+                  v-if="stockStatus" 
+                  class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border shadow-sm transition-all duration-300"
+                  :class="stockStatus.color"
+                >
+                  <Box class="size-3 mr-1.5" />
+                  {{ stockStatus.label }}
+                </span>
               </div>
-              <p class="text-xs text-muted-foreground">Precio de venta al público · IVA incluido</p>
-            </div>
-            <div v-else class="text-muted-foreground italic">
-              Precio no disponible
+
+              <!-- Name & SKU -->
+              <div class="space-y-2">
+                <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-tight">{{ product.name }}</h1>
+                <p class="text-sm text-muted-foreground font-mono" v-if="product.sku">
+                  SKU: {{ product.sku }}
+                </p>
+              </div>
+
+              <!-- Price -->
+              <div v-if="storeProduct" class="space-y-1.5">
+                <div class="flex items-baseline gap-3 flex-wrap">
+                  <span class="text-3xl sm:text-4xl font-bold text-foreground">{{ formattedPrice }}</span>
+                  <span v-if="hasDiscount" class="text-lg text-muted-foreground line-through">
+                    {{ formattedComparePrice }}
+                  </span>
+                  <Badge v-if="hasDiscount" class="bg-red-500/10 text-red-600 hover:bg-red-500/10 border-0 font-semibold">
+                    Ahorra {{ discountPercentage }}%
+                  </Badge>
+                </div>
+                <p class="text-xs text-muted-foreground">Precio de venta al público · IVA incluido</p>
+              </div>
+              <div v-else class="text-muted-foreground italic text-sm">
+                Precio no disponible
+              </div>
             </div>
 
             <Separator />
 
             <!-- Tabs for description and attributes -->
             <Tabs default-value="description" class="w-full">
-              <TabsList class="w-full grid grid-cols-2 h-10">
-                <TabsTrigger value="description" class="text-xs sm:text-sm gap-1.5">
-                  <Info class="size-3.5" />
+              <TabsList class="w-full grid grid-cols-2 h-11 bg-muted/50 p-1">
+                <TabsTrigger value="description" class="text-xs sm:text-sm gap-2">
+                  <Info class="size-4" />
                   Descripción
                 </TabsTrigger>
-                <TabsTrigger value="attributes" class="text-xs sm:text-sm gap-1.5">
-                  <List class="size-3.5" />
+                <TabsTrigger value="attributes" class="text-xs sm:text-sm gap-2">
+                  <List class="size-4" />
                   Características
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="description" class="mt-4">
+              <TabsContent value="description" class="mt-6">
                 <div v-if="product.description" class="prose prose-sm max-w-none">
                   <p class="text-muted-foreground whitespace-pre-line leading-relaxed text-sm">
                     {{ product.description }}
                   </p>
                 </div>
-                <p v-else class="text-sm text-muted-foreground italic py-4">
-                  Este producto no tiene descripción disponible.
-                </p>
+                <div v-else class="flex flex-col items-center justify-center py-10 px-4 text-center border border-dashed rounded-xl bg-muted/10">
+                  <Info class="size-8 text-muted-foreground/30 mb-3" />
+                  <p class="text-sm text-muted-foreground max-w-[250px]">
+                    Este producto no tiene una descripción detallada disponible en este momento.
+                  </p>
+                </div>
               </TabsContent>
 
-              <TabsContent value="attributes" class="mt-4">
-                <div v-if="product.attributes && product.attributes.length > 0" class="rounded-xl border overflow-hidden">
+              <TabsContent value="attributes" class="mt-6">
+                <div v-if="product.attributes && product.attributes.length > 0" class="rounded-xl border overflow-hidden shadow-sm">
                   <table class="w-full text-sm">
                     <tbody>
                       <tr 
                         v-for="(attr, idx) in product.attributes" 
                         :key="attr.id"
                         :class="Number(idx) % 2 === 0 ? 'bg-muted/30' : 'bg-background'"
-                        class="transition-colors"
+                        class="transition-colors border-b last:border-0"
                       >
-                        <td class="px-4 py-3 font-medium w-2/5 text-foreground">{{ attr.name }}</td>
-                        <td class="px-4 py-3 text-muted-foreground">{{ attr.value }}</td>
+                        <td class="px-5 py-3.5 font-medium w-2/5 text-foreground">{{ attr.name }}</td>
+                        <td class="px-5 py-3.5 text-muted-foreground">{{ attr.value }}</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
-                <p v-else class="text-sm text-muted-foreground italic py-4">
-                  No hay características registradas para este producto.
-                </p>
+                <div v-else class="flex flex-col items-center justify-center py-10 px-4 text-center border border-dashed rounded-xl bg-muted/10">
+                  <List class="size-8 text-muted-foreground/30 mb-3" />
+                  <p class="text-sm text-muted-foreground max-w-[250px]">
+                    No se han registrado características técnicas para este producto.
+                  </p>
+                </div>
               </TabsContent>
             </Tabs>
-
-            <!-- Back button -->
-            <div class="pt-4">
-              <RouterLink to="/shop/catalog">
-                <Button variant="outline" size="sm">
-                  <ArrowLeft class="size-4 mr-2" />
-                  Volver al catálogo
-                </Button>
-              </RouterLink>
-            </div>
           </div>
         </div>
       </div>

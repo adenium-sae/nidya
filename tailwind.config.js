@@ -63,7 +63,15 @@ export default {
   				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
-  			}
+  			},
+  			'shop-secondary': {
+  				DEFAULT: 'hsl(var(--shop-secondary, var(--secondary)))',
+  				foreground: 'hsl(var(--secondary-foreground))',
+  			},
+  			'shop-accent': {
+  				DEFAULT: 'hsl(var(--shop-accent, var(--accent)))',
+  				foreground: 'hsl(var(--shop-accent-foreground, var(--accent-foreground)))',
+  			},
   		},
   		borderRadius: {
   			xl: 'calc(var(--radius) + 4px)',

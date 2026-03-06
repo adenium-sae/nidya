@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import ShopLayout from '@/layouts/ShopLayout.vue'
-import { RouterView } from 'vue-router'
+import ShopLayout from '@/layouts/ShopLayout.vue';
+import { RouterView } from 'vue-router';
 </script>
 
 <template>

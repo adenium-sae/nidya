@@ -1,151 +1,171 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { Search, FilterX, SlidersHorizontal, LayoutGrid, X, ChevronLeft, ChevronRight, Package } from 'lucide-vue-next'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-
-import ProductCard from '@/components/shop/ProductCard.vue'
+import { ref, onMounted, watch, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { Search, FilterX, SlidersHorizontal, LayoutGrid, X, ChevronLeft, ChevronRight, Package } from 'lucide-vue-next';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import ProductCard from '@/components/shop/ProductCard.vue';
 
 interface Category {
-  id: string
-  name: string
-  slug: string
-  products_count?: number
+  id: string;
+  name: string;
+  slug: string;
+  products_count?: number;
 }
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
+const products = ref<any[]>([]);
+const categories = ref<Category[]>([]);
+const isLoadingProducts = ref(true);
+const isLoadingCategories = ref(true);
+const totalProducts = ref(0);
+const currentPage = ref(Number(route.query.page) || 1);
+const lastPage = ref(1);
+const searchQuery = ref((route.query.search as string) || '');
+const currentCategory = ref((route.query.category as string) || '');
 
-const products = ref<any[]>([])
-const categories = ref<Category[]>([])
-const isLoadingProducts = ref(true)
-const isLoadingCategories = ref(true)
-const totalProducts = ref(0)
-const currentPage = ref(Number(route.query.page) || 1)
-const lastPage = ref(1)
+const activeCategoryName = computed(function() {
+  if (!currentCategory.value) {
+    return null;
+  }
+  const found = categories.value.find(function(c) {
+    return c.id === currentCategory.value;
+  });
+  return found?.name || null;
+});
 
-const searchQuery = ref((route.query.search as string) || '')
-const currentCategory = ref((route.query.category as string) || '')
-
-const activeCategoryName = computed(() => {
-  if (!currentCategory.value) return null
-  const found = categories.value.find(c => c.id === currentCategory.value)
-  return found?.name || null
-})
-
-const fetchCategories = async () => {
-    isLoadingCategories.value = true
-    try {
-        const res = await fetch('/api/shop/categories')
-        if (res.ok) {
-            categories.value = await res.json()
-        }
-    } catch(e) {
-        console.error(e)
-    } finally {
-        isLoadingCategories.value = false
-    }
-}
-
-const fetchProducts = async () => {
-  isLoadingProducts.value = true
+async function fetchCategories() {
+  isLoadingCategories.value = true;
   try {
-    const params = new URLSearchParams()
-    if (searchQuery.value) params.append('search', searchQuery.value)
-    if (currentCategory.value) params.append('category', currentCategory.value)
-    params.append('page', String(currentPage.value))
-
-    const res = await fetch(`/api/shop/catalog/products?${params.toString()}`)
+    const res = await fetch('/api/shop/categories');
     if (res.ok) {
-      const data = await res.json()
-      products.value = data.data
-      totalProducts.value = data.total
-      lastPage.value = data.last_page
-      currentPage.value = data.current_page
+      categories.value = await res.json();
     }
-  } catch (error) {
-    console.error('Failed to fetch products', error)
+  } catch(e) {
+    console.error(e);
   } finally {
-    isLoadingProducts.value = false
+    isLoadingCategories.value = false;
   }
 }
 
-const updateFilters = () => {
-    const query: Record<string, string> = {}
-    if (searchQuery.value) query.search = searchQuery.value
-    if (currentCategory.value) query.category = currentCategory.value
-    if (currentPage.value > 1) query.page = String(currentPage.value)
-    router.push({ query })
-}
-
-const handleSearch = () => {
-    currentPage.value = 1
-    updateFilters()
-}
-
-const selectCategory = (categoryId: string) => {
-    currentCategory.value = currentCategory.value === categoryId ? '' : categoryId
-    currentPage.value = 1
-    updateFilters()
-}
-
-const clearFilters = () => {
-    searchQuery.value = ''
-    currentCategory.value = ''
-    currentPage.value = 1
-    updateFilters()
-}
-
-const goToPage = (page: number) => {
-    if (page < 1 || page > lastPage.value) return
-    currentPage.value = page
-    updateFilters()
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-const paginationPages = computed(() => {
-    const pages: (number | string)[] = []
-    const total = lastPage.value
-    const current = currentPage.value
-
-    if (total <= 7) {
-        for (let i = 1; i <= total; i++) pages.push(i)
-    } else {
-        pages.push(1)
-        if (current > 3) pages.push('...')
-        for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
-            pages.push(i)
-        }
-        if (current < total - 2) pages.push('...')
-        pages.push(total)
+async function fetchProducts() {
+  isLoadingProducts.value = true;
+  try {
+    const params = new URLSearchParams();
+    if (searchQuery.value) {
+      params.append('search', searchQuery.value);
     }
-    return pages
-})
+    if (currentCategory.value) {
+      params.append('category', currentCategory.value);
+    }
+    params.append('page', String(currentPage.value));
+    const res = await fetch(`/api/shop/catalog/products?${params.toString()}`);
+    if (res.ok) {
+      const data = await res.json();
+      products.value = data.data;
+      totalProducts.value = data.total;
+      lastPage.value = data.last_page;
+      currentPage.value = data.current_page;
+    }
+  } catch (error) {
+    console.error('Failed to fetch products', error);
+  } finally {
+    isLoadingProducts.value = false;
+  }
+}
 
-const hasActiveFilters = computed(() => searchQuery.value || currentCategory.value)
+function updateFilters() {
+  const query: Record<string, string> = {};
+  if (searchQuery.value) {
+    query.search = searchQuery.value;
+  }
+  if (currentCategory.value) {
+    query.category = currentCategory.value;
+  }
+  if (currentPage.value > 1) {
+    query.page = String(currentPage.value);
+  }
+  router.push({ query });
+}
+
+function handleSearch() {
+  currentPage.value = 1;
+  updateFilters();
+}
+
+function selectCategory(categoryId: string) {
+  currentCategory.value = currentCategory.value === categoryId ? '' : categoryId;
+  currentPage.value = 1;
+  updateFilters();
+}
+
+function clearFilters() {
+  searchQuery.value = '';
+  currentCategory.value = '';
+  currentPage.value = 1;
+  updateFilters();
+}
+
+function goToPage(page: number) {
+  if (page < 1 || page > lastPage.value) {
+    return;
+  }
+  currentPage.value = page;
+  updateFilters();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+const paginationPages = computed(function() {
+  const pages: (number | string)[] = [];
+  const total = lastPage.value;
+  const current = currentPage.value;
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) {
+      pages.push(i);
+    }
+  } else {
+    pages.push(1);
+    if (current > 3) {
+      pages.push('...');
+    }
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
+      pages.push(i);
+    }
+    if (current < total - 2) {
+      pages.push('...');
+    }
+    pages.push(total);
+  }
+  return pages;
+});
+
+const hasActiveFilters = computed(function() {
+  return searchQuery.value || currentCategory.value;
+});
 
 watch(
-  () => route.query,
-  (newQuery) => {
-    searchQuery.value = (newQuery.search as string) || ''
-    currentCategory.value = (newQuery.category as string) || ''
-    currentPage.value = Number(newQuery.page) || 1
-    fetchProducts()
+  function() {
+    return route.query;
+  },
+  function(newQuery) {
+    searchQuery.value = (newQuery.search as string) || '';
+    currentCategory.value = (newQuery.category as string) || '';
+    currentPage.value = Number(newQuery.page) || 1;
+    fetchProducts();
   },
   { deep: true }
-)
+);
 
-onMounted(() => {
-  fetchCategories()
-  fetchProducts()
-})
-
+onMounted(function() {
+  fetchCategories();
+  fetchProducts();
+});
 </script>
 
 <template>

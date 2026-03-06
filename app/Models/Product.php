@@ -31,6 +31,8 @@ class Product extends Model
         'is_active',
     ];
 
+    protected $appends = ['available_stock', 'total_stock'];
+
     protected $casts = [
         'track_inventory' => 'boolean',
         'is_active' => 'boolean',
