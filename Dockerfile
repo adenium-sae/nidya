@@ -1,6 +1,6 @@
 FROM php:8.2-fpm-alpine
 
-# Instalar dependencias del sistema y extensiones de PHP
+# Dependencias y extensiones
 RUN apk add --no-cache \
     nginx \
     wget \
@@ -15,32 +15,27 @@ RUN apk add --no-cache \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo pdo_pgsql gd
 
-# Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Directorio de trabajo
 WORKDIR /app
 COPY . .
 
-# Instalar dependencias de PHP y JS
 RUN composer install --no-dev --optimize-autoloader
 RUN npm install && npm run build
 
-# Configurar permisos iniciales
+# Permisos iniciales
 RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache
 
-# Crear el archivo de Nginx usando un formato heredoc (más limpio y sin errores de comillas)
+# Configuración de Nginx usando HEREDOC (evita errores de sintaxis)
 RUN cat <<EOF > /etc/nginx/http.d/default.conf
 server {
     listen 8001;
     client_max_body_size 20M;
     root /app/public;
     index index.php index.html;
-
     location / {
         try_files \$uri \$uri/ /index.php?\$query_string;
     }
-
     location ~ \.php$ {
         fastcgi_pass 127.0.0.1:9000;
         fastcgi_index index.php;
@@ -52,10 +47,9 @@ EOF
 
 EXPOSE 8001
 
-# Script de arranque para asegurar el link y permisos en cada deploy
+# Script de arranque para asegurar el enlace simbólico cada vez
 RUN printf "#!/bin/sh\n\
 php artisan storage:link --force\n\
-chown -R www-data:www-data /app/storage\n\
 php-fpm -D\n\
 nginx -g 'daemon off;'\n" > /app/start.sh && chmod +x /app/start.sh
 
