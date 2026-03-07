@@ -15,7 +15,7 @@ class Stock extends Model
     protected $table = 'stock';
 
     protected $fillable = [
-        
+
         'product_id',
         'warehouse_id',
         'storage_location_id',
@@ -47,7 +47,7 @@ class Stock extends Model
 
     public function addStock(int $quantity, ?float $cost = null): void
     {
-        $this->quantity += $quantity;        
+        $this->quantity += $quantity;
         if ($cost !== null) {
             $totalCost = ($this->avg_cost * $this->quantity) + ($cost * $quantity);
             $this->avg_cost = $totalCost / ($this->quantity + $quantity);

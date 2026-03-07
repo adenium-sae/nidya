@@ -37,12 +37,15 @@ class StorageLocationController extends Controller
         ]);
 
         $location = $this->storageLocationService->create($validated);
+
+        $storeId = $location->warehouse->stores()->first()?->id;
+
         $this->logActivity(
             type: ActivityLog::TYPE_INVENTORY,
             event: 'storage_location.created',
             description: "Ubicación '{$location->name}' creada en almacén {$location->warehouse_id}",
             metadata: ['location_id' => $location->id, 'name' => $location->name, 'code' => $location->code, 'warehouse_id' => $location->warehouse_id],
-            storeId: Auth::user()?->store_id,
+            storeId: $storeId,
         );
         return response()->json([
             'message' => 'Ubicación creada correctamente',

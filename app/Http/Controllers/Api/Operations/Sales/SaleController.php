@@ -16,8 +16,7 @@ class SaleController extends Controller
 
     public function store(StoreSaleRequest $request): JsonResponse
     {
-        $sale = $this->saleService->create($request->validated(), Auth::user()->id);
-
+        $sale = $this->saleService->create($request->validated());
         return response()->json([
             'message' => __('messages.sale_created_successfully'),
             'data' => $sale->load('items.product', 'user', 'branch')

@@ -2,34 +2,47 @@
 
 namespace App\Actions\Catalog\Products;
 
+use App\Exceptions\Access\Auth\AccessDeniedException;
 use App\Models\Product;
 use App\Models\Stock;
 use App\Models\Store;
 use App\Models\StoreProduct;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class CreateProductAction
 {
     public function __invoke(array $data): Product
     {
-        return DB::transaction(function () use ($data) {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $targetStoreIds = [];
+        if (!empty($data['store_id'])) {
+            $targetStoreIds[] = $data['store_id'];
+        } elseif (!empty($data['store_ids'])) {
+            $targetStoreIds = $data['store_ids'];
+        } elseif (!empty($data['all_stores'])) {
+            $targetStoreIds = Store::pluck('id')->toArray();
+        }
+
+        foreach ($targetStoreIds as $storeId) {
+            if (!$user->hasPermissionInStore('products.create', $storeId)) {
+                throw new AccessDeniedException();
+            }
+        }
+
+        return DB::transaction(function () use ($data, $targetStoreIds) {
             $product = $this->createBaseProduct($data);
 
-            if (!empty($data['store_id'])) {
-                $this->attachToStore($product->id, $data['store_id'], $data);
-                if ($data['type'] === 'product' && !empty($data['initial_stock']) && $data['initial_stock'] > 0) {
-                    $this->createInitialStock($product->id, $data);
-                }
-            } elseif (!empty($data['store_ids'])) {
-                foreach ($data['store_ids'] as $storeId) {
-                    $this->attachToStore($product->id, $storeId, $data);
-                }
-            } elseif (!empty($data['all_stores'])) {
-                $storeIds = Store::pluck('id');
-                foreach ($storeIds as $storeId) {
-                    $this->attachToStore($product->id, $storeId, $data);
-                }
+            foreach ($targetStoreIds as $storeId) {
+                $this->attachToStore($product->id, $storeId, $data);
             }
+
+            if ($data['type'] === 'product' && !empty($data['initial_stock']) && $data['initial_stock'] > 0 && !empty($data['warehouse_id'])) {
+                $this->createInitialStock($product->id, $data);
+            }
+
             return $product;
         });
     }

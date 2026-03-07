@@ -28,9 +28,7 @@ class SaleController extends Controller
 
     public function store(StoreSaleRequest $request): JsonResponse
     {
-        $sale = $this->saleService->create($request->validated(), Auth::user()->id);
-
-        // Log activity
+        $sale = $this->saleService->create($request->validated());
         $this->logActivity(
             type: ActivityLog::TYPE_SALES,
             event: 'sale.created',
@@ -42,7 +40,7 @@ class SaleController extends Controller
                 'item_count' => count($sale->items ?? []),
                 'customer_id' => $sale->customer_id ?? null,
             ],
-            storeId: $sale->store_id ?? Auth::user()->store_id
+            storeId: $sale->store_id
         );
 
         return response()->json([
@@ -51,18 +49,20 @@ class SaleController extends Controller
         ], 201);
     }
 
-    public function show(Sale $sale): JsonResponse
+    public function show(string $id): JsonResponse
     {
+        $sale = $this->saleService->getById($id);
         $sale->load(['items.product', 'user', 'customer', 'branch', 'warehouse', 'payments']);
         return response()->json($sale);
     }
 
-    public function cancel(Sale $sale): JsonResponse
+    public function cancel(string $id): JsonResponse
     {
+        $sale = $this->saleService->getById($id);
         $saleFolio = $sale->folio;
         $saleTotal = $sale->total;
 
-        $sale = $this->saleService->cancel($sale, Auth::user()->id);
+        $sale = $this->saleService->cancel($sale);
 
         // Log activity
         $this->logActivity(
@@ -75,7 +75,7 @@ class SaleController extends Controller
                 'total' => $saleTotal,
             ],
             level: ActivityLog::LEVEL_WARNING,
-            storeId: $sale->store_id ?? Auth::user()->store_id
+            storeId: $sale->store_id
         );
 
         return response()->json([
@@ -88,7 +88,8 @@ class SaleController extends Controller
     {
         $summary = $this->saleService->getDailySummary(
             $request->get('branch_id'),
-            $request->get('date', now()->toDateString())
+            $request->get('date', now()->toDateString()),
+            Auth::user()
         );
         return response()->json($summary);
     }

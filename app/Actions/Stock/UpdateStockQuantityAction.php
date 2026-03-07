@@ -2,55 +2,57 @@
 
 namespace App\Actions\Stock;
 
+use App\Exceptions\Access\Auth\AccessDeniedException;
 use App\Models\Stock;
 use App\Models\StockMovement;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class UpdateStockQuantityAction
 {
-    public function __invoke(string $stockId, array $data, string $userId): Stock
+    public function __invoke(Stock $stock, float $newQuantity, string $reason, ?string $storageLocationId = null): Stock
     {
-        return DB::transaction(function () use ($stockId, $data, $userId) {
-            /** @var Stock $stock */
-            $stock = Stock::findOrFail($stockId);
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
 
-            $quantityBefore = $stock->quantity;
-            $quantityAfter = (int) $data['quantity'];
-            $difference = $quantityAfter - $quantityBefore;
+        return DB::transaction(function () use ($stock, $newQuantity, $reason, $storageLocationId, $user) {
+            // Eager load warehouse and its stores for permission check
+            $stock->load('warehouse.stores');
+            $warehouse = $stock->warehouse;
 
-            $stock->quantity = $quantityAfter;
+            // Authorization check
+            $hasPermission = false;
+            foreach ($warehouse->stores as $store) {
+                if ($user->hasPermissionInStore('inventory.adjust', $store->id)) {
+                    $hasPermission = true;
+                    break;
+                }
+            }
+
+            if (!$hasPermission) {
+                throw new AccessDeniedException();
+            }
+
+            $oldQuantity = $stock->quantity;
+            $stock->quantity = $newQuantity;
+            if ($storageLocationId) {
+                $stock->storage_location_id = $storageLocationId;
+            }
             $stock->save();
 
-            $reason = $data['reason'] ?? 'recount';
-            $notes = $data['notes'] ?? null;
-
-            $reasonLabels = [
-                'damaged' => 'Dañado',
-                'lost' => 'Pérdida/Robo',
-                'found' => 'Hallazgo',
-                'expired' => 'Caducado',
-                'recount' => 'Recuento',
-                'correction' => 'Corrección',
-                'other' => 'Otro',
-            ];
-
-            $reasonLabel = $reasonLabels[$reason] ?? $reason;
-            $movementNotes = "Corrección directa de cantidad por: {$reasonLabel}";
-            if ($notes) {
-                $movementNotes .= " — {$notes}";
-            }
 
             StockMovement::create([
                 'product_id' => $stock->product_id,
                 'warehouse_id' => $stock->warehouse_id,
                 'storage_location_id' => $stock->storage_location_id,
-                'type' => 'adjustment',
-                'status' => StockMovement::STATUS_PENDING,
-                'quantity' => $difference,
-                'quantity_before' => $quantityBefore,
-                'quantity_after' => $quantityAfter,
-                'user_id' => $userId,
-                'notes' => $movementNotes,
+                'type' => $newQuantity > $oldQuantity ? StockMovement::TYPE_ENTRY : StockMovement::TYPE_EXIT,
+                'quantity' => abs($newQuantity - $oldQuantity),
+                'quantity_before' => $oldQuantity,
+                'quantity_after' => $newQuantity,
+                'reason' => $reason,
+                'notes' => "Actualización manual de stock",
+                'user_id' => $user->id,
+                'status' => StockMovement::STATUS_COMPLETED,
             ]);
 
             return $stock->load(['product', 'warehouse', 'storageLocation']);

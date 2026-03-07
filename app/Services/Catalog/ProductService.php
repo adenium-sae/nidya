@@ -6,7 +6,9 @@ use App\Actions\Catalog\Products\CreateProductAction;
 use App\Actions\Catalog\Products\DeleteProductAction;
 use App\Actions\Catalog\Products\UpdateProductAction;
 use App\Exceptions\Catalog\Products\ProductNotFoundException;
+use App\Exceptions\Access\Auth\AccessDeniedException;
 use App\Models\Product;
+use Illuminate\Support\Facades\Auth;
 
 class ProductService
 {
@@ -18,21 +20,24 @@ class ProductService
 
     // --- Queries ---
 
-    public function getProducts(array $filters)
+    public function list(array $filters)
     {
-        $query = Product::with(["category", "storeProducts", "stock" => function ($q) use ($filters) {
-            if (!empty($filters["warehouse_id"])) {
-                $q->where("warehouse_id", $filters["warehouse_id"]);
-            }
-        }])->withSum(["stock as total_stock" => function ($q) use ($filters) {
-                if (!empty($filters["warehouse_id"])) {
-                    $q->where("warehouse_id", $filters["warehouse_id"]);
-                }
-                if (!empty($filters["storage_location_id"])) {
-                    $q->where("storage_location_id", $filters["storage_location_id"]);
-                }
-            }
-        ], "quantity");
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $accessibleStoreIds = $user->getAccessibleStoreIds('products.view');
+
+        $query = Product::with(['category', 'brand', 'images', 'stores'])
+            ->whereHas('stores', function ($q) use ($accessibleStoreIds) {
+                $q->whereIn('stores.id', $accessibleStoreIds);
+            });
+
+        // The original code had stock and storeProducts related filters.
+        // The diff suggests replacing them with 'brand', 'images', 'stores'.
+        // I'm keeping the original stock filters but adapting them to the new structure if possible,
+        // or removing them if they don't fit the new 'with' clauses.
+        // Given the diff, it seems the intent is to simplify the eager loading and filtering for the list.
+        // I will remove the stock-related `with` and `withSum` as they are not in the diff's `with` list.
+
         if (!empty($filters["search"])) {
             $search = strtolower($filters["search"]);
             $query->where(function ($q) use ($search) {
@@ -54,27 +59,34 @@ class ProductService
         return $query->paginate($perPage);
     }
 
-    public function getProduct(string $id): Product
+    public function getById(string $id): Product
     {
-        $product = Product::with([
-            "category",
-            "stock.warehouse",
-            "stock.storageLocation",
-            "storeProducts.store",
-            "attributes",
-            "images",
-        ])->find($id);
+        $product = Product::with(['category', 'brand', 'images', 'stores', 'variants', 'attributes'])->findOrFail($id);
 
-        if (!$product) {
-            throw new ProductNotFoundException();
+        // Authorization check
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $accessibleStoreIds = $user->getAccessibleStoreIds('products.view');
+        $productStoreIds = $product->stores()->pluck('stores.id')->toArray();
+
+        if (empty(array_intersect($accessibleStoreIds, $productStoreIds))) {
+            throw new AccessDeniedException();
         }
+
         return $product;
     }
 
     public function getStockStatus(string $id): array
     {
         /** @var Product|null $product */
-        $product = Product::find($id);
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $accessibleStoreIds = $user->getAccessibleStoreIds();
+
+        $product = Product::whereHas('storeProducts', function ($q) use ($accessibleStoreIds) {
+            $q->whereIn('store_id', $accessibleStoreIds);
+        })->find($id);
+
         if (!$product) {
             throw new ProductNotFoundException();
         }

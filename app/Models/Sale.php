@@ -9,14 +9,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-use App\Traits\LogsActivity;
-
 class Sale extends Model
 {
-    use HasFactory, HasUuids, LogsActivity;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
-        
         'folio',
         'store_id',
         'branch_id',
@@ -97,11 +94,11 @@ class Sale extends Model
         $this->subtotal = $this->items->sum('subtotal');
         $this->tax = $this->items->sum('tax');
         $this->total = $this->subtotal + $this->tax - $this->discount;
-        
+
         if ($this->payment_method === 'cash' && $this->cash_received) {
             $this->change = $this->cash_received - $this->total;
         }
-        
+
         $this->save();
     }
 

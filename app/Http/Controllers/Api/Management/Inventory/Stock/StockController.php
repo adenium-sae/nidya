@@ -20,8 +20,8 @@ class StockController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $stock = $this->stockService->list($request->all(), $request->get('per_page', 50));
-        return response()->json($stock);
+        $stocks = $this->stockService->list($request->all(), $request->get('per_page', 15));
+        return response()->json($stocks);
     }
 
     public function adjust(Request $request): JsonResponse
@@ -40,16 +40,19 @@ class StockController extends Controller
         ]);
 
         try {
-            $adjustment = $this->stockService->adjust($validated, $request->user()->id);
+            $adjustment = $this->stockService->adjust($validated);
 
             // Log activity
-            $typeDescription = match($validated['type']) {
+            $typeDescription = match ($validated['type']) {
                 'increase' => 'Entrada de inventario',
                 'decrease' => 'Salida de inventario',
                 'recount' => 'Recuento de inventario',
                 'adjustment' => 'Ajuste de inventario',
                 default => 'Ajuste de inventario'
             };
+
+            $adjustment->load('warehouse.stores');
+            $storeId = $adjustment->warehouse->stores->first()?->id;
 
             $itemCount = count($validated['items']);
             $this->logActivity(
@@ -63,7 +66,7 @@ class StockController extends Controller
                     'warehouse_id' => $validated['warehouse_id'],
                     'reason' => $validated['reason'] ?? null,
                 ],
-                storeId: $request->user()->store_id
+                storeId: $storeId
             );
 
             return response()->json([
@@ -71,35 +74,29 @@ class StockController extends Controller
                 'message' => 'Ajuste de inventario registrado correctamente.',
                 'data' => $adjustment,
             ]);
-        } catch (\InvalidArgumentException $e) {
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage(),
             ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error al procesar el ajuste de inventario.',
-                'error' => config('app.debug') ? $e->getMessage() : null,
-            ], 500);
         }
     }
 
     public function movements(Request $request): JsonResponse
     {
-        $movements = $this->stockService->listMovements($request->all(), $request->get('per_page', 50));
+        $movements = $this->stockService->listMovements($request->all(), $request->get('per_page', 15));
         return response()->json($movements);
     }
 
     public function transfers(Request $request): JsonResponse
     {
-        $transfers = $this->stockService->listTransfers($request->all(), $request->get('per_page', 50));
+        $transfers = $this->stockService->listTransfers($request->all(), $request->get('per_page', 15));
         return response()->json($transfers);
     }
 
     public function adjustments(Request $request): JsonResponse
     {
-        $adjustments = $this->stockService->listAdjustments($request->all(), $request->get('per_page', 50));
+        $adjustments = $this->stockService->listAdjustments($request->all(), $request->get('per_page', 15));
         return response()->json($adjustments);
     }
 
@@ -117,21 +114,20 @@ class StockController extends Controller
         ]);
 
         try {
-            $transfer = $this->stockService->transfer($validated, $request->user()->id);
+            $transfer = $this->stockService->transfer($validated);
 
             // Log activity
-            $itemCount = count($validated['items']);
+            $transfer->load('sourceWarehouse.stores');
             $this->logActivity(
                 type: ActivityLog::TYPE_INVENTORY,
-                event: 'stock.transferred',
-                description: "Transferencia de inventario registrada ({$itemCount} producto(s))",
+                event: 'stock.transfer_started',
+                description: "Transferencia de stock iniciada: {$transfer->sourceWarehouse->name} -> {$transfer->destinationWarehouse->name}",
                 metadata: [
-                    'transfer_id' => $transfer->id ?? null,
-                    'source_warehouse_id' => $validated['source_warehouse_id'],
-                    'destination_warehouse_id' => $validated['destination_warehouse_id'],
-                    'item_count' => $itemCount,
+                    'transfer_id' => $transfer->id,
+                    'source_warehouse_id' => $transfer->source_warehouse_id,
+                    'destination_warehouse_id' => $transfer->destination_warehouse_id,
                 ],
-                storeId: $request->user()->store_id
+                storeId: $transfer->sourceWarehouse->stores->first()?->id
             );
 
             return response()->json([
@@ -143,7 +139,6 @@ class StockController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage(),
-                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 422);
         }
     }
@@ -157,9 +152,13 @@ class StockController extends Controller
         ]);
 
         try {
-            $stock = $this->stockService->updateQuantity($id, $validated, $request->user()->id);
+            /** @var \App\Models\Stock $stock */
+            $stock = \App\Models\Stock::with('warehouse.stores')->findOrFail($id);
+            $stock = $this->stockService->updateQuantity($stock, $validated['quantity'], $validated['reason']);
 
             // Log activity
+            $storeId = $stock->warehouse->stores->first()?->id;
+
             $this->logActivity(
                 type: ActivityLog::TYPE_INVENTORY,
                 event: 'stock.quantity_updated',
@@ -169,7 +168,7 @@ class StockController extends Controller
                     'new_quantity' => $validated['quantity'],
                     'reason' => $validated['reason'],
                 ],
-                storeId: $request->user()->store_id
+                storeId: $storeId
             );
 
             return response()->json([
@@ -188,15 +187,18 @@ class StockController extends Controller
     public function confirmMovement(string $id): JsonResponse
     {
         try {
-            $movement = $this->stockService->confirmMovement($id);
+            $movement = \App\Models\StockMovement::with('warehouse.stores')->findOrFail($id);
+            $this->stockService->confirmMovement($movement);
 
             // Log activity
+            $storeId = $movement->warehouse->stores->first()?->id;
+
             $this->logActivity(
                 type: ActivityLog::TYPE_INVENTORY,
                 event: 'movement.confirmed',
                 description: "Movimiento de inventario confirmado",
                 metadata: ['movement_id' => $id],
-                storeId: auth()?->user()?->store_id
+                storeId: $storeId
             );
 
             return response()->json([
@@ -218,12 +220,15 @@ class StockController extends Controller
             $adjustment = $this->stockService->confirmAdjustment($id);
 
             // Log activity
+            $adjustment->load('warehouse.stores');
+            $storeId = $adjustment->warehouse->stores->first()?->id;
+
             $this->logActivity(
                 type: ActivityLog::TYPE_INVENTORY,
                 event: 'adjustment.confirmed',
                 description: "Ajuste de inventario confirmado",
                 metadata: ['adjustment_id' => $id],
-                storeId: auth()?->user()?->store_id
+                storeId: $storeId
             );
 
             return response()->json([
@@ -245,12 +250,15 @@ class StockController extends Controller
             $transfer = $this->stockService->confirmTransfer($id);
 
             // Log activity
+            $transfer->load('destinationWarehouse.stores');
+            $storeId = $transfer->destinationWarehouse->stores->first()?->id;
+
             $this->logActivity(
                 type: ActivityLog::TYPE_INVENTORY,
                 event: 'transfer.confirmed',
                 description: "Transferencia de inventario confirmada",
                 metadata: ['transfer_id' => $id],
-                storeId: auth()?->user()?->store_id
+                storeId: $storeId
             );
 
             return response()->json([
@@ -269,16 +277,19 @@ class StockController extends Controller
     public function cancelMovement(string $id): JsonResponse
     {
         try {
-            $movement = $this->stockService->cancelMovement($id);
+            $movement = \App\Models\StockMovement::with('warehouse.stores')->findOrFail($id);
+            $this->stockService->cancelMovement($movement);
 
             // Log activity
+            $storeId = $movement->warehouse->stores->first()?->id;
+
             $this->logActivity(
                 type: ActivityLog::TYPE_INVENTORY,
                 event: 'movement.cancelled',
                 description: "Movimiento de inventario cancelado",
                 metadata: ['movement_id' => $id],
                 level: ActivityLog::LEVEL_WARNING,
-                storeId: auth()?->user()?->store_id
+                storeId: $storeId
             );
 
             return response()->json([
@@ -300,13 +311,16 @@ class StockController extends Controller
             $transfer = $this->stockService->cancelTransfer($id);
 
             // Log activity
+            $transfer->load('sourceWarehouse.stores');
+            $storeId = $transfer->sourceWarehouse->stores->first()?->id;
+
             $this->logActivity(
                 type: ActivityLog::TYPE_INVENTORY,
                 event: 'transfer.cancelled',
                 description: "Transferencia de inventario cancelada",
                 metadata: ['transfer_id' => $id],
                 level: ActivityLog::LEVEL_WARNING,
-                storeId: auth()?->user()?->store_id
+                storeId: $storeId
             );
 
             return response()->json([

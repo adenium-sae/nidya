@@ -10,6 +10,7 @@ use App\Services\Catalog\ProductService;
 use App\Traits\LogsActivity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
@@ -19,107 +20,65 @@ class ProductController extends Controller
         protected ProductService $productService
     ) {}
 
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'category_id' => 'required|exists:categories,id',
+            'brand_id' => 'nullable|exists:brands,id',
+            'name' => 'required|string|max:255',
+            'sku' => 'required|string|max:50|unique:products,sku',
+            'barcode' => 'nullable|string|max:100|unique:products,barcode',
+            'description' => 'nullable|string',
+            'short_description' => 'nullable|string|max:500',
+            'price' => 'required|numeric|min:0',
+            'cost_price' => 'nullable|numeric|min:0',
+            'tax_rate' => 'nullable|numeric|min:0',
+            'is_active' => 'boolean',
+            'store_ids' => 'required|array|min:1',
+            'store_ids.*' => 'exists:stores,id',
+            'images' => 'nullable|array',
+            'images.*' => 'string',
+        ]);
+
+        // Handle image upload if present
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('products', 'public');
+            $validated['image_url'] = '/storage/' . $path;
+        }
+
+        $product = $this->productService->create($validated);
+
+        // Log activity
+        $this->logActivity(
+            type: ActivityLog::TYPE_CATALOG,
+            event: 'product.created',
+            description: "Producto '{$product->name}' creado",
+            metadata: [
+                'product_id' => $product->id,
+                'sku' => $product->sku,
+                'name' => $product->name,
+                'store_ids' => $validated['store_ids'] ?? [],
+            ],
+            storeId: !empty($validated['store_ids']) ? $validated['store_ids'][0] : null
+        );
+
+        return response()->json([
+            'message' => __('messages.product_created_successfully'),
+            'data' => $product->load('category')
+        ], 201);
+    }
+
     public function index(Request $request): JsonResponse
     {
-        $products = $this->productService->getProducts(
+        $products = $this->productService->list(
             $request->all()
         );
         return response()->json($products);
     }
 
-    public function storeSingle(StoreProductRequest $request): JsonResponse
-    {
-        $data = $request->validated();
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('products', 'public');
-            $data['image_url'] = '/storage/' . $path;
-        }
-
-        $product = $this->productService->create($data);
-
-        // Log activity
-        $this->logActivity(
-            type: ActivityLog::TYPE_CATALOG,
-            event: 'product.created',
-            description: "Producto '{$product->name}' creado en tienda seleccionada",
-            metadata: [
-                'product_id' => $product->id,
-                'sku' => $product->sku,
-                'name' => $product->name,
-                'store_id' => $data['store_id'] ?? null,
-            ],
-            storeId: $request->user()?->store_id
-        );
-
-        return response()->json([
-            'message' => __('messages.product_created_in_single_store'),
-            'data' => $product->load('category')
-        ], 201);
-    }
-
-    public function storeMultiple(StoreProductRequest $request): JsonResponse
-    {
-        $data = $request->validated();
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('products', 'public');
-            $data['image_url'] = '/storage/' . $path;
-        }
-
-        $product = $this->productService->create($data);
-
-        // Log activity
-        $this->logActivity(
-            type: ActivityLog::TYPE_CATALOG,
-            event: 'product.created',
-            description: "Producto '{$product->name}' creado en múltiples tiendas",
-            metadata: [
-                'product_id' => $product->id,
-                'sku' => $product->sku,
-                'name' => $product->name,
-                'store_ids' => $data['store_ids'] ?? [],
-            ],
-            storeId: $request->user()?->store_id
-        );
-
-        return response()->json([
-            'message' => __('messages.product_created_in_multiple_stores'),
-            'data' => $product->load('category')
-        ], 201);
-    }
-
-    public function storeAll(StoreProductRequest $request): JsonResponse
-    {
-        $data = $request->validated();
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('products', 'public');
-            $data['image_url'] = '/storage/' . $path;
-        }
-
-        $product = $this->productService->create($data + ['all_stores' => true]);
-
-        // Log activity
-        $this->logActivity(
-            type: ActivityLog::TYPE_CATALOG,
-            event: 'product.created',
-            description: "Producto '{$product->name}' creado en todas las tiendas",
-            metadata: [
-                'product_id' => $product->id,
-                'sku' => $product->sku,
-                'name' => $product->name,
-                'all_stores' => true,
-            ],
-            storeId: $request->user()?->store_id
-        );
-
-        return response()->json([
-            'message' => __('messages.product_created_in_all_stores'),
-            'data' => $product->load('category')
-        ], 201);
-    }
-
     public function show(string $id): JsonResponse
     {
-        $product = $this->productService->getProduct($id);
+        $product = $this->productService->getById($id);
         return response()->json($product);
     }
 
@@ -130,9 +89,7 @@ class ProductController extends Controller
             $path = $request->file('image')->store('products', 'public');
             $data['image_url'] = '/storage/' . $path;
         }
-        $updatedProduct = $this->productService->update($id, $data);
-
-        // Log activity
+        $updatedProduct = $this->productService->update($id, $data, $request->user());
         $this->logActivity(
             type: ActivityLog::TYPE_CATALOG,
             event: 'product.updated',
@@ -143,9 +100,8 @@ class ProductController extends Controller
                 'name' => $updatedProduct->name,
                 'changes' => array_keys($data),
             ],
-            storeId: $request->user()?->store_id
+            storeId: null
         );
-
         return response()->json([
             'message' => __('messages.product_updated_successfully'),
             'data' => $updatedProduct->load('category')
@@ -154,10 +110,8 @@ class ProductController extends Controller
 
     public function destroy(string $id): JsonResponse
     {
-        $product = $this->productService->getProduct($id);
+        $product = $this->productService->getById($id);
         $this->productService->delete($id);
-
-        // Log activity
         $this->logActivity(
             type: ActivityLog::TYPE_CATALOG,
             event: 'product.deleted',
@@ -167,9 +121,8 @@ class ProductController extends Controller
                 'sku' => $product->sku,
                 'name' => $product->name,
             ],
-            storeId: auth()?->user()?->store_id
+            storeId: $product->stores->first()?->id
         );
-
         return response()->json([
             'message' => __('messages.product_deleted_successfully')
         ]);
@@ -177,7 +130,7 @@ class ProductController extends Controller
 
     public function checkStock(string $id): JsonResponse
     {
-        $status = $this->productService->getStockStatus($id);
+        $status = $this->productService->getStockStatus($id, Auth::user());
         return response()->json($status);
     }
 }

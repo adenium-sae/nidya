@@ -2,6 +2,7 @@
 
 namespace App\Actions\Sales;
 
+use App\Exceptions\Access\Auth\AccessDeniedException;
 use App\Exceptions\Catalog\Products\ProductNotAvailableException;
 use App\Exceptions\Inventory\Stock\InsufficientStockException;
 use App\Models\Product;
@@ -9,13 +10,21 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Stock;
 use App\Models\StockMovement;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class CreateSaleAction
 {
-    public function __invoke(array $data, int $userId): Sale
+    public function __invoke(array $data): Sale
     {
-        return DB::transaction(function () use ($data, $userId) {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        if (!$user->hasPermissionInStore('sales.create', $data['store_id'])) {
+            throw new AccessDeniedException();
+        }
+
+        return DB::transaction(function () use ($data, $user) {
             $folio = Sale::generateFolio();
             $sale = Sale::create([
                 'folio' => $folio,
@@ -23,7 +32,7 @@ class CreateSaleAction
                 'branch_id' => $data['branch_id'],
                 'warehouse_id' => $data['warehouse_id'],
                 'customer_id' => $data['customer_id'] ?? null,
-                'user_id' => $userId,
+                'user_id' => $user->id,
                 'payment_method' => $data['payment_method'],
                 'cash_received' => $data['cash_received'] ?? null,
                 'discount' => $data['discount'] ?? 0,
@@ -34,7 +43,7 @@ class CreateSaleAction
                 'status' => 'completed',
             ]);
             foreach ($data['items'] as $itemData) {
-                $this->processSaleItem($sale, $itemData, $data['store_id'], $data['warehouse_id'], $userId);
+                $this->processSaleItem($sale, $itemData, $data['store_id'], $data['warehouse_id'], $user);
             }
             $sale->calculateTotals();
             $sale->complete();
@@ -42,7 +51,7 @@ class CreateSaleAction
         });
     }
 
-    private function processSaleItem(Sale $sale, array $itemData, string $storeId, string $warehouseId, int $userId): void
+    private function processSaleItem(Sale $sale, array $itemData, string $storeId, string $warehouseId, \App\Models\User $user): void
     {
         $product = Product::findOrFail($itemData['product_id']);
         $storeProduct = $product->storeProducts()
@@ -66,11 +75,11 @@ class CreateSaleAction
             'total' => $total,
         ]);
         if ($product->track_inventory) {
-            $this->decrementStock($product, $warehouseId, $quantity, $userId, $sale);
+            $this->decrementStock($product, $warehouseId, $quantity, $user, $sale);
         }
     }
 
-    private function decrementStock(Product $product, string $warehouseId, int $quantity, int $userId, Sale $sale): void
+    private function decrementStock(Product $product, string $warehouseId, int $quantity, \App\Models\User $user, Sale $sale): void
     {
         $stock = Stock::where('product_id', $product->id)
             ->where('warehouse_id', $warehouseId)
@@ -92,7 +101,7 @@ class CreateSaleAction
             'quantity_before' => $quantityBefore,
             'quantity_after' => $stock->quantity,
             'cost' => $stock->avg_cost,
-            'user_id' => $userId,
+            'user_id' => $user->id,
             'movable_type' => Sale::class,
             'movable_id' => $sale->id,
         ]);

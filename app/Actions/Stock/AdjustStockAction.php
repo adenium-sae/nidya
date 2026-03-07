@@ -2,10 +2,14 @@
 
 namespace App\Actions\Stock;
 
+use App\Exceptions\Access\Auth\AccessDeniedException;
 use App\Models\Stock;
 use App\Models\StockAdjustment;
 use App\Models\StockAdjustmentItem;
 use App\Models\StockMovement;
+use App\Models\User;
+use App\Models\Warehouse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class AdjustStockAction
@@ -25,11 +29,26 @@ class AdjustStockAction
         'recount'  => 'adjustment',
     ];
 
-    public function __invoke(array $data, string $userId): StockAdjustment
+    public function __invoke(array $data): StockAdjustment
     {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
         $this->validateData($data);
 
-        return DB::transaction(function () use ($data, $userId) {
+        // Authorization check: User must have permission in at least one store associated with the warehouse
+        $warehouse = Warehouse::with('stores')->findOrFail($data['warehouse_id']);
+        $hasPermission = false;
+        foreach ($warehouse->stores as $store) {
+            if ($user->hasPermissionInStore('inventory.adjust', $store->id)) {
+                $hasPermission = true;
+                break;
+            }
+        }
+        if (!$hasPermission) {
+            throw new AccessDeniedException('No tienes permiso para ajustar inventario en este almacén.');
+        }
+
+        return DB::transaction(function () use ($data, $user) {
             $folio = $this->generateFolio();
 
             // Normalize type: map 'adjustment' from frontend to 'recount' for DB enum
@@ -41,7 +60,7 @@ class AdjustStockAction
                 'type' => $adjustmentType,
                 'status' => 'pending',
                 'reason' => $data['reason'] ?? $data['items'][0]['reason'] ?? 'other',
-                'user_id' => $userId,
+                'user_id' => $user->id,
                 'notes' => $data['notes'] ?? null,
             ]);
 
@@ -57,7 +76,7 @@ class AdjustStockAction
                     $data['warehouse_id'],
                     $storageLocationId,
                     $itemData['reason'] ?? $data['reason'] ?? 'other',
-                    $userId
+                    $user
                 );
             }
 
@@ -143,7 +162,7 @@ class AdjustStockAction
         string $warehouseId,
         ?string $storageLocationId,
         string $reason,
-        string $userId
+        \App\Models\User $user
     ): void {
         // Build the stock query matching exact location (null-safe)
         $stockQuery = Stock::where('product_id', $itemData['product_id'])
@@ -200,7 +219,7 @@ class AdjustStockAction
             'quantity_before' => $quantityBefore,
             'quantity_after' => $quantityAfter,
             'notes' => $this->buildMovementNote($adjustment->type, $reason, $adjustment->folio),
-            'user_id' => $userId,
+            'user_id' => $user->id,
             'movable_type' => StockAdjustment::class,
             'movable_id' => $adjustment->id,
         ]);

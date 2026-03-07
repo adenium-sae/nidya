@@ -181,7 +181,21 @@ class DevelopmentSeeder extends Seeder
         ]);
         $attachPermissions($sellerRole->id, $sellerPermissions->pluck('id')->toArray());
 
-        $this->command->info('✅ Roles creados: Admin, Gerente, Vendedor');
+        // Rol: Gerente Regional (Nuevo)
+        $regionalManagerRole = Role::firstOrCreate([
+            'key' => 'regional_manager'
+        ], [
+            'name' => 'Gerente Regional',
+            'description' => 'Consultas y reportes para tiendas específicas',
+            'is_system' => true,
+        ]);
+        $regionalManagerPermissions = $allPermissions->filter(function ($permission) {
+            return in_array($permission->module, ['reports', 'dashboard']) ||
+                in_array($permission->key, ['products.view', 'sales.view', 'inventory.view', 'customers.view']);
+        });
+        $attachPermissions($regionalManagerRole->id, $regionalManagerPermissions->pluck('id')->toArray());
+
+        $this->command->info('✅ Roles creados: Admin, Gerente, Vendedor, Gerente Regional');
 
         // 4. Crear Store (idempotente)
         $store = Store::firstOrCreate(
@@ -198,6 +212,12 @@ class DevelopmentSeeder extends Seeder
         );
 
         $this->command->info("✅ Tienda creada: {$store->name}");
+
+        // Asignar Owner como Admin de la tienda principal
+        DB::table('store_user_roles')->updateOrInsert(
+            ['user_id' => $user->id, 'store_id' => $store->id],
+            ['id' => Str::uuid(), 'role_id' => $adminRole->id, 'created_at' => now(), 'updated_at' => now()]
+        );
 
         // 4.5. Configuración de Landing Page
         LandingPageSetting::firstOrCreate(
@@ -646,6 +666,30 @@ class DevelopmentSeeder extends Seeder
             }
 
             $this->command->info("✅ Demo store created: {$additionalStore->name} (branches: " . count($branches) . ", warehouses: " . count($warehouses) . ", products: " . count($createdForThisStore) . ", customers: " . count($localCustomers) . ")");
+
+            // Asignar Owner como Admin de cada tienda demo
+            DB::table('store_user_roles')->updateOrInsert(
+                ['user_id' => $user->id, 'store_id' => $additionalStore->id],
+                ['id' => Str::uuid(), 'role_id' => $adminRole->id, 'created_at' => now(), 'updated_at' => now()]
+            );
+
+            // Crear un Gerente Regional de prueba para la primera tienda demo (Store 2)
+            if ($si === 2) {
+                $managerUser = User::firstOrCreate(
+                    ['email' => 'gerente@demo.com'],
+                    ['password' => bcrypt('password'), 'email_verified_at' => now(), 'is_active' => true]
+                );
+                Profile::updateOrCreate(
+                    ['user_id' => $managerUser->id],
+                    ['first_name' => 'Gerente', 'last_name' => 'De Prueba', 'phone' => '6449998877']
+                );
+
+                DB::table('store_user_roles')->updateOrInsert(
+                    ['user_id' => $managerUser->id, 'store_id' => $additionalStore->id],
+                    ['id' => Str::uuid(), 'role_id' => $regionalManagerRole->id, 'created_at' => now(), 'updated_at' => now()]
+                );
+                $this->command->info("👤 Usuario Gerente Regional creado para {$additionalStore->name}");
+            }
         }
 
         $this->command->info('');

@@ -5,8 +5,9 @@ namespace App\Services\Inventory;
 use App\Actions\Inventory\Warehouses\CreateWarehouseAction;
 use App\Actions\Inventory\Warehouses\DeleteWarehouseAction;
 use App\Actions\Inventory\Warehouses\UpdateWarehouseAction;
-use App\Exceptions\Inventory\Warehouses\WarehouseNotFoundException;
+use App\Exceptions\Access\Auth\AccessDeniedException;
 use App\Models\Warehouse;
+use Illuminate\Support\Facades\Auth;
 
 class WarehouseService
 {
@@ -20,7 +21,15 @@ class WarehouseService
 
     public function findAll(array $filters)
     {
-        $query = Warehouse::with(['stores', 'branch', 'address']);
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $accessibleStoreIds = $user->getAccessibleStoreIds('inventory.view');
+
+        $query = Warehouse::with(['stores', 'branch', 'address'])
+            ->whereHas('stores', function ($q) use ($accessibleStoreIds) {
+                $q->whereIn('stores.id', $accessibleStoreIds);
+            });
+
         if (!empty($filters['store_id'])) {
             $query->whereHas('stores', function ($q) use ($filters) {
                 $q->where('stores.id', $filters['store_id']);
@@ -47,10 +56,17 @@ class WarehouseService
 
     public function getById(string $id): Warehouse
     {
-        $warehouse = Warehouse::with(['stores', 'branch', 'address', 'storageLocations', 'stock'])->find($id);
-        if (!$warehouse) {
-            throw new WarehouseNotFoundException();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $warehouse = Warehouse::with(['stores', 'branch', 'address', 'storageLocations', 'stock'])->findOrFail($id);
+
+        // Authorization check
+        $accessibleStoreIds = $user->getAccessibleStoreIds('inventory.view');
+        $warehouseStoreIds = $warehouse->stores()->pluck('stores.id')->toArray();
+        if (empty(array_intersect($accessibleStoreIds, $warehouseStoreIds))) {
+            throw new AccessDeniedException();
         }
+
         return $warehouse;
     }
 

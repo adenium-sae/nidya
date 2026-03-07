@@ -14,7 +14,7 @@ class StockMovement extends Model
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        
+
         'product_id',
         'warehouse_id',
         'storage_location_id',
@@ -31,6 +31,9 @@ class StockMovement extends Model
         'movable_type',
         'movable_id',
     ];
+
+    const TYPE_ENTRY = 'entry';
+    const TYPE_EXIT = 'exit';
 
     const STATUS_PENDING = 'pending';
     const STATUS_COMPLETED = 'completed';

@@ -32,22 +32,24 @@ class WarehousesController extends Controller
     {
         $warehouse = $this->warehouseService->create($request->validated());
 
+        $storeId = $warehouse->stores()->first()?->id;
+
         $this->logActivity(
             type: ActivityLog::TYPE_INVENTORY,
             event: 'warehouse.created',
             description: "Almacén '{$warehouse->name}' creado",
             metadata: ['warehouse_id' => $warehouse->id, 'name' => $warehouse->name, 'type' => $warehouse->type],
-            storeId: Auth::user()?->store_id,
+            storeId: $storeId,
         );
 
         return response()->json([
             "status" => true,
             "message" => __('messages.warehouse_created_successfully'),
-            "data" => $warehouse->load(['store', 'branch', 'address'])
+            "data" => $warehouse->load(['stores', 'branch', 'address'])
         ], 201);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $warehouse = $this->warehouseService->getById($id);
         return response()->json([
@@ -62,12 +64,14 @@ class WarehousesController extends Controller
         $data = $request->validated();
         $warehouse = $this->warehouseService->update($id, $data);
 
+        $storeId = $warehouse->stores()->first()?->id;
+
         $this->logActivity(
             type: ActivityLog::TYPE_INVENTORY,
             event: 'warehouse.updated',
             description: "Almacén '{$warehouse->name}' actualizado",
             metadata: ['warehouse_id' => $warehouse->id, 'name' => $warehouse->name, 'changes' => array_keys($data)],
-            storeId: Auth::user()?->store_id,
+            storeId: $storeId,
         );
 
         return response()->json([
@@ -77,10 +81,11 @@ class WarehousesController extends Controller
         ]);
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
         $warehouse = $this->warehouseService->getById($id);
         $warehouseName = $warehouse->name;
+        $storeId = $warehouse->stores()->first()?->id;
 
         $this->warehouseService->delete($id);
 
@@ -90,7 +95,7 @@ class WarehousesController extends Controller
             description: "Almacén '{$warehouseName}' eliminado",
             metadata: ['warehouse_id' => $id, 'name' => $warehouseName],
             level: ActivityLog::LEVEL_WARNING,
-            storeId: Auth::user()?->store_id,
+            storeId: $storeId,
         );
 
         return response()->json([

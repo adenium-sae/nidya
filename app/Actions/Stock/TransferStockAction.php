@@ -2,24 +2,47 @@
 
 namespace App\Actions\Stock;
 
+use App\Exceptions\Access\Auth\AccessDeniedException;
+use App\Exceptions\Inventory\Stock\InsufficientStockException;
 use App\Models\Stock;
 use App\Models\StockMovement;
 use App\Models\StockTransfer;
 use App\Models\StockTransferItem;
+use App\Models\Warehouse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class TransferStockAction
 {
-    public function __invoke(array $data, string $userId): StockTransfer
+    public function __invoke(array $data): StockTransfer
     {
-        return DB::transaction(function () use ($data, $userId) {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        // Authorization check
+        $sourceWarehouse = Warehouse::with('stores')->findOrFail($data['source_warehouse_id']);
+        $destinationWarehouse = Warehouse::with('stores')->findOrFail($data['destination_warehouse_id']);
+
+        // Check permission: user must have 'inventory.transfer' in at least one store associated with the source warehouse
+        $hasPermission = false;
+        foreach ($sourceWarehouse->stores as $store) {
+            if ($user->hasPermissionInStore('inventory.transfer', $store->id)) {
+                $hasPermission = true;
+                break;
+            }
+        }
+        if (!$hasPermission) {
+            throw new AccessDeniedException('No tienes permiso para iniciar transferencias desde este almacén.');
+        }
+
+        return DB::transaction(function () use ($data, $user) {
             $folio = $this->generateFolio();
 
             $transfer = StockTransfer::create([
                 'folio' => $folio,
                 'from_warehouse_id' => $data['source_warehouse_id'],
                 'to_warehouse_id' => $data['destination_warehouse_id'],
-                'requested_by' => $userId,
+                'requested_by' => $user->id,
                 'notes' => $data['notes'] ?? null,
                 'status' => StockTransfer::STATUS_PENDING,
             ]);
@@ -30,7 +53,7 @@ class TransferStockAction
                     $itemData,
                     $data['source_warehouse_id'],
                     $data['destination_warehouse_id'],
-                    $userId
+                    $user
                 );
             }
 
@@ -58,7 +81,7 @@ class TransferStockAction
         array $itemData,
         string $srcWhId,
         string $dstWhId,
-        string $userId
+        \App\Models\User $user
     ): void {
         $productId = $itemData['product_id'];
         $qty = (int) $itemData['quantity'];
@@ -81,7 +104,7 @@ class TransferStockAction
             $available = $sourceStock ? $sourceStock->quantity : 0;
             throw new \Exception(
                 "Stock insuficiente en origen para el producto {$productId}. " .
-                "Disponible: {$available}, solicitado: {$qty}"
+                    "Disponible: {$available}, solicitado: {$qty}"
             );
         }
 
@@ -134,7 +157,7 @@ class TransferStockAction
             'quantity_before' => $sourceQtyBefore,
             'quantity_after' => $sourceQtyAfter,
             'notes' => "Transferencia salida → almacén destino (folio: {$transfer->folio})",
-            'user_id' => $userId,
+            'user_id' => $user->id,
             'movable_type' => StockTransfer::class,
             'movable_id' => $transfer->id,
         ]);
@@ -149,7 +172,7 @@ class TransferStockAction
             'quantity_before' => $destQtyBefore,
             'quantity_after' => $destQtyAfter,
             'notes' => "Transferencia entrada ← almacén origen (folio: {$transfer->folio})",
-            'user_id' => $userId,
+            'user_id' => $user->id,
             'movable_type' => StockTransfer::class,
             'movable_id' => $transfer->id,
             'related_movement_id' => $outMovement->id,

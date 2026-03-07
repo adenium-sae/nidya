@@ -61,6 +61,16 @@ class User extends Authenticatable
         return $this->hasMany(CashRegisterSession::class);
     }
 
+    public function storeRoles(): HasMany
+    {
+        return $this->hasMany(StoreUserRole::class);
+    }
+
+    public function branchRoles(): HasMany
+    {
+        return $this->hasMany(BranchUserRole::class);
+    }
+
     public function generateOtp(): string
     {
         $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -111,5 +121,34 @@ class User extends Authenticatable
             ->where('branch_user_roles.branch_id', $branchId)
             ->where('roles.key', $roleKey)
             ->exists();
+    }
+
+    /**
+     * Check if the user has a specific permission in a specific store.
+     */
+    public function hasPermissionInStore(string $permissionKey, string $storeId): bool
+    {
+        return DB::table('store_user_roles')
+            ->join('role_permissions', 'store_user_roles.role_id', '=', 'role_permissions.role_id')
+            ->join('permissions', 'role_permissions.permission_id', '=', 'permissions.id')
+            ->where('store_user_roles.user_id', $this->id)
+            ->where('store_user_roles.store_id', $storeId)
+            ->where('permissions.key', $permissionKey)
+            ->exists();
+    }
+
+    /**
+     * Get IDs of stores where the user has a specific permission.
+     */
+    public function getAccessibleStoreIds(?string $permissionKey = null): array
+    {
+        $query = DB::table('store_user_roles')
+            ->where('user_id', $this->id);
+        if ($permissionKey) {
+            $query->join('role_permissions', 'store_user_roles.role_id', '=', 'role_permissions.role_id')
+                ->join('permissions', 'role_permissions.permission_id', '=', 'permissions.id')
+                ->where('permissions.key', $permissionKey);
+        }
+        return $query->distinct()->pluck('store_id')->toArray();
     }
 }
