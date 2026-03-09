@@ -155,9 +155,9 @@ Todos los modelos usan **UUIDs** como primary key (`HasUuids` trait).
 │ email       │    │ first_name   │    │ key          │
 │ password    │    │ last_name    │    │ name         │
 │ otp_code    │    │ phone        │    │ module       │
-│ is_active   │    │ type (admin) │    └──────┬───────┘
-└──────┬──────┘    └──────────────┘           │
-       │                                      │ role_permissions
+│ is_superuser│    │ type (admin) │    └──────┬───────┘
+│ is_active   │    └──────────────┘           │
+└──────┬──────┘                               │ role_permissions
        │                              ┌───────┴───────┐
        │                              │     Role      │
        │                              │───────────────│
@@ -172,12 +172,12 @@ Todos los modelos usan **UUIDs** como primary key (`HasUuids` trait).
 │    Sale     │◄──┤  SaleItem    │    │ SalePayment  │
 │─────────────│    │──────────────│    │──────────────│
 │ folio       │    │ product_id   │    │ sale_id      │
-│ store_id    │    │ quantity     │    │ method       │
-│ branch_id   │    │ unit_price   │    │ amount       │
-│ warehouse_id│    │ subtotal     │    └──────────────┘
-│ customer_id │    │ tax          │
-│ total       │    └──────────────┘
-│ status      │
+│ store_id    │    │ store_id (?) │    │ method       │
+│ branch_id   │    │ quantity     │    │ amount       │
+│ warehouse_id│    │ unit_price   │    └──────────────┘
+│ customer_id │    │ subtotal     │
+│ total       │    │ tax          │
+│ status      │    └──────────────┘
 └─────────────┘
 
 ┌──────────────┐    ┌──────────────┐    ┌─────────────────┐
@@ -321,9 +321,8 @@ Todos los modelos usan **UUIDs** como primary key (`HasUuids` trait).
 
 ```
 1. POST /auth/signup
-   → RegisterUserAction: crea User + Profile + Store + Branch + Warehouse
-   → CompletesLogin: genera token Sanctum
-   → Respuesta: { user, token }
+   → RegisterUserAction: crea User + Profile (La tienda se crea por separado)
+   → Respuesta: { user } (Sin token por defecto)
 
 2. POST /auth/signin
    → LoginAction: valida credenciales
@@ -406,6 +405,15 @@ El sistema usa un modelo de permisos basado en **roles asignables** con **permis
 | `customers` | `view`, `create`, `edit`, `delete` |
 | `reports` | `sales`, `inventory`, `cash`, `products` |
 | `settings` | `view`, `edit`, `users`, `roles`, `stores`, `branches` |
+
+### Jerarquía de Seguridad
+El sistema implementa una jerarquía de tres niveles:
+1. **Superusuario Global (`is_superuser`):** Acceso total a todas las tiendas y recursos (bypass de permisos).
+2. **Admin de Tienda:** Control total sobre una tienda específica vía `store_user_roles`.
+3. **Rol Operativo:** Permisos granulares (ventas, inventario) dentro de una tienda.
+
+### Ventas Multi-Tienda (Cross-Store)
+Las ventas pueden incluir productos de distintas tiendas en una misma transacción. El sistema valida los permisos del vendedor por cada tienda involucrada y registra el `store_id` en cada `SaleItem`.
 
 ### Roles predefinidos (Seeder)
 

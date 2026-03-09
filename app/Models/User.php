@@ -24,6 +24,7 @@ class User extends Authenticatable
         'otp_code',
         'otp_expires_at',
         'is_active',
+        'is_superuser',
     ];
 
     protected $hidden = [
@@ -37,6 +38,7 @@ class User extends Authenticatable
         'otp_expires_at' => 'datetime',
         'password' => 'hashed',
         'is_active' => 'boolean',
+        'is_superuser' => 'boolean',
     ];
 
     public function profile(): HasOne
@@ -128,6 +130,10 @@ class User extends Authenticatable
      */
     public function hasPermissionInStore(string $permissionKey, string $storeId): bool
     {
+        if ($this->is_superuser) {
+            return true;
+        }
+
         return DB::table('store_user_roles')
             ->join('role_permissions', 'store_user_roles.role_id', '=', 'role_permissions.role_id')
             ->join('permissions', 'role_permissions.permission_id', '=', 'permissions.id')

@@ -11,8 +11,8 @@ Nidya is a comprehensive management system for grocery stores and similar busine
 - 🏪 **Stores and branches** — "Concept Store" model (multi-tenant) with shared consolidated warehouses per branch
 - 📦 **Product catalog** — With categories, variants, attributes, and images
 - 📊 **Inventory** — Stock per warehouse, adjustments, inter-warehouse transfers, movements
-- 💰 **Sales** — Point of sale with discounts, taxes, multiple payment methods
-- 👥 **Users and roles** — Granular permission system by module
+- 💰 **Sales** — Multi-store point of sale with discounts, taxes, multiple payment methods
+- 👥 **Users and roles** — Granular permission system by module and global superuser
 - 🏷️ **Customers** — Customer directory with history
 - 📋 **Activity Log** — Audit trail for all database-mutating operations (creates, updates, deletes, authentication)
 
@@ -62,6 +62,10 @@ The server will be available at `http://localhost:8000`.
 
 - 📐 [Backend Architecture (ES)](docs/ARCHITECTURE.md) — Patterns, structure, data model, API
 - 📐 [Backend Architecture (EN)](docs/ARCHITECTURE.en.md) — Patterns, structure, data model, API
+- 🔐 [Permission Hierarchy (ES)](docs/PERMISSIONS.md) — Access levels and security
+- 🔐 [Permission Hierarchy (EN)](docs/PERMISSIONS.en.md) — Access levels and security
+- 💼 [Use Cases (ES)](docs/USE_CASES.md) — Practical business scenarios
+- 💼 [Use Cases (EN)](docs/USE_CASES.en.md) — Practical business scenarios
 
 ## Available Scripts
 

@@ -22,6 +22,8 @@ test('can list stores', function () {
 });
 
 test('can create a store', function () {
+    $this->user->update(['is_superuser' => true]);
+
     $payload = [
         'name' => 'New Store',
         'slug' => 'new-store',
@@ -38,7 +40,21 @@ test('can create a store', function () {
     $this->assertDatabaseHas('stores', ['slug' => 'new-store']);
 });
 
+test('normal user cannot create a store', function () {
+    $payload = [
+        'name' => 'New Store',
+        'slug' => 'new-store',
+        'is_active' => true,
+        'primary_color' => '#FFFFFF',
+    ];
+
+    $response = $this->postJson('/api/admin/stores', $payload);
+
+    $response->assertStatus(403);
+});
+
 test('can update a store', function () {
+    $this->user->update(['is_superuser' => true]);
     $store = Store::factory()->create(['name' => 'Old Name']);
 
     $payload = [
@@ -55,11 +71,34 @@ test('can update a store', function () {
     $this->assertDatabaseHas('stores', ['id' => $store->id, 'name' => 'Updated Store']);
 });
 
+test('normal user cannot update a store', function () {
+    $store = Store::factory()->create(['name' => 'Old Name']);
+
+    $payload = [
+        'name' => 'Updated Store',
+        'slug' => $store->slug,
+        'is_active' => false,
+    ];
+
+    $response = $this->putJson("/api/admin/stores/{$store->id}", $payload);
+
+    $response->assertStatus(403);
+});
+
 test('can delete a store', function () {
+    $this->user->update(['is_superuser' => true]);
     $store = Store::factory()->create();
 
     $response = $this->deleteJson("/api/admin/stores/{$store->id}");
 
     $response->assertStatus(200);
     expect(Store::withTrashed()->find($store->id)->trashed())->toBeTrue();
+});
+
+test('normal user cannot delete a store', function () {
+    $store = Store::factory()->create();
+
+    $response = $this->deleteJson("/api/admin/stores/{$store->id}");
+
+    $response->assertStatus(403);
 });

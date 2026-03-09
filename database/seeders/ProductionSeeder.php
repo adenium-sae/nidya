@@ -140,6 +140,7 @@ class ProductionSeeder extends Seeder
                 'password'          => bcrypt($password),
                 'email_verified_at' => now(),
                 'is_active'         => true,
+                'is_superuser'      => true,
             ]
         );
 
@@ -170,6 +171,17 @@ class ProductionSeeder extends Seeder
         );
 
         $this->command->info("✅ Tienda creada: {$store->name}");
+
+        // Asignar Super Admin como Administrador de la tienda principal
+        DB::table('store_user_roles')->updateOrInsert(
+            ['user_id' => $user->id, 'store_id' => $store->id],
+            [
+                'id' => (string) Str::uuid(),
+                'role_id' => $adminRole->id,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]
+        );
 
         // ─── 5. Sucursal principal ─────────────────────────────────
         $address = Address::create([

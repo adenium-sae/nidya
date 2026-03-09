@@ -20,7 +20,9 @@ class CreateSaleAction
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        if (!$user->hasPermissionInStore('sales.create', $data['store_id'])) {
+        // Validation: If it's a single-store sale, we check the global store.
+        // If items come from different stores, we check permissions per item in processSaleItem.
+        if (isset($data['store_id']) && !$user->hasPermissionInStore('sales.create', $data['store_id'])) {
             throw new AccessDeniedException();
         }
 
@@ -43,7 +45,15 @@ class CreateSaleAction
                 'status' => 'completed',
             ]);
             foreach ($data['items'] as $itemData) {
-                $this->processSaleItem($sale, $itemData, $data['store_id'], $data['warehouse_id'], $user);
+                // Determine item store: specific in itemData or fallback to sale's global store
+                $itemStoreId = $itemData['store_id'] ?? $data['store_id'];
+                
+                // Permission check per item
+                if (!$user->hasPermissionInStore('sales.create', $itemStoreId)) {
+                    throw new AccessDeniedException("No permission to sell from store: {$itemStoreId}");
+                }
+
+                $this->processSaleItem($sale, $itemData, $itemStoreId, $data['warehouse_id'], $user);
             }
             $sale->calculateTotals();
             $sale->complete();
@@ -68,6 +78,7 @@ class CreateSaleAction
         SaleItem::create([
             'sale_id' => $sale->id,
             'product_id' => $product->id,
+            'store_id' => $storeId,
             'quantity' => $quantity,
             'unit_price' => $unitPrice,
             'subtotal' => $subtotal,

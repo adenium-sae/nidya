@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Management\Inventory\StorageLocationController;
 use App\Http\Controllers\Api\Management\Catalog\CategoryController;
 use App\Http\Controllers\Api\Management\Inventory\Stock\StockController;
 use App\Http\Controllers\Api\Management\ActivityLogController;
+use App\Http\Controllers\Api\Management\Sales\SaleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -100,6 +101,14 @@ Route::prefix("admin")->middleware(['auth:sanctum', 'profile.type:admin'])->grou
         Route::get("/transfers", [StockController::class, "transfers"]);
         Route::post("/transfer/{id}/confirm", [StockController::class, "confirmTransfer"]);
         Route::post("/transfer/{id}/cancel", [StockController::class, "cancelTransfer"]);
+    });
+
+    Route::prefix("sales")->group(function () {
+        Route::get("/", [SaleController::class, "index"]);
+        Route::post("/", [SaleController::class, "store"]);
+        Route::get("/{id}", [SaleController::class, "show"]);
+        Route::post("/{id}/cancel", [SaleController::class, "cancel"]);
+        Route::get("/summary/daily", [SaleController::class, "dailySummary"]);
     });
 
     Route::get("/activity-logs", [ActivityLogController::class, "index"]);

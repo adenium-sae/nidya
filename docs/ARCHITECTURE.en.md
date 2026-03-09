@@ -155,9 +155,9 @@ All models use **UUIDs** as primary keys (`HasUuids` trait).
 │ email       │    │ first_name   │    │ key          │
 │ password    │    │ last_name    │    │ name         │
 │ otp_code    │    │ phone        │    │ module       │
-│ is_active   │    │ type (admin) │    └──────┬───────┘
-└──────┬──────┘    └──────────────┘           │
-       │                                      │ role_permissions
+│ is_superuser│    │ type (admin) │    └──────┬───────┘
+│ is_active   │    └──────────────┘           │
+└──────┬──────┘                               │ role_permissions
        │                              ┌───────┴───────┐
        │                              │     Role      │
        │                              │───────────────│
@@ -172,12 +172,12 @@ All models use **UUIDs** as primary keys (`HasUuids` trait).
 │    Sale     │◄──┤  SaleItem    │    │ SalePayment  │
 │─────────────│    │──────────────│    │──────────────│
 │ folio       │    │ product_id   │    │ sale_id      │
-│ store_id    │    │ quantity     │    │ method       │
-│ branch_id   │    │ unit_price   │    │ amount       │
-│ warehouse_id│    │ subtotal     │    └──────────────┘
-│ customer_id │    │ tax          │
-│ total       │    └──────────────┘
-│ status      │
+│ store_id    │    │ store_id (?) │    │ method       │
+│ branch_id   │    │ quantity     │    │ amount       │
+│ warehouse_id│    │ unit_price   │    └──────────────┘
+│ customer_id │    │ subtotal     │
+│ total       │    │ tax          │
+│ status      │    └──────────────┘
 └─────────────┘
 
 ┌──────────────┐    ┌──────────────┐    ┌─────────────────┐
@@ -321,9 +321,8 @@ All models use **UUIDs** as primary keys (`HasUuids` trait).
 
 ```
 1. POST /auth/signup
-   → RegisterUserAction: creates User + Profile + Store + Branch + Warehouse
-   → CompletesLogin: generates Sanctum token
-   → Response: { user, token }
+   → RegisterUserAction: creates User + Profile (Store is created separately)
+   → Response: { user } (No token by default)
 
 2. POST /auth/signin
    → LoginAction: validates credentials
@@ -406,6 +405,15 @@ The system uses a role-based permission model with **assignable roles** and **gr
 | `customers` | `view`, `create`, `edit`, `delete` |
 | `reports` | `sales`, `inventory`, `cash`, `products` |
 | `settings` | `view`, `edit`, `users`, `roles`, `stores`, `branches` |
+
+### Security Hierarchy
+The system implements a three-level hierarchy:
+1. **Global Superuser (`is_superuser`):** Full access to all stores and resources (permission bypass).
+2. **Store Admin:** Full control over a specific store via `store_user_roles`.
+3. **Operational Role:** Granular permissions (sales, inventory) within a store.
+
+### Multi-Store Sales (Cross-Store)
+Sales can include products from different stores in a single transaction. The system validates the seller's permissions for each store involved and records the `store_id` in each `SaleItem`.
 
 ### Default Roles (Seeder)
 

@@ -11,8 +11,8 @@ Nidya es un sistema integral de gestión para tiendas de abarrotes y negocios si
 - 🏪 **Tiendas y sucursales** — Modelo "Concept Store" (multi-tienda) con base de almacenes compartida por sucursal
 - 📦 **Catálogo de productos** — Con categorías, variantes, atributos e imágenes
 - 📊 **Inventario** — Stock por almacén, ajustes, transferencias entre almacenes, movimientos
-- 💰 **Ventas** — Punto de venta con descuentos, impuestos, múltiples métodos de pago
-- 👥 **Usuarios y roles** — Sistema de permisos granulares por módulo
+- 💰 **Ventas** — Punto de venta multi-tienda con descuentos, impuestos, múltiples métodos de pago
+- 👥 **Usuarios y roles** — Sistema de permisos granulares por módulo y superusuario global
 - 🏷️ **Clientes** — Directorio de clientes con historial
 - 📋 **Bitácora** — Registro de auditoría de todas las operaciones que mutan la base de datos (creaciones, actualizaciones, eliminaciones, autenticación)
 
@@ -62,6 +62,10 @@ El servidor estará en `http://localhost:8000`.
 
 - 📐 [Arquitectura del backend (ES)](docs/ARCHITECTURE.md) — Patrones, estructura, modelo de datos, API
 - 📐 [Backend Architecture (EN)](docs/ARCHITECTURE.en.md) — Patterns, structure, data model, API
+- 🔐 [Jerarquía de Permisos (ES)](docs/PERMISSIONS.md) — Niveles de acceso y seguridad
+- 🔐 [Permission Hierarchy (EN)](docs/PERMISSIONS.en.md) — Access levels and security
+- 💼 [Casos de Uso (ES)](docs/USE_CASES.md) — Escenarios prácticos de negocio
+- 💼 [Use Cases (EN)](docs/USE_CASES.en.md) — Practical business scenarios
 
 ## Scripts disponibles
 
